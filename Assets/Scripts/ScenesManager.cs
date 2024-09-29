@@ -23,11 +23,6 @@ public class ScenesManager : MonoBehaviour
         SceneManager.LoadScene("Scene_Ocean");
     }
 
-    public void GoToGameSceneRight()
-    {
-        SceneManager.LoadScene("Scene_Ocean_Right");
-    }
-
     public void GoToSettingScene()
     {
         SceneManager.LoadScene("Settings");

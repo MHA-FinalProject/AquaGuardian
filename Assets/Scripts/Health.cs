@@ -6,24 +6,29 @@ using UnityEngine.UI;
 
 public class Health : MonoBehaviour
 {
-    [SerializeField] TextMeshProUGUI healthText;  // Reference to the TextMeshPro component displaying the health
-    [SerializeField] Image healthBar;  // Reference to the UI Image representing the health bar
+    // === UI Elements ===
+    [Header("UI Components")]
+    [SerializeField] private TextMeshProUGUI healthText;  // Reference to the TextMeshPro component displaying the health
+    [SerializeField] private Image healthBar;  // Reference to the UI Image representing the health bar
+    [SerializeField] private GameObject Panel;  // Reference to a UI panel
 
+    // === Health Settings ===
+    [Header("Health Settings")]
     private float health = 100f;  // Current health value
     private float maxHealth = 100f;  // Maximum health value
-
     private float lerpSpeed;  // Speed for interpolating the health bar fill amount
     private float factorLerpSpeed = 3f;  // Multiplier for the lerp speed
 
-    private float lifeTime; // Time to wait before applying automatic damage
+    // === Lifetime and Damage Settings ===
+    [Header("Lifetime & Damage Settings")]
+    private float lifeTime;  // Time to wait before applying automatic damage
     public TMP_InputField lifeTime_inputField;  // Input field for user-defined lifetime
-
-    private float downHealthPairSec; // Damage applied every life time interval
+    private float downHealthPairSec;  // Damage applied every life time interval
     public TMP_InputField downHealthPairSec_inputField;  // Input field for user-defined damage per interval
 
-    [SerializeField] GameObject Panel;  // Reference to a UI panel
+    // === Internal States ===
+    [Header("Internal States")]
     private bool moveOxygen = false;  // Flag to start oxygen decrease coroutine, initially set to false
-
     public bool didntGetInputsYet = false;  // Flag to check if inputs have been received yet
 
     // Start is called before the first frame update
@@ -45,23 +50,7 @@ public class Health : MonoBehaviour
         // Get user inputs for lifeTime and downHealthPairSec
         if (didntGetInputsYet)
         {
-            // Parse user inputs for lifeTime and downHealthPairSec
-            bool isLifeTimeValid = float.TryParse(lifeTime_inputField.text, out lifeTime);
-            bool isDownHealthPairSecValid = float.TryParse(downHealthPairSec_inputField.text, out downHealthPairSec);
-            if (isLifeTimeValid && isDownHealthPairSecValid)
-            {
-                lifeTime = float.Parse(lifeTime_inputField.text);  // Convert input to float
-                downHealthPairSec = float.Parse(downHealthPairSec_inputField.text);  // Convert input to float
-            }
-            else
-            {
-                // Log errors if input parsing fails
-                Debug.Log("error: " + lifeTime_inputField.text);
-                Debug.Log("error: " + downHealthPairSec_inputField.text);
-            }
-
-            Debug.Log("lifeTime: " + lifeTime + ", downHealthPairSec: " + downHealthPairSec);
-
+            ProcessUserInputs();
             didntGetInputsYet = false;  // Inputs have now been received
         }
 
@@ -87,6 +76,26 @@ public class Health : MonoBehaviour
 
         // Update the lerp speed based on the time delta
         lerpSpeed = factorLerpSpeed * Time.deltaTime;
+    }
+
+    void ProcessUserInputs()
+    {
+        // Parse user inputs for lifeTime and downHealthPairSec
+        bool isLifeTimeValid = float.TryParse(lifeTime_inputField.text, out lifeTime);
+        bool isDownHealthPairSecValid = float.TryParse(downHealthPairSec_inputField.text, out downHealthPairSec);
+        if (isLifeTimeValid && isDownHealthPairSecValid)
+        {
+            lifeTime = float.Parse(lifeTime_inputField.text);  // Convert input to float
+            downHealthPairSec = float.Parse(downHealthPairSec_inputField.text);  // Convert input to float
+        }
+        else
+        {
+            // Log errors if input parsing fails
+            Debug.Log("error: " + lifeTime_inputField.text);
+            Debug.Log("error: " + downHealthPairSec_inputField.text);
+        }
+
+        Debug.Log("lifeTime: " + lifeTime + ", downHealthPairSec: " + downHealthPairSec);
     }
 
     // Smoothly updates the health bar fill amount

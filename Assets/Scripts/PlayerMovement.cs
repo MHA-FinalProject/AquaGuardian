@@ -7,51 +7,49 @@ using UnityEngine.SceneManagement;
 
 public class PlayerMovement : MonoBehaviour
 {
-    [SerializeField] public float speed;
-    public TMP_InputField speed_inputField;
+    
+    // ----- Movement Settings -----
+    [Header("Movement Settings")]
+    [SerializeField] public float speed;  // Speed of the player
+    public TMP_InputField speed_inputField;  // Input field for speed
 
-    public float rotationSpeed;
-    public float verticalSpeed; // Adjust this for the speed of upward and downward movement
-    public TMP_InputField vertical_speed_inputField;
+    public float verticalSpeed;  // Speed for upward and downward movement
+    public TMP_InputField vertical_speed_inputField;  // Input field for vertical speed
 
-    public float idleUpwardSpeed; // Adjust this for the speed of upward movement when no input is detected
-    public TMP_InputField idle_upward_speed_inputField;
+    public float idleUpwardSpeed;  // Speed for upward movement when no input is detected
+    public TMP_InputField idle_upward_speed_inputField;  // Input field for idle upward speed
 
-    private Rigidbody rb;
-    public GameObject Panel;
-    public bool canMove = true; // Set to true by default
+    private Rigidbody rb;  // Reference to the Rigidbody component
+    public bool canMove = true;  // Flag to control if the player can move
 
-    /*[SerializeField] public TextMeshProUGUI infoText1; // Reference to the text object
-    [SerializeField] public TextMeshProUGUI infoText2; // Reference to the text object
-    [SerializeField] public TextMeshProUGUI infoText3; // Reference to the text object
-    [SerializeField] public TextMeshProUGUI infoText4; // Reference to the text object
-    [SerializeField] public TextMeshProUGUI infoText5; // Reference to the text object*/
-    [SerializeField] public TextMeshProUGUI infoText6; // Reference to the text object
-    [SerializeField] public TextMeshProUGUI infoText7; // Reference to the text object
+    // ----- UI References -----
+    [Header("UI References")]
+    public GameObject Panel;  // Reference to the UI panel
+    [SerializeField] public TextMeshProUGUI infoText6;  // Text for "Get Ready"
+    [SerializeField] public TextMeshProUGUI infoText7;  // Text for "Go"
 
+    // ----- Collision Control -----
+    [Header("Collision Control")]
+    private bool canCollide = true;  // Flag to control collision timing
+    public float collisionDelay = 2f;  // Delay between collisions
 
-    private bool show = true;
-    public bool afterText = false;
+    // ----- Game State -----
+    [Header("Game State")]
+    private bool show = true;  // Flag to control display of text
+    public bool afterText = false;  // Flag to check if the intro text has been shown
 
+    // ----- Scene References -----
+    [Header("Scene References")]
+    [SerializeField] string sceneName;  // Name of the scene
+    [SerializeField] GameObject surface;  // Reference to the surface object
+    [SerializeField] GameObject ground;  // Reference to the ground object
 
-    /*[SerializeField] GameObject blue;
-    [SerializeField] GameObject green;
-    [SerializeField] GameObject red;
-    [SerializeField] GameObject purple;*/
+    // ----- Upward Movement Factor -----
+    private float idleUpwardFactor = 0.5f;  // Factor for idle upward movement
 
-    private int counterFish = 0;
-
-    private bool canCollide = true;
-    public float collisionDelay = 2f;
-
-    [SerializeField] string sceneName;
-
-    [SerializeField] GameObject surface;
-    [SerializeField] GameObject ground;
-
-    private float idleUpwardFactor = 0.5f;
-
-    public bool notGetForcesFromAmadeo = true; //check if amadeo mechine is connected or play throw the keyboard
+    // ----- Amadeo Device Connection -----
+    [Header("Amadeo Device Connection")]
+    public bool notGetForcesFromAmadeo = true;  // Flag to check if Amadeo device is connected or using keyboard
 
     void Start()
     {
@@ -84,24 +82,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (show && !Panel.activeSelf)
         {
-            // make speed. vertical speed and idle upward speed from user
-            bool isSpeedValid = float.TryParse(speed_inputField.text, out speed);
-            bool isSpeedVerticalValid = float.TryParse(vertical_speed_inputField.text, out verticalSpeed);
-            bool isIdleUpwardSpeedValid = float.TryParse(idle_upward_speed_inputField.text, out idleUpwardSpeed);
-            if (isSpeedValid && isSpeedVerticalValid && isIdleUpwardSpeedValid)
-            {
-                speed = float.Parse(speed_inputField.text);
-                verticalSpeed = float.Parse(vertical_speed_inputField.text);
-                idleUpwardSpeed = float.Parse(idle_upward_speed_inputField.text);
-            }
-            else
-            {
-                Debug.Log("error: " + speed_inputField.text);
-                Debug.Log(vertical_speed_inputField.text);
-                Debug.Log(idle_upward_speed_inputField.text);
-            }
-            Debug.Log("speed: " + speed + ", vertical speed: " + verticalSpeed + ", idleUpwardSpeed: " + idleUpwardSpeed);
-
+            ProcessUserInputs();
             // Show the info text for 4 seconds
             StartCoroutine(ShowInfoTextAndKeys());
 
@@ -129,6 +110,27 @@ public class PlayerMovement : MonoBehaviour
 
 
         }
+    }
+
+    void ProcessUserInputs()
+    {
+        // make speed. vertical speed and idle upward speed from user
+        bool isSpeedValid = float.TryParse(speed_inputField.text, out speed);
+        bool isSpeedVerticalValid = float.TryParse(vertical_speed_inputField.text, out verticalSpeed);
+        bool isIdleUpwardSpeedValid = float.TryParse(idle_upward_speed_inputField.text, out idleUpwardSpeed);
+        if (isSpeedValid && isSpeedVerticalValid && isIdleUpwardSpeedValid)
+        {
+            speed = float.Parse(speed_inputField.text);
+            verticalSpeed = float.Parse(vertical_speed_inputField.text);
+            idleUpwardSpeed = float.Parse(idle_upward_speed_inputField.text);
+        }
+        else
+        {
+            Debug.Log("error: " + speed_inputField.text);
+            Debug.Log(vertical_speed_inputField.text);
+            Debug.Log(idle_upward_speed_inputField.text);
+        }
+        Debug.Log("speed: " + speed + ", vertical speed: " + verticalSpeed + ", idleUpwardSpeed: " + idleUpwardSpeed);
     }
 
     /*void FixedUpdate()
@@ -198,36 +200,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (infoText6 != null && infoText7 != null)
         {
-            /*infoText1.gameObject.SetActive(true); // Show the text
-            yield return WaitForSecondsOrSkip(3f); // Wait for 3 seconds or skip if Enter is pressed
-            infoText1.gameObject.SetActive(false); // Hide the text after 3 seconds
-
-            yield return WaitForSecondsOrSkip(1f); // Wait for 1 second or skip if Enter is pressed*/
-
-            /*infoText2.gameObject.SetActive(true); // Show the text
-            yield return WaitForSecondsOrSkip(4f); // Wait for 4 seconds or skip if Enter is pressed
-            infoText2.gameObject.SetActive(false); // Hide the text after 4 seconds
-
-            yield return WaitForSecondsOrSkip(1f); // Wait for 1 second or skip if Enter is pressed*/
-
-            /*infoText3.gameObject.SetActive(true); // Show the text
-            yield return WaitForSecondsOrSkip(4f); // Wait for 4 seconds or skip if Enter is pressed
-            infoText3.gameObject.SetActive(false); // Hide the text after 4 seconds
-
-            yield return WaitForSecondsOrSkip(1f); // Wait for 1 second or skip if Enter is pressed
-
-            infoText4.gameObject.SetActive(true); // Show the text
-            yield return WaitForSecondsOrSkip(4f); // Wait for 4 seconds or skip if Enter is pressed
-            infoText4.gameObject.SetActive(false); // Hide the text after 4 seconds
-
-            yield return WaitForSecondsOrSkip(1f); // Wait for 1 second or skip if Enter is pressed
-
-            infoText5.gameObject.SetActive(true); // Show the text
-            yield return WaitForSecondsOrSkip(4f); // Wait for 4 seconds or skip if Enter is pressed
-            infoText5.gameObject.SetActive(false); // Hide the text after 4 seconds
-
-            yield return WaitForSecondsOrSkip(1f); // Wait for 1 second or skip if Enter is pressed*/
-
+            
             infoText6.gameObject.SetActive(true); // Show the text
             yield return WaitForSecondsOrSkip(1f); // Wait for 1 second or skip if Enter is pressed
             infoText6.gameObject.SetActive(false); // Hide the text after 1 second
