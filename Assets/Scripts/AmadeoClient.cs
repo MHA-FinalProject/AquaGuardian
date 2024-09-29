@@ -12,8 +12,8 @@ using System.Threading.Tasks;
 // Enum to determine the input type: either emulation mode or actual Amadeo device.
 public enum InputType
 {
-    EmulationMode,
-    Amadeo,
+    EmulationMode,  // Reads the forces from the file Assets/AmadeoRecords/force_data.txt. The five right numbers in each row represent the forces in the five fingers (of the right hand).
+    Amadeo,         // Reads the forces from Amadeo (if it is connected). If there are no forces from Amadeo, then reads from keyboard (Space = Down).
 }
 
 public class AmadeoClient : MonoBehaviour
@@ -31,12 +31,10 @@ public class AmadeoClient : MonoBehaviour
     // Number of data samples to be used for zeroing the forces.
     [SerializeField] private int _zeroFBuffer = 10;
 
-    private CancellationTokenSource _cancellationTokenSource;
-    private bool _isReceiving = false; // Flag to check if data reception is active.
+    private CancellationTokenSource _cancellationTokenSource;  // See C# documentation to learn about CancellationTokenSource: https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtokensource?view=net-8.0
+    private bool _isReceiving = false;                         // Flag to check if data reception is active.
     private UdpClient _udpClient;
-    private const string EmulationDataFile = "Assets/AmadeoRecords/force_data.txt"; // File path for emulation data.
-
-    private const int DefaultPortNumber = 4444; // Default port number if not set manually.
+    private const string EmulationDataFile = "Assets/AmadeoRecords/force_data.txt"; // Path to file where each row represents a sample of 10 forces (one per finger).
 
     private IPEndPoint _remoteEndPoint; // End point for the UDP connection.
 
@@ -49,7 +47,7 @@ public class AmadeoClient : MonoBehaviour
 
     public GameObject Panel;
 
-    /* Uncommented the singleton implementation.
+    /* Singleton implementation; commented out because it did not work just before the experiment.
     // private void Awake()
     {
         Debug.Log("AmadeoClient Awake called");
@@ -62,7 +60,7 @@ public class AmadeoClient : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }*/
 
-    // Initialization method called on start.
+
     private void Start()
     {
         try
@@ -79,8 +77,7 @@ public class AmadeoClient : MonoBehaviour
 
         _cancellationTokenSource = new CancellationTokenSource();
         Debug.Log("AmadeoClient started");
-        // Data reception would normally start here, but it's commented out for now.
-        // StartReceiveData();
+        // NOTE: Barak called StartReceiveData() here, but we call it from PanelOpenUp.ClosePanel().
     }
 
     // Method to start zeroing the forces (calibration step).
@@ -92,6 +89,7 @@ public class AmadeoClient : MonoBehaviour
     }
 
     // Method to start receiving data from either Amadeo device or emulation file.
+    // We call it after the PanelOpenUp is closed.
     public void StartReceiveData()
     {
         if (_cancellationTokenSource.IsCancellationRequested)
@@ -163,7 +161,7 @@ public class AmadeoClient : MonoBehaviour
                 }
 
                 index = (index + 1) % lines.Length;
-                await Task.Delay(10, cancellationToken); // Delay between data readings.
+                await Task.Delay(10, cancellationToken); // Delay between data readings. Emulates the delay between samples.
             }
 
             Debug.Log("HandleIncomingDataEmu: Stopped receiving data.");

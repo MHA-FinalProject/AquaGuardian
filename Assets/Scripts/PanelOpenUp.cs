@@ -1,42 +1,41 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using UnityEditor;
-using Unity.Mathematics;
 using System.IO;
 
+/**
+ *  The panel that opens up when we start the game. 
+ *  It allows the physician to set all the parameters of the game, e.g. force factor, fingers, etc.
+ */
 public class PanelOpenUp : MonoBehaviour
 {
     // === Amadeo Client and UI References ===
     [Header("Amadeo Client and UI Components")]
     [SerializeField] private AmadeoClient _client;  // Reference to the AmadeoClient
     public GameObject Panel;  // Reference to a UI panel
-    [SerializeField] public TextMeshProUGUI num_of_caves_Text = null;  // Reference to the TextMeshPro component for number of caves
-    [SerializeField] public Slider slider;  // Reference to the UI slider
+    // [SerializeField] public TextMeshProUGUI num_of_caves_Text = null;  // Reference to the TextMeshPro component for number of caves
+    ///[SerializeField] public Slider slider;  // Reference to the UI slider
 
     // === Game Object References ===
     [Header("Game Objects")]
-    [SerializeField] public GameObject objectToScale = null;  // Reference to the object being scaled
-    [SerializeField] public GameObject oxygenObject = null;  // Reference to the oxygen object
-    [SerializeField] public GameObject wall = null;  // Reference to the wall object
-    [SerializeField] public GameObject arrows = null;  // Reference to the arrows object
-    [SerializeField] public GameObject chest = null;  // Reference to the chest object
+    [SerializeField] public GameObject caveObject = null;     // Reference to the cave object, that is being scaled
+    [SerializeField] public GameObject oxygenObject = null;   // Reference to the oxygen object
+    [SerializeField] public GameObject wall = null;           // Reference to the wall object
+    [SerializeField] public GameObject arrows = null;         // Reference to the arrows object
+    [SerializeField] public GameObject chest = null;          // Reference to the chest object
 
     // === Game Settings ===
     [Header("Game Settings")]
-    [SerializeField] public float maxSliderAmount = 5.0f;  // Maximum amount for the slider
-    public float num_caves_from_user = 0;  // Number of caves specified by the user
+    // [SerializeField] public float maxSliderAmount = 5.0f;     // Maximum amount for the slider
+    // public float num_caves_from_user = 0;  // Number of caves specified by the user
     private int numOfLines = 0;  // Internal counter for lines in the CSV
 
     // === Pivot and Position Settings ===
     [Header("Pivot and Position Settings")]
-    private int pivotPlace = 120;  // Pivot place for general objects
-    private int pivotChest = 75;  // Pivot place for the chest
-    private int pivotOxygen = 100;  // Pivot place for oxygen objects
-    private float chestX = 291.774f;  // X position for the chest
-    private float chestY = 20.002f;  // Y position for the chest
-    private float generalPivot = 50f;  // General pivot for object placement
-    private float pivotCavePlace = 70;  // Pivot place for caves
+    private int pivotChest = 75;        // Distance (in minus z direction) from last cave to treasure chest
+    private float chestX = 291.774f;    // X position for the chest (note: Y position for the chest is the Y position of the last cave).
+    private float generalPivot = 50f;   // Distance (in minus z direction) from current cave to next wall / oxygen / arrows.
+    private float pivotCavePlace = 70;  // Distance (in minus z direction) from current wall to next cave.
     private float pivotArrowsToWall = 45f;  // Pivot distance between arrows and walls
 
     // === File Settings ===
@@ -87,22 +86,6 @@ public class PanelOpenUp : MonoBehaviour
         }
     }
 
-    /* public void num_of_caves(float value)
-     {
-         num_caves_from_user = 0;
-         *//*Debug.Log("before update: " + num_caves_from_user);*//*
-
-         // Round down the value to the nearest integer
-         int intValue = Mathf.FloorToInt(value);
-
-         num_of_caves_Text.text = intValue.ToString("0");
-
-         num_caves_from_user = intValue;
-
-         *//*Debug.Log("num_caves_from_user after update: " + numOfLines);*//*
-     }
- */
-
     // The function handles closing a panel and creates objects according to the data read from a CSV file.
     // The function places the objects in the game world and updates their size and position based on the data in the file.
     public void ClosePanel()
@@ -111,21 +94,21 @@ public class PanelOpenUp : MonoBehaviour
         {
             Panel.SetActive(false);
             /*Debug.Log("num_caves_from_user in ClosePanel: " + numOfLines);*/
-            Vector3 currentPosition = objectToScale.transform.position;
+            Vector3 currentPositionCave   = caveObject.transform.position;
             Vector3 currentPositionOxygen = oxygenObject.transform.position;
-            Vector3 currentPositionWall = wall.transform.position;
+            Vector3 currentPositionWall   = wall.transform.position;
             Vector3 currentPositionArrows = arrows.transform.position;
 
-            Vector3 newPosition = new Vector3(currentPosition.x,currentPosition.y,currentPosition.z);
-            Vector3 newOxygenPosition = new Vector3(currentPositionOxygen.x, currentPositionOxygen.y, currentPositionOxygen.z);
-            Vector3 newWallPosition = new Vector3(currentPositionWall.x, currentPositionWall.y, currentPositionWall.z);
-            Vector3 newArrowsPosition = new Vector3(currentPositionArrows.x, currentPositionArrows.y, currentPositionArrows.z);
+            Vector3 newCavePosition = new Vector3(currentPositionCave.x,currentPositionCave.y,currentPositionCave.z);
+            Vector3 newOxygenPosition;
+            Vector3 newWallPosition;
+            Vector3 newArrowsPosition;
 
-            Vector3 currentScale = objectToScale.transform.localScale;
-            Vector3 newScale = new Vector3(currentScale.x, currentScale.y, currentScale.z);
+            Vector3 currentCaveScale = caveObject.transform.localScale;
+            Vector3 newCaveScale = new Vector3(currentCaveScale.x, currentCaveScale.y, currentCaveScale.z);
 
             //For each row
-            for (int i = 1; i < numOfLines; i++)
+            for (int i = 1; i < numOfLines; i++)   // numOfLines = number of caves defined in the CSV file.
             {
                 string[] fields = lines[i].Split(',');
 
@@ -133,7 +116,6 @@ public class PanelOpenUp : MonoBehaviour
                 float valueY = float.Parse(fields[1]);
                 /*Debug.Log("Y of cave " + i +" from file: " + valueY);*/
            
-
                 // Height
                 float posY = float.Parse(fields[2]);
                 /*Debug.Log("posY of cave " + i +" from file: " + posY);*/
@@ -142,48 +124,46 @@ public class PanelOpenUp : MonoBehaviour
                 float valueZ = float.Parse(fields[3]);
                 /*Debug.Log("Z of cave " + i +" from file: " + valueZ);*/
 
+                /*
                 float valueZnext = valueZ;
-
                 if (i < numOfLines - 1) {
                     string[] fieldsNext = lines[i+1].Split(',');
                     valueZnext = float.Parse(fieldsNext[3]);
                 }
+                */
 
 
                 // In these lines, the current position of the objects that are added to the game world is updated,
                 // and this position is calculated based on their previous position and data from the file.
 
-                newScale = new Vector3(newScale.x, valueY, valueZ);
+                newCaveScale = new Vector3(newCaveScale.x, valueY, valueZ);
 
                 /*Debug.Log("current cave position: " + currentPosition.x + " " + currentPosition.y + " " + currentPosition.z);*/
                 
-                newPosition = new Vector3(currentPosition.x, currentPosition.y + posY, currentPositionWall.z - pivotCavePlace);
+                newCavePosition = new Vector3(currentPositionCave.x, currentPositionCave.y + posY, currentPositionWall.z - pivotCavePlace);
 
-                currentPosition = new Vector3(currentPosition.x,currentPosition.y,newPosition.z);
+                currentPositionCave = new Vector3(currentPositionCave.x,currentPositionCave.y,newCavePosition.z);
 
                 /*Debug.Log( i +" current cave position: " + currentPosition.x + " " + currentPosition.y + " " + currentPosition.z);
 */
                 //instantiate objects
-                GameObject newObject = Instantiate(objectToScale, newPosition, Quaternion.identity);
-                newObject.transform.localScale = newScale;
+                GameObject newCaveObject = Instantiate(caveObject, newCavePosition, Quaternion.identity);
+                newCaveObject.transform.localScale = newCaveScale;
 
                 //Objects position
 
-                newOxygenPosition = new Vector3(currentPositionOxygen.x, currentPositionOxygen.y, currentPosition.z - generalPivot);
-
-                newWallPosition = new Vector3(currentPositionWall.x, currentPositionWall.y, currentPosition.z - generalPivot);
-
+                newOxygenPosition = new Vector3(currentPositionOxygen.x, currentPositionOxygen.y, currentPositionCave.z - generalPivot);
+                newWallPosition = new Vector3(currentPositionWall.x, currentPositionWall.y, currentPositionCave.z - generalPivot);
                 currentPositionWall = new Vector3(currentPositionWall.x , currentPositionWall.y , newWallPosition.z);
-
-                newArrowsPosition = new Vector3(currentPositionArrows.x, currentPositionWall.y + pivotArrowsToWall, currentPosition.z - generalPivot);
+                newArrowsPosition = new Vector3(currentPositionArrows.x, currentPositionWall.y + pivotArrowsToWall, currentPositionCave.z - generalPivot);
 
                 // Instantiate Oxygen, Wall and Arrows
                 if (i != numOfLines - 1)
                 {
-                    GameObject newOxygenObject = Instantiate(oxygenObject, newOxygenPosition, Quaternion.identity);
-                    GameObject newWallObject = Instantiate(wall, newWallPosition, Quaternion.identity);
+                    Instantiate(oxygenObject, newOxygenPosition, Quaternion.identity);
+                    Instantiate(wall, newWallPosition, Quaternion.identity);
                 }
-                GameObject newArrowsObject = Instantiate(arrows, newArrowsPosition, Quaternion.identity);
+                Instantiate(arrows, newArrowsPosition, Quaternion.identity);
 
                 if (_client == null )
                 {
@@ -194,70 +174,22 @@ public class PanelOpenUp : MonoBehaviour
             }
 
             // Instantiate chest
-            Vector3 newPosition_chest = new Vector3(chestX, currentPosition.y, newPosition.z - (pivotChest));
-
+            Vector3 newPosition_chest = new Vector3(chestX, currentPositionCave.y, newCavePosition.z - (pivotChest));
             GameObject newObject_chest = Instantiate(chest, newPosition_chest, Quaternion.identity);
 
-            // Get the Transform component of the newly instantiated chest
+            // Set the finish line in the progress bar according to the chest position.
             Transform chestTransform = newObject_chest.transform;
-
-            // Set the finish line in LevelProgressUI
             if (levelProgressUI != null)
             {
                 levelProgressUI.SetFinishLine(chestTransform);
             }
 
             // Boolean to initialize variables after panel been close
-
-            playerLife.didntGetInputsYet = true;
-
-            health.didntGetInputsYet = true;
-
-
+            playerLife.didntGetInputsYet = true;   // the PlayerLife component has to read the input data from the panel only once. After it reads the data, it sets this flag to false.
+            // playerLife.ProcessUserInputs(...)
+            health.didntGetInputsYet = true;       // the Health component has to read the input data from the panel only once. After it reads the data, it sets this flag to false.
+            // health.ProcessUserInputs(...)
         }
     }
-
-   /* public void num_of_caves(float value)
-    {
-        num_caves_from_user = 0;
-        Debug.Log("before update: " + num_caves_from_user);
-
-        // Round down the value to the nearest integer
-        int intValue = Mathf.FloorToInt(value);
-
-        num_of_caves_Text.text = intValue.ToString("0");
-
-        num_caves_from_user = intValue;
-
-        Debug.Log("num_caves_from_user after update: " + num_caves_from_user);
-    }
-
-
-    public void ClosePanel()
-    {
-        if (Panel != null)
-        {
-            Panel.SetActive(false);
-            Debug.Log("num_caves_from_user in ClosePanel: " + num_caves_from_user);
-            Vector3 currentPosition = objectToScale.transform.position;
-            Vector3 currentPositionOxygen = oxygenObject.transform.position;
-            Vector3 newPosition = new Vector3(currentPosition.x, currentPosition.y, currentPosition.z);
-            Vector3 newOxygenPosition = new Vector3(currentPositionOxygen.x, currentPositionOxygen.y, currentPositionOxygen.z);
-
-            for (int i = 1; i <= num_caves_from_user; i++)
-            {
-                newPosition = new Vector3(currentPosition.x, currentPosition.y, currentPosition.z - (pivotPlace * i));
-                newOxygenPosition = new Vector3(currentPositionOxygen.x, currentPositionOxygen.y, currentPositionOxygen.z - (pivotPlace * i));
-                GameObject newObject = Instantiate(objectToScale, newPosition, Quaternion.identity);
-                GameObject newOxygenObject = Instantiate(oxygenObject, newOxygenPosition, Quaternion.identity);
-            }
-
-
-            Vector3 newPosition_chest = new Vector3(chestX, chestY, newPosition.z - (pivotPlace));
-
-            GameObject newObject_chest = Instantiate(chest, newPosition_chest, Quaternion.identity);
-
-        }
-    }*/
 
 }

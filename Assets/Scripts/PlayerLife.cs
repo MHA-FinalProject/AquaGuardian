@@ -4,6 +4,10 @@ using System.Collections;
 using TMPro;
 using UnityEngine.UI;
 
+/**
+ * Keeps track of the player's oxygen level.
+ * See also: Health
+ */
 public class PlayerLife : MonoBehaviour
 {
     //    /*public int maxCollisions = 3; // Maximum number of collisions allowed

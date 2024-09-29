@@ -4,6 +4,10 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+/**
+ * Keeps track of the player's oxygen level.
+ * See also: PlayerLife
+ */
 public class Health : MonoBehaviour
 {
     // === UI Elements ===
