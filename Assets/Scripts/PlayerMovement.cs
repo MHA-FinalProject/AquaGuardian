@@ -82,20 +82,18 @@ public class PlayerMovement : MonoBehaviour
 
         if (show && !Panel.activeSelf)
         {
-            ProcessUserInputs();
+            ProcessUserInputsInInitialForm();
             // Show the info text for 4 seconds
             StartCoroutine(ShowInfoTextAndKeys());
 
             show = false;
         }
 
-        if (notGetForcesFromAmadeo && canMove && afterText)
-        {
-            Vector3 movementDirection = Vector3.forward; // Move along the z-axis (forward direction)
-            Vector3 targetVelocity = speed * transform.TransformDirection(movementDirection);
+        if (notGetForcesFromAmadeo && canMove && afterText)  {
+            Vector3 horizontalVelocity = speed * transform.TransformDirection(Vector3.forward); // move along the z-axis (forward direction)
+
             float upDownInput = Input.GetAxis("UpDown");
             float verticalMovementSpeed = upDownInput * verticalSpeed;
-
             // Apply idle upward speed if no input is given
             if (upDownInput <= 0)
             {
@@ -103,16 +101,17 @@ public class PlayerMovement : MonoBehaviour
             }
 
             // Add vertical movement to the target velocity
-            targetVelocity += verticalMovementSpeed * transform.TransformDirection(Vector3.up);
+            Vector3 verticalVelocity = verticalMovementSpeed * transform.TransformDirection(Vector3.up);
 
             // Apply target velocity to the Rigidbody
-            rb.velocity = targetVelocity;
-
-
+            rb.velocity = horizontalVelocity + verticalVelocity;
         }
     }
 
-    void ProcessUserInputs()
+    /**
+     * Read the numbers that the user entered in the parameters form at the start of the game.
+     */
+    void ProcessUserInputsInInitialForm()
     {
         // make speed. vertical speed and idle upward speed from user
         bool isSpeedValid = float.TryParse(speed_inputField.text, out speed);
