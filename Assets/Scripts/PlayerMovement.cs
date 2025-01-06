@@ -90,17 +90,22 @@ public class PlayerMovement : MonoBehaviour
         }
 
         if (notGetForcesFromAmadeo && canMove && afterText)  {
+            // NOTE: this part runs only if Amadeo is not connected.
+            // If Amadeo is connected, then the code in getEventFromAmadeoClient.cs is run.
+
+            // TODO: Merge both functions to a single, easy-to-read function.
+
             Vector3 horizontalVelocity = speed * transform.TransformDirection(Vector3.forward); // move along the z-axis (forward direction)
 
-            float upDownInput = Input.GetAxis("UpDown");
+            float upDownInput = Input.GetAxis("UpDown");   // Change in Edit -> Project Settings -> Input Manager -> Axes - UpDown
+                // TODO: move to the new input system - use InputAction.
+
             float verticalMovementSpeed = upDownInput * verticalSpeed;
             // Apply idle upward speed if no input is given
             if (upDownInput <= 0)
             {
                 verticalMovementSpeed += idleUpwardSpeed;
             }
-
-            // Add vertical movement to the target velocity
             Vector3 verticalVelocity = verticalMovementSpeed * transform.TransformDirection(Vector3.up);
 
             // Apply target velocity to the Rigidbody
