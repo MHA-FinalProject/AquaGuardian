@@ -49,6 +49,9 @@ public class PlayerMovement : MonoBehaviour
     {
         if (notGetForcesFromAmadeo && canMove && afterText)
         {
+             // NOTE: this part runs only if Amadeo is not connected.
+            // If Amadeo is connected, then the code in getEventFromAmadeoClient.cs is run.
+            // TODO: Merge both functions to a single, easy-to-read function.
             Vector3 horizontalVelocity = speed * transform.TransformDirection(Vector3.forward);
 
             float upDownInput = Input.GetAxis("UpDown");
