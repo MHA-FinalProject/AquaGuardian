@@ -8,6 +8,11 @@ using UnityEngine.UI;
  * Keeps track of the player's oxygen level.
  * See also: PlayerLife
  */
+
+ // 1. Move UI updates to a separate HealthUIManager class
+// 2. Create an interface IHealth for better abstraction
+// 3. Consider using ScriptableObjects for health settings
+// 4. Add validation for health values
 public class Health : MonoBehaviour
 {
     // === UI Elements ===
@@ -160,4 +165,12 @@ public class Health : MonoBehaviour
     {
         SceneManager.LoadScene("Game_Over");
     }
+
+    // Public getter for current oxygen level (0-100)
+    public float GetOxygen()
+    {
+        return health;
+    }
+
+    
 }

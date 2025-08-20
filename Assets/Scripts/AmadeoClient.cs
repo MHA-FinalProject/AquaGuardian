@@ -8,8 +8,16 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+// 1. Move input handling to a separate InputManager class
+// 2. Create a separate UIManager for panel and text handling
+// 3. Split ProcessUserInputsInInitialForm into smaller methods
+// 4. Consider using events for state changes
 // Enum to determine the input type: either emulation mode or actual Amadeo device.
+// 1. Consider implementing IDisposable for better resource management
+// 2. Split UDP handling into a separate NetworkManager class
+// 3. Create a separate ForceDataProcessor class for force calculations
+// 4. Add more error handling and logging
+
 public enum InputType
 {
     EmulationMode,  // Reads the forces from the file Assets/AmadeoRecords/force_data.txt. The five right numbers in each row represent the forces in the five fingers (of the right hand).
@@ -23,6 +31,7 @@ public class AmadeoClient : MonoBehaviour
 
     // Input type to determine if we're in EmulationMode or using the actual Amadeo device.
     [SerializeField] InputType inputType = InputType.Amadeo;
+    public InputType CurrentInputType => inputType; // expose current input type for reports/UI
 
     // The port number used for the Amadeo connection, typically 4444.
     [SerializeField, Tooltip("Port should be 4444 for Amadeo connection"), Range(1024, 49151)]

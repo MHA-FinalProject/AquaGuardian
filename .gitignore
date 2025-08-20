@@ -25,6 +25,31 @@
 
 # Visual Studio cache directory
 .vs/
+# orel use this 
+Code.md
+CodeArchitecture.md
+DIFFICULTY_SETUP_GUIDE.md
+/Assets/Scripts/DifficultySystem_Future/
+/Assets/Sci-Fi UI/
+/Assets/tokens.json
+/Assets/Cute-GUI-Pack-Lite/
+
+# Additional ignore patterns for Unity
+# Generated reports
+Assets/Subject/
+
+
+# Temp screenshots and test images
+Assets/**/צילום*
+Assets/**/ל*.png
+
+
+
+
+# Additional UI assets
+Assets/WaterUIPAck/
+
+
 
 # Gradle cache directory
 .gradle/

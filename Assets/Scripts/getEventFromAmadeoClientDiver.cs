@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Unity.VisualScripting;
+
 
 public class getEventFromAmadeoClientDiver : MonoBehaviour
 {
@@ -70,6 +70,8 @@ public class getEventFromAmadeoClientDiver : MonoBehaviour
         // TODO: Merge both functions to a single, easy-to-read function.
 
         Debug.Log(indexForce);
+
+        
 
         // Check if the player can move and if the intro text has been shown
         if (pm.canMove && pm.afterText)

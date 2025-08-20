@@ -10,24 +10,8 @@ using UnityEngine.UI;
  */
 public class PlayerLife : MonoBehaviour
 {
-    //    /*public int maxCollisions = 3; // Maximum number of collisions allowed
-    //    private int currentCollisions = 0; // Current number of collisions*/
-    //    private bool canCollide = true; // Flag to control collision timing
-    //    private float waitTime = 2f;
+    
 
-    //    private bool PlayerisCollide = false;
-    // /*   float PlayerPositionX;
-    //    float PlayerPositionY;
-
-    //    [SerializeField] public GameObject TopOfCave = null;
-    //    [SerializeField] public GameObject BottomOfCave = null;*/
-
-    //   /* float pivotToCaveCenter = 8f;*/
-
-    //    /*[SerializeField] GameObject fish1;
-    //    [SerializeField] GameObject fish2;
-    //    [SerializeField] GameObject fish3;
-    //    [SerializeField] GameObject fish4;
     //*/
     //    public AudioClip collisionSound; // Assign this in the inspector
     //    private AudioSource audioSource;
@@ -57,6 +41,10 @@ public class PlayerLife : MonoBehaviour
     //    private float colorAlphaValue = 0.5f;
 
     //    private float timeUntilFadeOut = 3f;
+
+    // ----- Collision Control -----
+    [Header("Collision Tracking")]
+    private int collisionCount = 0;  // Counter for number of collisions with cave
 
     // ----- Collision Control -----
     private bool canCollide = true;  // Flag to control collision timing
@@ -107,7 +95,7 @@ public class PlayerLife : MonoBehaviour
         audioSourceOxygen = gameObject.AddComponent<AudioSource>();
         audioSourceOxygen.clip = collisionSoundOxygen;
 
-       /* distance = gameObject.transform.position.z - fish1.transform.position.z;*/
+    
 
         // Ensure the blood splatter image is initially invisible
         if (bloodSplatterImage != null)
@@ -129,24 +117,7 @@ public class PlayerLife : MonoBehaviour
             didntGetInputsYet = false;
         }
 
-        /*float currentDistance = gameObject.transform.position.z - fish1.transform.position.z;
-        if (distance != currentDistance)
-        {
-            Vector3 newPosition1 = fish1.transform.position;
-            Vector3 newPosition2 = fish2.transform.position;
-            Vector3 newPosition3 = fish3.transform.position;
-            Vector3 newPosition4 = fish4.transform.position;
-
-            newPosition1.z = gameObject.transform.position.z - distance;
-            newPosition2.z = gameObject.transform.position.z - distance;
-            newPosition3.z = gameObject.transform.position.z - distance;
-            newPosition4.z = gameObject.transform.position.z - distance;
-
-            fish1.transform.position = newPosition1;
-            fish2.transform.position = newPosition2;
-            fish3.transform.position = newPosition3;
-            fish4.transform.position = newPosition4;
-        }*/
+      
     }
 
     void ProcessUserInputs()
@@ -177,6 +148,8 @@ public class PlayerLife : MonoBehaviour
         if (canCollide && collision.collider.CompareTag("Cave"))
         {
             PlayerisCollide = true;
+            collisionCount++;
+            Debug.Log("collisionCount: " + collisionCount);
             HandleCollision();
         }
     }
@@ -270,5 +243,11 @@ public class PlayerLife : MonoBehaviour
         {
             audioSource.Play();
         }
+    }
+
+    // Public method to get collision count
+    public int GetCollisionCount()
+    {
+        return collisionCount;
     }
 }

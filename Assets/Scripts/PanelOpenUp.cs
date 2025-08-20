@@ -2,72 +2,114 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.IO;
+using System.Collections.Generic;
+using System.Globalization;
 
 /**
  *  The panel that opens up when we start the game. 
  *  It allows the physician to set all the parameters of the game, e.g. force factor, fingers, etc.
+ *  
+ *  Note: Detailed difficulty analysis and CSV export are handled by CaveTracker and ReportExporter.
  */
-public class PanelOpenUp : MonoBehaviour
+public partial class PanelOpenUp : MonoBehaviour
 {
-    // === Amadeo Client and UI References ===
+
     [Header("Amadeo Client and UI Components")]
     [SerializeField] private AmadeoClient _client;  // Reference to the AmadeoClient
     public GameObject Panel;  // Reference to a UI panel
-    // [SerializeField] public TextMeshProUGUI num_of_caves_Text = null;  // Reference to the TextMeshPro component for number of caves
-    ///[SerializeField] public Slider slider;  // Reference to the UI slider
+                              
 
-    // === Game Object References ===
     [Header("Game Objects")]
-    [SerializeField] public GameObject caveObject = null;     // Reference to the cave object, that is being scaled
-    [SerializeField] public GameObject oxygenObject = null;   // Reference to the oxygen object
-    [SerializeField] public GameObject wall = null;           // Reference to the wall object
-    [SerializeField] public GameObject arrows = null;         // Reference to the arrows object
-    [SerializeField] public GameObject chest = null;          // Reference to the chest object
+    public GameObject caveObject = null;     // Reference to the cave object, that is being scaled
+    public GameObject oxygenObject = null;   // Reference to the oxygen object
+    public GameObject wall = null;           // Reference to the wall object
+    public GameObject arrows = null;         // Reference to the arrows object
+    public GameObject chest = null;          // Reference to the chest object
 
     // === Game Settings ===
     [Header("Game Settings")]
-    // [SerializeField] public float maxSliderAmount = 5.0f;     // Maximum amount for the slider
-    // public float num_caves_from_user = 0;  // Number of caves specified by the user
+
     private int numOfLines = 0;  // Internal counter for lines in the CSV
 
-    // === Pivot and Position Settings ===
-    [Header("Pivot and Position Settings")]
-    private int pivotChest = 75;        // Distance (in minus z direction) from last cave to treasure chest
-    private float chestX = 291.774f;    // X position for the chest (note: Y position for the chest is the Y position of the last cave).
-    private float generalPivot = 50f;   // Distance (in minus z direction) from current cave to next wall / oxygen / arrows.
-    private float pivotCavePlace = 70;  // Distance (in minus z direction) from current wall to next cave.
-    private float pivotArrowsToWall = 45f;  // Pivot distance between arrows and walls
+    [SerializeField] private TextAsset csvFile; // Will show file selection in inspector
+    private string[] lines = null;  // Array for storing lines from the CSV file
 
-    // === File Settings ===
-    [Header("File Settings")]
-    public string filePath = "Assets\\Data\\caves.csv";  // Path to the CSV file containing cave data
-    string[] lines = null;  // Array for storing lines from the CSV file
 
-    // === Component References ===
     [Header("Component References")]
     [SerializeField] private LevelProgressUI levelProgressUI;  // Reference to the LevelProgressUI component
     [SerializeField] private PlayerLife playerLife;  // Reference to the PlayerLife component for handling player health
     [SerializeField] private Health health;  // Reference to the Health component to manage player health
+    
+    // === Cave Bounds for Tracking ===
+    [System.Serializable]
+    public class CaveInfo
+    {
+        public int index;
+        public float minZ;
+        public float maxZ;
+        // Optional geometry for reporting/analysis
+        public float diameter;
+        public float height;
+        public float length;
+        public float difficulty;
+        public float distanceFromPrevious;
+    }
+
+    // Populated during ClosePanel() alongside cave instantiation
+    public List<CaveInfo> caveInfos = new List<CaveInfo>();
+
+    // === Simple Performance Tracking ===
+    [Header("Performance Tracking")]
+   // [SerializeField] private bool enablePerformanceTracking = true;
+    [SerializeField] private bool enableDifficultyAnalysis = true;
+    
+    // Difficulty tracking
+    private float levelDifficultyScore = 0f;
+    
+    // Cave difficulty data for CaveTracker
+    [System.Serializable]
+    public class CaveDifficultyData
+    {
+        public int caveIndex;
+        public float difficultyScore;
+        public float distanceFromPrevious;
+    }
+    
+    public List<CaveDifficultyData> caveDifficultyList = new List<CaveDifficultyData>();
+
+    [Header("Pivot and Position Settings")]
+    private const int pivotChest = 75;        // Distance (in minus z direction) from last cave to treasure chest
+    private const float chestX = 291.774f;    // X position for the chest (note: Y position for the chest is the Y position of the last cave).
+    private const float generalPivot = 50f;   // Distance (in minus z direction) from current cave to next wall / oxygen / arrows.
+    private const float pivotCavePlace = 70;  // Distance (in minus z direction) from current wall to next cave.
+    private const float pivotArrowsToWall = 45f;  // Pivot distance between arrows and walls
 
 
     void Start()
     {
-        ReadCSVFile(filePath);
+        if (csvFile != null)
+        {
+            ReadCSVFromTextAsset();
+        }
+        else
+        {
+            Debug.LogError("No CSV file assigned! Please assign a CSV file in the inspector.");
+        }
     }
 
-    void ReadCSVFile(string path)
+    void ReadCSVFromTextAsset()
     {
         try
         {
-            lines = File.ReadAllLines(path);
-
+            string csvText = csvFile.text;
+            lines = csvText.Split(new[] { "\r\n", "\r", "\n" }, System.StringSplitOptions.RemoveEmptyEntries);
             numOfLines = lines.Length;
 
-            /*Debug.Log("num of caves from file: " + numOfLines);*/
+            Debug.Log("=== CSV FILE LOADED ===");
+            Debug.Log($"Number of caves from file: {numOfLines}");
 
             foreach (string line in lines)
             {
-                
                 /*Debug.Log(line);*/ // Prints each line of the CSV file
 
                 // Split the line into fields based on the comma delimiter
@@ -80,9 +122,9 @@ public class PanelOpenUp : MonoBehaviour
                 }
             }
         }
-        catch (IOException e)
+        catch (System.Exception e)
         {
-            Debug.LogError($"Error reading file: {e.Message}");
+            Debug.LogError($"Error reading CSV file: {e.Message}");
         }
     }
 
@@ -94,18 +136,71 @@ public class PanelOpenUp : MonoBehaviour
         {
             Panel.SetActive(false);
             /*Debug.Log("num_caves_from_user in ClosePanel: " + numOfLines);*/
-            Vector3 currentPositionCave   = caveObject.transform.position;
+            Vector3 currentPositionCave = caveObject.transform.position;
             Vector3 currentPositionOxygen = oxygenObject.transform.position;
-            Vector3 currentPositionWall   = wall.transform.position;
+            Vector3 currentPositionWall = wall.transform.position;
             Vector3 currentPositionArrows = arrows.transform.position;
 
-            Vector3 newCavePosition = new Vector3(currentPositionCave.x,currentPositionCave.y,currentPositionCave.z);
+            Vector3 newCavePosition = new Vector3(currentPositionCave.x, currentPositionCave.y, currentPositionCave.z);
             Vector3 newOxygenPosition;
             Vector3 newWallPosition;
             Vector3 newArrowsPosition;
 
             Vector3 currentCaveScale = caveObject.transform.localScale;
             Vector3 newCaveScale = new Vector3(currentCaveScale.x, currentCaveScale.y, currentCaveScale.z);
+
+            // Add the first cave (index 0) which already exists in the scene
+            if (numOfLines > 0)
+            {
+                // Get bounds of the existing cave object
+                float minZ = currentPositionCave.z;
+                float maxZ = currentPositionCave.z;
+                var existingRend = caveObject.GetComponentInChildren<Renderer>();
+                if (existingRend != null)
+                {
+                    var b = existingRend.bounds;
+                    minZ = b.min.z;
+                    maxZ = b.max.z;
+                }
+                else
+                {
+                    var existingCol = caveObject.GetComponentInChildren<Collider>();
+                    if (existingCol != null)
+                    {
+                        var b = existingCol.bounds;
+                        minZ = b.min.z;
+                        maxZ = b.max.z;
+                    }
+                    else
+                    {
+                        // Fallback: approximate by scale length on Z
+                        float half = caveObject.transform.localScale.z * 0.5f;
+                        minZ = currentPositionCave.z - half;
+                        maxZ = currentPositionCave.z + half;
+                    }
+                }
+                
+                // Populate geometry for the first (existing) cave from localScale directly
+                float firstDiameter = currentCaveScale.x; // X = diameter
+                float firstHeightOffset = currentCaveScale.y; // Y = height
+                float firstLength = currentCaveScale.z; // Z = length
+
+                float firstDifficulty = CalculateCaveDifficulty(firstDiameter, firstHeightOffset, firstLength);
+
+                caveInfos.Add(new CaveInfo {
+                    index = 1,
+                    minZ = minZ,
+                    maxZ = maxZ,
+                    diameter = firstDiameter,
+                    height = firstHeightOffset,
+                    length = firstLength,
+                    difficulty = firstDifficulty,
+                    distanceFromPrevious = 0f
+                });
+                caveDifficultyList.Add(new CaveDifficultyData { caveIndex = 1, difficultyScore = firstDifficulty, distanceFromPrevious = 0f });
+                levelDifficultyScore += firstDifficulty;
+                Debug.Log($"Cave 1 (existing) bounds: Z[{minZ:F1},{maxZ:F1}] at position {currentPositionCave.z:F1}, geom(d={firstDiameter:F2},h={firstHeightOffset:F2},l={firstLength:F2}), diff={firstDifficulty:F2}");
+            }
 
             //For each row
             for (int i = 1; i < numOfLines; i++)   // numOfLines = number of caves defined in the CSV file.
@@ -115,11 +210,11 @@ public class PanelOpenUp : MonoBehaviour
                 // Diameter
                 float valueY = float.Parse(fields[1]);
                 /*Debug.Log("Y of cave " + i +" from file: " + valueY);*/
-           
+
                 // Height
                 float posY = float.Parse(fields[2]);
                 /*Debug.Log("posY of cave " + i +" from file: " + posY);*/
-
+                
                 // Length
                 float valueZ = float.Parse(fields[3]);
                 /*Debug.Log("Z of cave " + i +" from file: " + valueZ);*/
@@ -142,19 +237,69 @@ public class PanelOpenUp : MonoBehaviour
                 
                 newCavePosition = new Vector3(currentPositionCave.x, currentPositionCave.y + posY, currentPositionWall.z - pivotCavePlace);
 
-                currentPositionCave = new Vector3(currentPositionCave.x,currentPositionCave.y,newCavePosition.z);
+                currentPositionCave = new Vector3(currentPositionCave.x, currentPositionCave.y, newCavePosition.z);
 
                 /*Debug.Log( i +" current cave position: " + currentPosition.x + " " + currentPosition.y + " " + currentPosition.z);
 */
-                //instantiate objects
+                // Instantiate objects
                 GameObject newCaveObject = Instantiate(caveObject, newCavePosition, Quaternion.identity);
                 newCaveObject.transform.localScale = newCaveScale;
 
-                //Objects position
+                // Compute actual Z bounds of the cave for tracking (renderer/collider fallback)
+                float minZ = newCavePosition.z;
+                float maxZ = newCavePosition.z;
+                var rend = newCaveObject.GetComponentInChildren<Renderer>();
+                if (rend != null)
+                {
+                    var b = rend.bounds;
+                    minZ = b.min.z;
+                    maxZ = b.max.z;
+                }
+                else
+                {
+                    var col = newCaveObject.GetComponentInChildren<Collider>();
+                    if (col != null)
+                    {
+                        var b = col.bounds;
+                        minZ = b.min.z;
+                        maxZ = b.max.z;
+                    }
+                    else
+                    {
+                        // Fallback: approximate by scale length on Z
+                        float half = newCaveObject.transform.localScale.z * 0.5f;
+                        minZ = newCavePosition.z - half;
+                        maxZ = newCavePosition.z + half;
+                    }
+                }
+
+                // Keep original indexing logic (i + 1) and compute structural difficulty
+                float structuralDifficulty = CalculateCaveDifficulty(valueY, posY, valueZ);
+                float distanceFromPrev = 0f;
+                if (caveInfos.Count >= 1)
+                {
+                    var prev = caveInfos[caveInfos.Count - 1];
+                    distanceFromPrev = Mathf.Abs(minZ - prev.maxZ);
+                }
+                caveInfos.Add(new CaveInfo {
+                    index = i + 1,
+                    minZ = minZ,
+                    maxZ = maxZ,
+                    diameter = valueY,
+                    height = posY,
+                    length = valueZ,
+                    difficulty = structuralDifficulty,
+                    distanceFromPrevious = distanceFromPrev
+                });
+                caveDifficultyList.Add(new CaveDifficultyData { caveIndex = i + 1, difficultyScore = structuralDifficulty, distanceFromPrevious = distanceFromPrev });
+                levelDifficultyScore += structuralDifficulty;
+                Debug.Log($"Cave {i + 1} bounds: Z[{minZ:F1},{maxZ:F1}] at position {newCavePosition.z:F1}");
+
+                // Objects position
 
                 newOxygenPosition = new Vector3(currentPositionOxygen.x, currentPositionOxygen.y, currentPositionCave.z - generalPivot);
                 newWallPosition = new Vector3(currentPositionWall.x, currentPositionWall.y, currentPositionCave.z - generalPivot);
-                currentPositionWall = new Vector3(currentPositionWall.x , currentPositionWall.y , newWallPosition.z);
+                currentPositionWall = new Vector3(currentPositionWall.x, currentPositionWall.y, newWallPosition.z);
                 newArrowsPosition = new Vector3(currentPositionArrows.x, currentPositionWall.y + pivotArrowsToWall, currentPositionCave.z - generalPivot);
 
                 // Instantiate Oxygen, Wall and Arrows
@@ -164,8 +309,9 @@ public class PanelOpenUp : MonoBehaviour
                     Instantiate(wall, newWallPosition, Quaternion.identity);
                 }
                 Instantiate(arrows, newArrowsPosition, Quaternion.identity);
-
-                if (_client == null )
+                
+                // Original behavior: Start receiving data per iteration
+                if (_client == null)
                 {
                     Debug.LogWarning("Amadeo Client is null");
                     return;
@@ -189,7 +335,68 @@ public class PanelOpenUp : MonoBehaviour
             // playerLife.ProcessUserInputs(...)
             health.didntGetInputsYet = true;       // the Health component has to read the input data from the panel only once. After it reads the data, it sets this flag to false.
             // health.ProcessUserInputs(...)
+            
+            if (enableDifficultyAnalysis)
+            {
+                Debug.Log("=== LEVEL DIFFICULTY ANALYSIS ===");
+                Debug.Log($"Total caves: {caveDifficultyList.Count}");
+                Debug.Log($"Average difficulty: {GetAverageDifficulty():F2}");
+            }
+         
         }
     }
+    
+    
+    
+    /// <summary>
+    /// Calculate difficulty of a single cave based on its parameters
+    /// </summary>
+    private float CalculateCaveDifficulty(float diameter, float height, float length)
+    {
+        // Difficulty based on opening size (smaller = harder)
+        float diameterScore = 1f - Mathf.Clamp01((diameter - 0.2f) / 0.6f);
+        
+        // Difficulty based on height (higher = harder)
+        float heightScore = Mathf.Clamp01(height / 25f);
+        
+        // Difficulty based on length (longer = harder)
+        float lengthScore = Mathf.Clamp01((length - 0.2f) / 0.8f);
+        
+        // Final score (weighted average)
+        return (diameterScore * 0.5f) + (heightScore * 0.3f) + (lengthScore * 0.2f);
+    }
+    
+    // Note: Expected time inside cave is computed in CaveTracker using cave length and therapist speed.
+    
+    /// <summary>
+    /// Get difficulty data for a specific cave (used by CaveTracker)
+    /// </summary>
+    public CaveDifficultyData GetCaveDifficultyData(int caveIndex)
+    {
+        foreach (var data in caveDifficultyList)
+        {
+            if (data.caveIndex == caveIndex)
+                return data;
+        }
+        return null;
+    }
+    
+    /// <summary>
+    /// Get level difficulty score
+    /// </summary>
+    public float GetLevelDifficultyScore()
+    {
+        return levelDifficultyScore;
+    }
+    
+    /// <summary>
+    /// Get average difficulty
+    /// </summary>
+    public float GetAverageDifficulty()
+    {
+        return caveDifficultyList.Count > 0 ? levelDifficultyScore / caveDifficultyList.Count : 0f;
+    }
+
+
 
 }

@@ -1,6 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+// 1. Split UI updates and progress calculations
+// 2. Add input validation
+// 3. Consider using events for progress updates
+// 4. Add more documentation
 public class LevelProgressUI : MonoBehaviour
 {
     [Header("UI References:")]
@@ -12,10 +16,10 @@ public class LevelProgressUI : MonoBehaviour
     [SerializeField] private Slider slider;
 
     [Header("Smooth Settings:")]
-    [SerializeField] private float smoothSpeed = 5f; // Speed of smooth transitions
+    [SerializeField] private float smoothSpeed = 5f; 
 
     private Transform finishLine;
-    private float maxDistance;
+    private float maxDistance; 
     private float currentSliderValue;
     private Vector2 currentPlayerModelPosition;
 
