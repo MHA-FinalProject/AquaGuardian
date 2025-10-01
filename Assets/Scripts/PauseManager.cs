@@ -56,15 +56,22 @@ public class PauseManager : MonoBehaviour
         if (Time.timeScale == 0f)
         {
             pausePanel.SetActive(false);
-            amadeoClient?.StartReceiveData();
+            // ✅ Safe call to AmadeoClient only if it exists
+            if (amadeoClient != null)
+            {
+                amadeoClient.StartReceiveData();
+            }
             Time.timeScale = 1f;
         }
     }
 
     private void OnDestroy()
     {
-        Resume();
-        pauseButton.onClick.RemoveListener(Pause);
-        resumeButton.onClick.RemoveListener(Resume);
+        // ✅ Don't call Resume() in OnDestroy - components might be null
+        // Just clean up button listeners
+        if (pauseButton != null)
+            pauseButton.onClick.RemoveListener(Pause);
+        if (resumeButton != null)
+            resumeButton.onClick.RemoveListener(Resume);
     }
 }

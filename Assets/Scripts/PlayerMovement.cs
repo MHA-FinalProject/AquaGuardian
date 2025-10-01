@@ -26,7 +26,6 @@ public class PlayerMovement : MonoBehaviour
     public GameObject Panel;  // Reference to the UI panel
 
 
-
     // ----- Game State -----
     [Header("Game State")]
     public bool canMove = true;  // Flag to control if the player can move
@@ -78,14 +77,23 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        // Check if the panel is active and set canMove accordingly
-        if (Panel != null)
+        // Use GameStateManager for reliable state checking
+        // Only allow movement after panel is closed AND intro text is complete
+        if (GameStateManager.Instance != null)
         {
-            canMove = !Panel.activeSelf;
+            canMove = GameStateManager.Instance.IsPanelClosed && afterText;
+        }
+        else
+        {
+            // Fallback: Check if the panel is active and afterText is complete
+            if (Panel != null)
+            {
+                canMove = !Panel.activeSelf && afterText;
+            }
         }
 
-
-        if ((notGetForcesFromAmadeo && canMove && afterText))
+        // Movement is allowed only after intro text completed AND panel closed (GameStateManager)
+        if (notGetForcesFromAmadeo && canMove)
         {
             HandleMovement();
         }
@@ -130,10 +138,30 @@ public class PlayerMovement : MonoBehaviour
         {
             Debug.Log("collision " + gameObject.name + " " + collision.gameObject.name);
 
-            // Record cave collision
-            if (collision.gameObject.CompareTag("Cave") && caveTracker != null)
+            // Record all collisions (cave, wall, ground) in CaveTracker
+            if (caveTracker != null)
             {
                 caveTracker.SendMessage("RegisterCollision", SendMessageOptions.DontRequireReceiver);
+            }
+        }
+    }
+
+    // Handle trigger events (for trial fish detection)
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("TrialFish"))
+        {
+            Debug.Log("Player reached trial fish!");
+
+            // Find PanelOpenUp and notify it
+            var panelOpenUp = FindObjectOfType<PanelOpenUp>();
+            if (panelOpenUp != null)
+            {
+                var health = FindObjectOfType<Health>();
+                float finalOxygen = health != null ? health.GetOxygen() : 0f;
+                bool completed = true; // If reached fish, it's completed
+
+                panelOpenUp.OnTrialFishReached(finalOxygen, completed);
             }
         }
     }

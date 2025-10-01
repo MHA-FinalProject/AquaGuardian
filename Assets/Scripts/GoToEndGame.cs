@@ -1,19 +1,30 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+/**
+ * GoToEndGame is a script that is used to load the end game scene when the
+ * player reaches the end of the game
+ */
 public class GoToEndGame : MonoBehaviour
 {
     [SerializeField] string sceneName;
+    [SerializeField] bool oneShot = true;
+    private bool _consumed = false;
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
-        {
-            Debug.Log("Player reached finish line - exporting session report...");
-            StartCoroutine(ExportAndLoad());
-        }
+        if (!other.CompareTag("Player")) return;
+
+    
+        if (oneShot && _consumed) return;
+        _consumed = true;
+
+        // Disable collider to prevent multiple triggers
+        var col = GetComponent<Collider>();
+        if (col) col.enabled = false;
+
+        StartCoroutine(ExportAndLoad());
     }
 
     private IEnumerator ExportAndLoad()
@@ -23,15 +34,26 @@ public class GoToEndGame : MonoBehaviour
         var panel = Object.FindObjectOfType<PanelOpenUp>();
         var health = Object.FindObjectOfType<Health>();
         var player = Object.FindObjectOfType<PlayerMovement>();
-        
-        Debug.Log($"Components found: Tracker={tracker != null}, Panel={panel != null}, Health={health != null}, Player={player != null}");
-        
+
+
         ReportExporter.SaveSessionCsv(tracker, panel, health, player);
 
-        // Wait one frame to ensure file writing completes
+        float finalOxygen = health != null ? health.GetOxygen() : 0f;
+
+        // During trials (or when attached to the temporary TrialFish), do NOT load a scene
+        if (GameStateManager.AreTrialsActive || gameObject.CompareTag("TrialFish"))
+        {
+            GameStateManager.NotifyGameEnded(finalOxygen, true);
+            if (panel != null)
+            {
+                panel.OnTrialFishReached(finalOxygen, true);
+            }
+            yield break;
+        }
+
+
+        GameStateManager.NotifyGameEnded(finalOxygen, true);
         yield return new WaitForEndOfFrame();
-        
-        Debug.Log("Loading next scene...");
         SceneManager.LoadScene(sceneName);
     }
 }

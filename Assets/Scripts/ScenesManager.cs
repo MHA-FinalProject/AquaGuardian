@@ -13,7 +13,7 @@ public class ScenesManager : MonoBehaviour
     public void GoToSettingScene()
     {
         SceneManager.LoadScene("Settings");
-    }
+    }  
 
     public void GoToMenuScene()
     {

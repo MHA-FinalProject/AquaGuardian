@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 
 
@@ -71,7 +70,7 @@ public class getEventFromAmadeoClientDiver : MonoBehaviour
 
         Debug.Log(indexForce);
 
-        
+
 
         // Check if the player can move and if the intro text has been shown
         if (pm.canMove && pm.afterText)
@@ -90,8 +89,8 @@ public class getEventFromAmadeoClientDiver : MonoBehaviour
                 float currentVerticalPosition = transform.position.y;
 
                 // Calculate vertical speed based on the difference between current and target vertical positions
-                float verticalMovementSpeed = Mathf.Abs(newVerticalPosition - currentVerticalPosition) < verticalTolerance?
-                    pm.idleUpwardSpeed:                                                             // Apply idle upward speed if within tolerance
+                float verticalMovementSpeed = Mathf.Abs(newVerticalPosition - currentVerticalPosition) < verticalTolerance ?
+                    pm.idleUpwardSpeed :                                                             // Apply idle upward speed if within tolerance
                     Mathf.Sign(newVerticalPosition - currentVerticalPosition) * pm.verticalSpeed;   // Move up or down
                 Vector3 verticalVelocity = verticalMovementSpeed * transform.TransformDirection(Vector3.up);
 

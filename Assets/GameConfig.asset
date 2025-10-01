@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6afa441b25b64b44cae19a20b8e46724, type: 3}
+  m_Name: GameConfig
+  m_EditorClassIdentifier: 
+  systemMode: 0
+  oxygenPerBalloon: 5
+  oxygenDropPerSec: 1
+  oxygenDropOnCollision: 8
+  oxygenPerBalloonRange: {x: 80, y: 200}
+  oxygenDropPerSecRange: {x: 0.5, y: 2}
+  oxygenDropOnCollisionRange: {x: 4, y: 15}
+  constants:
+    maxHealth: 100
+    factorLerpSpeed: 3
+    idleUpwardFactor: 0.5
+    playerCollisionDelay: 2
+    colorAlphaValue: 0.5
+    timeUntilFadeOut: 3
+    playerLifeWaitTime: 2
+    pivotChest: 75
+    chestX: 291.774
+    generalPivot: 50
+    pivotCavePlace: 70
+    pivotArrowsToWall: 45
+  suggested:
+    playerSpeed: 10
+    verticalSpeed: 5
+    idleUpwardSpeed: 2
+    lifeTime: 3
+    oxygenDropRate: 2
+    collisionDamage: 8
+    oxygenGain: 20
+    collisionCooldown: 2
+    forceFactor: 10
+    forceThreshold: 0.1
+  enableFutureFeatures: 0
+  futureSettings:
+    enableAdaptiveSystem: 0
+    enablePreGameAnalysis: 0
+    preGameDuration: 630
+    enableMLPrediction: 0
+    confidenceThreshold: 0.6
+    maxAdjustmentFactor: 0.3

@@ -10,43 +10,10 @@ using UnityEngine.UI;
  */
 public class PlayerLife : MonoBehaviour
 {
-    
 
-    //*/
-    //    public AudioClip collisionSound; // Assign this in the inspector
-    //    private AudioSource audioSource;
-
-    //    [SerializeField] GameObject healthBarObject2;
-    //    private Health healthBar2; // Reference to the HealthBar component
-
-    //    private float removeHealthWithCollide;
-    //    public TMP_InputField removeHealthWithCollide_inputField;
-
-    //    private float timeBetweenCollides;
-    //    public TMP_InputField timeBetweenCollides_inputField;
-
-    //    private float healHealthPoint;
-    //    public TMP_InputField healHealthPoints_inputField;
-
-    //    public bool didntGetInputsYet = false;
-
-    //    /*float distance = 0;*/
-
-    //    public AudioClip collisionSoundOxygen; // Assign this in the inspector
-    //    private AudioSource audioSourceOxygen;
-
-    //    // Blood splatter image
-    //    [SerializeField] private Image bloodSplatterImage;
-
-    //    private float colorAlphaValue = 0.5f;
-
-    //    private float timeUntilFadeOut = 3f;
-
-    // ----- Collision Control -----
     [Header("Collision Tracking")]
     private int collisionCount = 0;  // Counter for number of collisions with cave
 
-    // ----- Collision Control -----
     private bool canCollide = true;  // Flag to control collision timing
     private float waitTime = 2f;  // Time to wait between collisions
     private bool PlayerisCollide = false;  // Flag to indicate if player is colliding
@@ -80,8 +47,8 @@ public class PlayerLife : MonoBehaviour
 
     void Start()
     {
-       /* PlayerPositionX = gameObject.transform.position.x;
-        PlayerPositionY = (TopOfCave.transform.position.y + BottomOfCave.transform.position.y) / 2;*/
+        // Subscribe to GameStateManager events
+        GameStateManager.OnPanelClosed += OnPanelClosed;
 
         audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.clip = collisionSound;
@@ -95,8 +62,6 @@ public class PlayerLife : MonoBehaviour
         audioSourceOxygen = gameObject.AddComponent<AudioSource>();
         audioSourceOxygen.clip = collisionSoundOxygen;
 
-    
-
         // Ensure the blood splatter image is initially invisible
         if (bloodSplatterImage != null)
         {
@@ -109,18 +74,30 @@ public class PlayerLife : MonoBehaviour
         }
     }
 
+    void OnDestroy()
+    {
+        // Unsubscribe from events to prevent memory leaks
+        GameStateManager.OnPanelClosed -= OnPanelClosed;
+    }
+
+    /// <summary>
+    /// Called when the panel is closed via GameStateManager
+    /// </summary>
+    private void OnPanelClosed()
+    {
+        ProcessUserInputs();
+    }
+
     private void Update()
     {
         if (didntGetInputsYet)
         {
-            ProcessUserInputs();
+            ProcessUserInputs(); //
             didntGetInputsYet = false;
         }
-
-      
     }
 
-    void ProcessUserInputs()
+    public void ProcessUserInputs()
     {
         // Get user input values
         bool isRemoveHealthWithCollideValid = float.TryParse(removeHealthWithCollide_inputField.text, out removeHealthWithCollide);
@@ -139,6 +116,11 @@ public class PlayerLife : MonoBehaviour
             Debug.Log("error: " + timeBetweenCollides_inputField.text);
             Debug.Log("error: " + healHealthPoints_inputField.text);
         }
+
+        // Reset internal collision timing using the updated parameters
+        StopAllCoroutines();
+        canCollide = true;
+        waitTime = timeBetweenCollides;
 
         Debug.Log("removeHealthWithCollide: " + removeHealthWithCollide + ", timeBetweenCollides: " + timeBetweenCollides + ", healHealthPoint: " + healHealthPoint);
     }
@@ -171,6 +153,8 @@ public class PlayerLife : MonoBehaviour
             if (healthBar2 != null)
             {
                 healthBar2.heal(healHealthPoint);
+
+                //
             }
         }
     }
@@ -197,6 +181,9 @@ public class PlayerLife : MonoBehaviour
         if (healthBar2 != null && canCollide)
         {
             healthBar2.damage(removeHealthWithCollide);
+
+            // TODO: דיווח על התנגשות עבור Active Learning
+
             StartCoroutine(Wait(timeBetweenCollides));
         }
     }

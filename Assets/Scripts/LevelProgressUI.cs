@@ -34,11 +34,13 @@ public class LevelProgressUI : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (finishLine != null)
+        if (finishLine != null && player != null)
         {
             float distance = GetDistance();
             float targetProgress = 1 - (distance / maxDistance);
             targetProgress = Mathf.Clamp01(targetProgress);
+
+            // Debug removed for cleaner gameplay
 
             // Smoothly update the slider value
             currentSliderValue = Mathf.Lerp(currentSliderValue, targetProgress, Time.deltaTime * smoothSpeed);
@@ -75,11 +77,10 @@ public class LevelProgressUI : MonoBehaviour
         {
             finishLine = finishLineTransform;
             maxDistance = GetDistance(); // Update maxDistance after setting the finish line
-            Debug.Log("Finish line set at position: " + finishLine.position);
         }
         else
         {
-            Debug.LogWarning("Finish line transform is null.");
+            Debug.LogWarning("PROGRESS BAR: Finish line transform is null.");
         }
     }
 

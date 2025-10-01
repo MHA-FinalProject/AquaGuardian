@@ -3,99 +3,209 @@ using UnityEngine.UI;
 using TMPro;
 using System.IO;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Linq;
 
-/**
- *  The panel that opens up when we start the game. 
- *  It allows the physician to set all the parameters of the game, e.g. force factor, fingers, etc.
- *  
- *  Note: Detailed difficulty analysis and CSV export are handled by CaveTracker and ReportExporter.
- */
+
 public partial class PanelOpenUp : MonoBehaviour
 {
+    // ========== ORIGINAL FIELDS (kept for backwards compatibility) ==========
 
     [Header("Amadeo Client and UI Components")]
-    [SerializeField] private AmadeoClient _client;  // Reference to the AmadeoClient
-    public GameObject Panel;  // Reference to a UI panel
-                              
+    [SerializeField] private AmadeoClient _client;
+    public GameObject Panel;
 
     [Header("Game Objects")]
-    public GameObject caveObject = null;     // Reference to the cave object, that is being scaled
-    public GameObject oxygenObject = null;   // Reference to the oxygen object
-    public GameObject wall = null;           // Reference to the wall object
-    public GameObject arrows = null;         // Reference to the arrows object
-    public GameObject chest = null;          // Reference to the chest object
+    public GameObject caveObject = null;
+    public GameObject oxygenObject = null;
+    [SerializeField] private Transform oxygenSpawnRef;
+    public GameObject wall = null;
+    public GameObject arrows = null;
+    public GameObject chest = null;
 
-    // === Game Settings ===
     [Header("Game Settings")]
-
-    private int numOfLines = 0;  // Internal counter for lines in the CSV
-
-    [SerializeField] private TextAsset csvFile; // Will show file selection in inspector
-    private string[] lines = null;  // Array for storing lines from the CSV file
-
+    private int numOfLines = 0;
+    [SerializeField] private TextAsset csvFile;
+    private string[] lines = null;
 
     [Header("Component References")]
-    [SerializeField] private LevelProgressUI levelProgressUI;  // Reference to the LevelProgressUI component
-    [SerializeField] private PlayerLife playerLife;  // Reference to the PlayerLife component for handling player health
-    [SerializeField] private Health health;  // Reference to the Health component to manage player health
-    
-    // === Cave Bounds for Tracking ===
+    [SerializeField] private LevelProgressUI levelProgressUI;
+    [SerializeField] private PlayerLife playerLife;
+    [SerializeField] private Health health;
+    [SerializeField] private PlayerMovement playerMovement;
+
+    [Header("Configuration")]
+    [SerializeField] private GameConfig gameConfig;
+
+    // ========== TRIAL SYSTEM MANAGERS (NEW!) ==========
+
+    [Header("Trial System Managers")]
+    [SerializeField] private TrialSystemManager trialSystemManager;
+    [SerializeField] private TrialParameterManager parameterManager;
+    [SerializeField] private TrialFishSpawner fishSpawner;
+    [SerializeField] private TrialUIController uiController;
+    [SerializeField] private GameSystemResetter systemResetter;
+
+    // ========== CAVE DATA STRUCTURES ==========
+
     [System.Serializable]
     public class CaveInfo
     {
         public int index;
         public float minZ;
         public float maxZ;
-        // Optional geometry for reporting/analysis
         public float diameter;
         public float height;
         public float length;
-        public float difficulty;
         public float distanceFromPrevious;
     }
 
-    // Populated during ClosePanel() alongside cave instantiation
+    [System.NonSerialized]
     public List<CaveInfo> caveInfos = new List<CaveInfo>();
 
-    // === Simple Performance Tracking ===
-    [Header("Performance Tracking")]
-   // [SerializeField] private bool enablePerformanceTracking = true;
-    [SerializeField] private bool enableDifficultyAnalysis = true;
-    
-    // Difficulty tracking
-    private float levelDifficultyScore = 0f;
-    
-    // Cave difficulty data for CaveTracker
+    // ========== TRIAL DATA CLASSES (public for other scripts) ==========
+
     [System.Serializable]
-    public class CaveDifficultyData
+    public class TrialData
     {
-        public int caveIndex;
-        public float difficultyScore;
-        public float distanceFromPrevious;
+        public int trialId;
+        public float speed;
+        public float verticalSpeed;
+        public float idleUpwardSpeed;
+        public float lifeTime;
+        public float downHealthPairSec;
+        public float removeHealthWithCollide;
+        public float timeBetweenCollides;
+        public float healHealthPoint;
+        public float factorForce;
+        public float finalOxygenRemaining;
+        public bool completed;
     }
-    
-    public List<CaveDifficultyData> caveDifficultyList = new List<CaveDifficultyData>();
 
-    [Header("Pivot and Position Settings")]
-    private const int pivotChest = 75;        // Distance (in minus z direction) from last cave to treasure chest
-    private const float chestX = 291.774f;    // X position for the chest (note: Y position for the chest is the Y position of the last cave).
-    private const float generalPivot = 50f;   // Distance (in minus z direction) from current cave to next wall / oxygen / arrows.
-    private const float pivotCavePlace = 70;  // Distance (in minus z direction) from current wall to next cave.
-    private const float pivotArrowsToWall = 45f;  // Pivot distance between arrows and walls
+    [System.Serializable]
+    public class ParameterRanges
+    {
+        [Header("Movement Parameters")]
+        public Vector2 speedRange = new Vector2(10f, 25f);
+        public Vector2 verticalSpeedRange = new Vector2(15f, 40f);
+        public Vector2 idleUpwardSpeedRange = new Vector2(0.5f, 2f);
 
+        [Header("Health Parameters")]
+        public Vector2 oxygenHealRange = new Vector2(3f, 15f);
+        public Vector2 timeBetweenCollidesRange = new Vector2(1f, 5f);
+        public Vector2 collisionDamageRange = new Vector2(5f, 15f);
+        public Vector2 oxygenDropPerSecRange = new Vector2(0.5f, 2f);
+        public Vector2 lifeTimeRange = new Vector2(0.8f, 3f);
+    }
+
+    // ========== CAVE FILES FOR TRIALS ==========
+
+    [Header("Cave Files for Trials")]
+    [SerializeField] private TextAsset[] caveFiles = new TextAsset[5];
+    private TextAsset originalCaveFile;
+    [SerializeField] private bool useCaveFilePathPattern = true;
+    [SerializeField] private string caveFilePathPattern = "Data/Cave{n}.csv";
+
+    // ========== LIFECYCLE METHODS ==========
 
     void Start()
     {
+        Debug.Log("=== PANELOPENUP START() (REFACTORED VERSION) ===");
+
+        // Auto-wire managers if not assigned in Inspector
+        AutoWireManagers();
+
+        // Store original cave file
+        originalCaveFile = csvFile;
+
+        // Load CSV
         if (csvFile != null)
         {
             ReadCSVFromTextAsset();
+            Debug.Log($"CSV file loaded: {csvFile.name} ({numOfLines} caves)");
         }
         else
         {
-            Debug.LogError("No CSV file assigned! Please assign a CSV file in the inspector.");
+            Debug.LogError("No CSV file assigned!");
         }
+
+        // Subscribe to events
+        GameStateManager.OnGameEnded += OnGameEnded;
+
+        Debug.Log("=== PanelOpenUp initialized successfully ===");
     }
+
+    void Update()
+    {
+        // Keep cursor unlocked and visible
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    void OnDestroy()
+    {
+        GameStateManager.OnGameEnded -= OnGameEnded;
+    }
+
+    // ========== AUTO-WIRE MANAGERS ==========
+
+    private void AutoWireManagers()
+    {
+        // Auto-find or create managers if not assigned in Inspector
+        if (trialSystemManager == null)
+        {
+            trialSystemManager = GetComponent<TrialSystemManager>();
+            if (trialSystemManager == null)
+            {
+                Debug.LogWarning("TrialSystemManager not found - add it manually to this GameObject");
+            }
+        }
+
+        if (parameterManager == null)
+        {
+            parameterManager = GetComponent<TrialParameterManager>();
+            if (parameterManager == null)
+            {
+                Debug.LogWarning("TrialParameterManager not found - add it manually to this GameObject");
+            }
+        }
+
+        if (fishSpawner == null)
+        {
+            fishSpawner = GetComponent<TrialFishSpawner>();
+            if (fishSpawner == null)
+            {
+                Debug.LogWarning("TrialFishSpawner not found - add it manually to this GameObject");
+            }
+        }
+
+        // ✅ Auto-assign chest prefab to fishSpawner
+        if (fishSpawner != null && chest != null)
+        {
+            fishSpawner.SetChestPrefab(chest);
+        }
+
+        if (uiController == null)
+        {
+            uiController = GetComponent<TrialUIController>();
+            if (uiController == null)
+            {
+                Debug.LogWarning("TrialUIController not found - add it manually to this GameObject");
+            }
+        }
+
+        if (systemResetter == null)
+        {
+            systemResetter = GetComponent<GameSystemResetter>();
+            if (systemResetter == null)
+            {
+                Debug.LogWarning("GameSystemResetter not found - add it manually to this GameObject");
+            }
+        }
+
+        Debug.Log("Manager components verified");
+    }
+
+    // ========== CSV READING ==========
 
     void ReadCSVFromTextAsset()
     {
@@ -104,299 +214,571 @@ public partial class PanelOpenUp : MonoBehaviour
             string csvText = csvFile.text;
             lines = csvText.Split(new[] { "\r\n", "\r", "\n" }, System.StringSplitOptions.RemoveEmptyEntries);
             numOfLines = lines.Length;
-
-            Debug.Log("=== CSV FILE LOADED ===");
-            Debug.Log($"Number of caves from file: {numOfLines}");
-
-            foreach (string line in lines)
-            {
-                /*Debug.Log(line);*/ // Prints each line of the CSV file
-
-                // Split the line into fields based on the comma delimiter
-                string[] fields = line.Split(',');
-
-                // Process the fields as needed
-                foreach (string field in fields)
-                {
-                    /*Debug.Log(field);*/ // Prints each field in the current line
-                }
-            }
+            Debug.Log($"CSV loaded: {numOfLines} cave definitions");
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"Error reading CSV file: {e.Message}");
+            Debug.LogError($"Error reading CSV: {e.Message}");
         }
     }
 
-    // The function handles closing a panel and creates objects according to the data read from a CSV file.
-    // The function places the objects in the game world and updates their size and position based on the data in the file.
+    void ReadCSVFromAbsolutePath(string absolutePath)
+    {
+        try
+        {
+            if (!System.IO.File.Exists(absolutePath))
+            {
+                Debug.LogError($"Cave CSV not found at: {absolutePath}");
+                return;
+            }
+
+            string[] fileLines = System.IO.File.ReadAllLines(absolutePath);
+            lines = fileLines.Where(l => !string.IsNullOrWhiteSpace(l)).ToArray();
+            numOfLines = lines.Length;
+            Debug.Log($"Loaded {numOfLines} caves from path: {absolutePath}");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Error reading CSV from path: {e.Message}");
+        }
+    }
+
+    // ========== CLOSE PANEL - CAVE BUILDING (CORE FUNCTIONALITY) ==========
+
     public void ClosePanel()
     {
+        Debug.Log("=== CLOSE PANEL - BUILDING CAVES ===");
+
+        // ✅ DEBUG: Check trial system state
+        bool isTrialMode = (trialSystemManager != null && trialSystemManager.TrialsMode);
+        Debug.Log($"ClosePanel START: trialSystemManager={trialSystemManager != null}, TrialsMode={trialSystemManager?.TrialsMode ?? false}, Decision={isTrialMode}");
+
+        // Hide main panel
         if (Panel != null)
         {
             Panel.SetActive(false);
-            /*Debug.Log("num_caves_from_user in ClosePanel: " + numOfLines);*/
-            Vector3 currentPositionCave = caveObject.transform.position;
-            Vector3 currentPositionOxygen = oxygenObject.transform.position;
-            Vector3 currentPositionWall = wall.transform.position;
-            Vector3 currentPositionArrows = arrows.transform.position;
+        }
 
-            Vector3 newCavePosition = new Vector3(currentPositionCave.x, currentPositionCave.y, currentPositionCave.z);
-            Vector3 newOxygenPosition;
-            Vector3 newWallPosition;
-            Vector3 newArrowsPosition;
+        // Reset cave tracking
+        caveInfos.Clear();
 
-            Vector3 currentCaveScale = caveObject.transform.localScale;
-            Vector3 newCaveScale = new Vector3(currentCaveScale.x, currentCaveScale.y, currentCaveScale.z);
+        // Get initial positions
+        Vector3 currentPositionCave = caveObject.transform.position;
+        Vector3 currentPositionOxygen = oxygenObject.transform.position;
+        Vector3 currentPositionWall = wall.transform.position;
+        Vector3 currentPositionArrows = arrows.transform.position;
 
-            // Add the first cave (index 0) which already exists in the scene
-            if (numOfLines > 0)
+        Vector3 newCavePosition = currentPositionCave;
+        Vector3 newOxygenPosition;
+        Vector3 newWallPosition;
+        Vector3 newArrowsPosition;
+
+        Vector3 currentCaveScale = caveObject.transform.localScale;
+        Vector3 newCaveScale = currentCaveScale;
+
+        // Add first cave (already in scene)
+        if (numOfLines > 0)
+        {
+            AddFirstCaveBounds(currentPositionCave, currentCaveScale);
+        }
+
+        // Build remaining caves from CSV
+        for (int i = 1; i < numOfLines; i++)
+        {
+            string[] fields = lines[i].Split(',');
+
+            float diameter = float.Parse(fields[1]);
+            float heightOffset = float.Parse(fields[2]);
+            float length = float.Parse(fields[3]);
+
+            newCaveScale = new Vector3(newCaveScale.x, diameter, length);
+            newCavePosition = new Vector3(currentPositionCave.x, currentPositionCave.y + heightOffset,
+                currentPositionWall.z - gameConfig.pivotCavePlace);
+            currentPositionCave = new Vector3(currentPositionCave.x, currentPositionCave.y, newCavePosition.z);
+
+            // Instantiate cave
+            GameObject newCaveObject = Instantiate(caveObject, newCavePosition, Quaternion.identity);
+            TrackSpawned(newCaveObject);
+            newCaveObject.transform.localScale = newCaveScale;
+
+            // Add cave bounds
+            AddCaveBounds(newCaveObject, i + 1, newCavePosition, diameter, heightOffset, length);
+
+            // Calculate object positions
+            newOxygenPosition = new Vector3(currentPositionOxygen.x, currentPositionOxygen.y,
+                currentPositionCave.z - gameConfig.generalPivot);
+            newWallPosition = new Vector3(currentPositionWall.x, currentPositionWall.y,
+                currentPositionCave.z - gameConfig.generalPivot);
+            currentPositionWall = new Vector3(currentPositionWall.x, currentPositionWall.y, newWallPosition.z);
+            newArrowsPosition = new Vector3(currentPositionArrows.x, currentPositionWall.y + gameConfig.pivotArrowsToWall,
+                currentPositionCave.z - gameConfig.generalPivot);
+
+            // Instantiate oxygen, wall, arrows (except for last cave)
+            if (i != numOfLines - 1)
             {
-                // Get bounds of the existing cave object
-                float minZ = currentPositionCave.z;
-                float maxZ = currentPositionCave.z;
-                var existingRend = caveObject.GetComponentInChildren<Renderer>();
-                if (existingRend != null)
+                if (oxygenObject != null)
                 {
-                    var b = existingRend.bounds;
-                    minZ = b.min.z;
-                    maxZ = b.max.z;
+                    // ⚠️ CRITICAL: Check prefab state BEFORE instantiation
+                    if (!oxygenObject.activeSelf)
+                    {
+                        Debug.LogWarning($"⚠️ WARNING: oxygenObject prefab is DISABLED! This will cause all tanks to spawn disabled!");
+                        Debug.LogWarning($"Fix: Select 'tank' prefab in Project window and enable it in Inspector");
+                    }
+
+                    var oxy = Instantiate(oxygenObject, newOxygenPosition, Quaternion.identity);
+                    oxy.name = $"tank_{i + 1}"; // Name: tank_2, tank_3, etc.
+
+                    //  CRITICAL: Force tank to be active immediately after instantiation
+                    oxy.SetActive(true);
+                    Debug.Log($"✓ Created tank_{i + 1}: prefab.activeSelf={oxygenObject.activeSelf}, instance.activeSelf={oxy.activeSelf}");
+
+                    // Ensure tag is correct (should already be OxygenObject from prefab)
+                    if (oxy.tag != "OxygenObject")
+                    {
+                        oxy.tag = "OxygenObject";
+                    }
+                    TrackSpawned(oxy);
+                    Debug.Log($" Created oxygen tank_{i + 1} at {newOxygenPosition} with tag: {oxy.tag}, active: {oxy.activeSelf}");
                 }
                 else
                 {
-                    var existingCol = caveObject.GetComponentInChildren<Collider>();
-                    if (existingCol != null)
-                    {
-                        var b = existingCol.bounds;
-                        minZ = b.min.z;
-                        maxZ = b.max.z;
-                    }
-                    else
-                    {
-                        // Fallback: approximate by scale length on Z
-                        float half = caveObject.transform.localScale.z * 0.5f;
-                        minZ = currentPositionCave.z - half;
-                        maxZ = currentPositionCave.z + half;
-                    }
+                    Debug.LogError($" oxygenObject prefab is NULL! Cannot create tank_{i + 1}");
                 }
-                
-                // Populate geometry for the first (existing) cave from localScale directly
-                float firstDiameter = currentCaveScale.x; // X = diameter
-                float firstHeightOffset = currentCaveScale.y; // Y = height
-                float firstLength = currentCaveScale.z; // Z = length
-
-                float firstDifficulty = CalculateCaveDifficulty(firstDiameter, firstHeightOffset, firstLength);
-
-                caveInfos.Add(new CaveInfo {
-                    index = 1,
-                    minZ = minZ,
-                    maxZ = maxZ,
-                    diameter = firstDiameter,
-                    height = firstHeightOffset,
-                    length = firstLength,
-                    difficulty = firstDifficulty,
-                    distanceFromPrevious = 0f
-                });
-                caveDifficultyList.Add(new CaveDifficultyData { caveIndex = 1, difficultyScore = firstDifficulty, distanceFromPrevious = 0f });
-                levelDifficultyScore += firstDifficulty;
-                Debug.Log($"Cave 1 (existing) bounds: Z[{minZ:F1},{maxZ:F1}] at position {currentPositionCave.z:F1}, geom(d={firstDiameter:F2},h={firstHeightOffset:F2},l={firstLength:F2}), diff={firstDifficulty:F2}");
+                var wallObj = Instantiate(wall, newWallPosition, Quaternion.identity);
+                TrackSpawned(wallObj);
             }
 
-            //For each row
-            for (int i = 1; i < numOfLines; i++)   // numOfLines = number of caves defined in the CSV file.
+            var arrowsObj = Instantiate(arrows, newArrowsPosition, Quaternion.identity);
+            TrackSpawned(arrowsObj);
+
+            // Start Amadeo client
+            if (_client != null)
             {
-                string[] fields = lines[i].Split(',');
-
-                // Diameter
-                float valueY = float.Parse(fields[1]);
-                /*Debug.Log("Y of cave " + i +" from file: " + valueY);*/
-
-                // Height
-                float posY = float.Parse(fields[2]);
-                /*Debug.Log("posY of cave " + i +" from file: " + posY);*/
-                
-                // Length
-                float valueZ = float.Parse(fields[3]);
-                /*Debug.Log("Z of cave " + i +" from file: " + valueZ);*/
-
-                /*
-                float valueZnext = valueZ;
-                if (i < numOfLines - 1) {
-                    string[] fieldsNext = lines[i+1].Split(',');
-                    valueZnext = float.Parse(fieldsNext[3]);
-                }
-                */
-
-
-                // In these lines, the current position of the objects that are added to the game world is updated,
-                // and this position is calculated based on their previous position and data from the file.
-
-                newCaveScale = new Vector3(newCaveScale.x, valueY, valueZ);
-
-                /*Debug.Log("current cave position: " + currentPosition.x + " " + currentPosition.y + " " + currentPosition.z);*/
-                
-                newCavePosition = new Vector3(currentPositionCave.x, currentPositionCave.y + posY, currentPositionWall.z - pivotCavePlace);
-
-                currentPositionCave = new Vector3(currentPositionCave.x, currentPositionCave.y, newCavePosition.z);
-
-                /*Debug.Log( i +" current cave position: " + currentPosition.x + " " + currentPosition.y + " " + currentPosition.z);
-*/
-                // Instantiate objects
-                GameObject newCaveObject = Instantiate(caveObject, newCavePosition, Quaternion.identity);
-                newCaveObject.transform.localScale = newCaveScale;
-
-                // Compute actual Z bounds of the cave for tracking (renderer/collider fallback)
-                float minZ = newCavePosition.z;
-                float maxZ = newCavePosition.z;
-                var rend = newCaveObject.GetComponentInChildren<Renderer>();
-                if (rend != null)
-                {
-                    var b = rend.bounds;
-                    minZ = b.min.z;
-                    maxZ = b.max.z;
-                }
-                else
-                {
-                    var col = newCaveObject.GetComponentInChildren<Collider>();
-                    if (col != null)
-                    {
-                        var b = col.bounds;
-                        minZ = b.min.z;
-                        maxZ = b.max.z;
-                    }
-                    else
-                    {
-                        // Fallback: approximate by scale length on Z
-                        float half = newCaveObject.transform.localScale.z * 0.5f;
-                        minZ = newCavePosition.z - half;
-                        maxZ = newCavePosition.z + half;
-                    }
-                }
-
-                // Keep original indexing logic (i + 1) and compute structural difficulty
-                float structuralDifficulty = CalculateCaveDifficulty(valueY, posY, valueZ);
-                float distanceFromPrev = 0f;
-                if (caveInfos.Count >= 1)
-                {
-                    var prev = caveInfos[caveInfos.Count - 1];
-                    distanceFromPrev = Mathf.Abs(minZ - prev.maxZ);
-                }
-                caveInfos.Add(new CaveInfo {
-                    index = i + 1,
-                    minZ = minZ,
-                    maxZ = maxZ,
-                    diameter = valueY,
-                    height = posY,
-                    length = valueZ,
-                    difficulty = structuralDifficulty,
-                    distanceFromPrevious = distanceFromPrev
-                });
-                caveDifficultyList.Add(new CaveDifficultyData { caveIndex = i + 1, difficultyScore = structuralDifficulty, distanceFromPrevious = distanceFromPrev });
-                levelDifficultyScore += structuralDifficulty;
-                Debug.Log($"Cave {i + 1} bounds: Z[{minZ:F1},{maxZ:F1}] at position {newCavePosition.z:F1}");
-
-                // Objects position
-
-                newOxygenPosition = new Vector3(currentPositionOxygen.x, currentPositionOxygen.y, currentPositionCave.z - generalPivot);
-                newWallPosition = new Vector3(currentPositionWall.x, currentPositionWall.y, currentPositionCave.z - generalPivot);
-                currentPositionWall = new Vector3(currentPositionWall.x, currentPositionWall.y, newWallPosition.z);
-                newArrowsPosition = new Vector3(currentPositionArrows.x, currentPositionWall.y + pivotArrowsToWall, currentPositionCave.z - generalPivot);
-
-                // Instantiate Oxygen, Wall and Arrows
-                if (i != numOfLines - 1)
-                {
-                    Instantiate(oxygenObject, newOxygenPosition, Quaternion.identity);
-                    Instantiate(wall, newWallPosition, Quaternion.identity);
-                }
-                Instantiate(arrows, newArrowsPosition, Quaternion.identity);
-                
-                // Original behavior: Start receiving data per iteration
-                if (_client == null)
-                {
-                    Debug.LogWarning("Amadeo Client is null");
-                    return;
-                }
                 _client.StartReceiveData();
             }
-
-            // Instantiate chest
-            Vector3 newPosition_chest = new Vector3(chestX, currentPositionCave.y, newCavePosition.z - (pivotChest));
-            GameObject newObject_chest = Instantiate(chest, newPosition_chest, Quaternion.identity);
-
-            // Set the finish line in the progress bar according to the chest position.
-            Transform chestTransform = newObject_chest.transform;
-            if (levelProgressUI != null)
-            {
-                levelProgressUI.SetFinishLine(chestTransform);
-            }
-
-            // Boolean to initialize variables after panel been close
-            playerLife.didntGetInputsYet = true;   // the PlayerLife component has to read the input data from the panel only once. After it reads the data, it sets this flag to false.
-            // playerLife.ProcessUserInputs(...)
-            health.didntGetInputsYet = true;       // the Health component has to read the input data from the panel only once. After it reads the data, it sets this flag to false.
-            // health.ProcessUserInputs(...)
-            
-            if (enableDifficultyAnalysis)
-            {
-                Debug.Log("=== LEVEL DIFFICULTY ANALYSIS ===");
-                Debug.Log($"Total caves: {caveDifficultyList.Count}");
-                Debug.Log($"Average difficulty: {GetAverageDifficulty():F2}");
-            }
-         
         }
-    }
-    
-    
-    
-    /// <summary>
-    /// Calculate difficulty of a single cave based on its parameters
-    /// </summary>
-    private float CalculateCaveDifficulty(float diameter, float height, float length)
-    {
-        // Difficulty based on opening size (smaller = harder)
-        float diameterScore = 1f - Mathf.Clamp01((diameter - 0.2f) / 0.6f);
-        
-        // Difficulty based on height (higher = harder)
-        float heightScore = Mathf.Clamp01(height / 25f);
-        
-        // Difficulty based on length (longer = harder)
-        float lengthScore = Mathf.Clamp01((length - 0.2f) / 0.8f);
-        
-        // Final score (weighted average)
-        return (diameterScore * 0.5f) + (heightScore * 0.3f) + (lengthScore * 0.2f);
-    }
-    
-    // Note: Expected time inside cave is computed in CaveTracker using cave length and therapist speed.
-    
-    /// <summary>
-    /// Get difficulty data for a specific cave (used by CaveTracker)
-    /// </summary>
-    public CaveDifficultyData GetCaveDifficultyData(int caveIndex)
-    {
-        foreach (var data in caveDifficultyList)
+
+        // Create chest or fish at end - CALCULATE FROM LAST CAVE IN caveInfos
+        Vector3 endPosition;
+
+        if (caveInfos.Count > 0)
         {
-            if (data.caveIndex == caveIndex)
-                return data;
+            // ✅ Use the LAST cave from caveInfos (works for 1 or more caves)
+            var lastCave = caveInfos[caveInfos.Count - 1];
+            float lastCaveEndZ = lastCave.maxZ; // End of last cave (maxZ)
+
+            // Position chest/fish AFTER the last cave
+            endPosition = new Vector3(gameConfig.chestX, currentPositionCave.y,
+                lastCaveEndZ - gameConfig.pivotChest);
+
+            Debug.Log($"=== END OBJECT POSITION CALCULATION (FROM caveInfos) ===");
+            Debug.Log($"Number of caves: {caveInfos.Count}");
+            Debug.Log($"Last cave #{lastCave.index}: maxZ={lastCave.maxZ:F2}");
+            Debug.Log($"Chest/Fish Z position: {endPosition.z:F2}");
+            Debug.Log($"Distance from last cave end: {lastCave.maxZ - endPosition.z:F2} (should be gameConfig.pivotChest={gameConfig.pivotChest})");
         }
-        return null;
+        else
+        {
+            // Fallback if no caves (shouldn't happen)
+            Debug.LogError("No caves in caveInfos - using fallback position");
+            endPosition = new Vector3(gameConfig.chestX, currentPositionCave.y,
+                newCavePosition.z - gameConfig.pivotChest);
+        }
+
+
+        // (Removed AddFirstCaveOxygen call as per user request)
+
+        // ✅ CRITICAL: Re-assign chest prefab before creating end object
+        if (fishSpawner != null && chest != null)
+        {
+            fishSpawner.SetChestPrefab(chest);
+            Debug.Log($"Re-assigned chest prefab to fishSpawner: {chest.name}");
+        }
+
+        // Create end object (chest or trial fish)
+        GameObject endObject = CreateEndObject(endPosition);
+
+        // Set finish line in progress bar
+        if (levelProgressUI != null && endObject != null)
+        {
+            levelProgressUI.SetFinishLine(endObject.transform);
+        }
+
+        // Initialize component flags
+        playerLife.didntGetInputsYet = true;
+        health.didntGetInputsYet = true;
+
+        // Notify GameStateManager (only in normal mode, not trials)
+        bool inTrialsMode = (trialSystemManager != null && trialSystemManager.TrialsMode);
+        if (!inTrialsMode)
+        {
+            GameStateManager.Instance?.NotifyPanelClosed();
+
+        }
+
+
     }
-    
-    /// <summary>
-    /// Get level difficulty score
-    /// </summary>
-    public float GetLevelDifficultyScore()
+
+    // ========== CAVE BUILDING HELPERS ==========
+
+    private void AddFirstCaveBounds(Vector3 position, Vector3 scale)
     {
-        return levelDifficultyScore;
+        float minZ = position.z;
+        float maxZ = position.z;
+
+        var existingRend = caveObject.GetComponentInChildren<Renderer>();
+        if (existingRend != null)
+        {
+            minZ = existingRend.bounds.min.z;
+            maxZ = existingRend.bounds.max.z;
+        }
+        else
+        {
+            var existingCol = caveObject.GetComponentInChildren<Collider>();
+            if (existingCol != null)
+            {
+                minZ = existingCol.bounds.min.z;
+                maxZ = existingCol.bounds.max.z;
+            }
+            else
+            {
+                float half = scale.z * 0.5f;
+                minZ = position.z - half;
+                maxZ = position.z + half;
+            }
+        }
+
+        caveInfos.Add(new CaveInfo
+        {
+            index = 1,
+            minZ = minZ,
+            maxZ = maxZ,
+            diameter = scale.x,
+            height = scale.y,
+            length = scale.z,
+            distanceFromPrevious = 0f
+        });
+
+        Debug.Log($"Cave 1 (existing): Z[{minZ:F1},{maxZ:F1}], d={scale.x:F2}, h={scale.y:F2}, l={scale.z:F2}");
     }
-    
-    /// <summary>
-    /// Get average difficulty
-    /// </summary>
-    public float GetAverageDifficulty()
+
+    private void AddCaveBounds(GameObject cave, int index, Vector3 position, float diameter, float height, float length)
     {
-        return caveDifficultyList.Count > 0 ? levelDifficultyScore / caveDifficultyList.Count : 0f;
+        float minZ = position.z;
+        float maxZ = position.z;
+
+        var rend = cave.GetComponentInChildren<Renderer>();
+        if (rend != null)
+        {
+            minZ = rend.bounds.min.z;
+            maxZ = rend.bounds.max.z;
+        }
+        else
+        {
+            var col = cave.GetComponentInChildren<Collider>();
+            if (col != null)
+            {
+                minZ = col.bounds.min.z;
+                maxZ = col.bounds.max.z;
+            }
+            else
+            {
+                float half = length * 0.5f;
+                minZ = position.z - half;
+                maxZ = position.z + half;
+            }
+        }
+
+        // Calculate distance from previous cave
+        float distanceFromPrev = 0f;
+        if (caveInfos.Count >= 1)
+        {
+            var prev = caveInfos[caveInfos.Count - 1];
+            distanceFromPrev = Mathf.Abs(minZ - prev.maxZ);
+        }
+
+        caveInfos.Add(new CaveInfo
+        {
+            index = index,
+            minZ = minZ,
+            maxZ = maxZ,
+            diameter = diameter,
+            height = height,
+            length = length,
+            distanceFromPrevious = distanceFromPrev
+        });
+
+        Debug.Log($"Cave {index}: Z[{minZ:F1},{maxZ:F1}], dist={distanceFromPrev:F1}");
     }
 
 
 
+
+    private GameObject CreateEndObject(Vector3 position)
+    {
+        Debug.Log($"=== CREATE END OBJECT DEBUG ===");
+        Debug.Log($"trialSystemManager exists: {trialSystemManager != null}");
+        if (trialSystemManager != null)
+        {
+            Debug.Log($"trialSystemManager.TrialsMode: {trialSystemManager.TrialsMode}");
+        }
+
+        bool inTrialsMode = (trialSystemManager != null && trialSystemManager.TrialsMode);
+        Debug.Log($"Final inTrialsMode decision: {inTrialsMode}");
+
+        if (inTrialsMode)
+        {
+            Debug.Log("=== CREATING TRIAL FISH ===");
+            return CreateTrialFish(position);
+        }
+        else
+        {
+            Debug.Log("=== CREATING CHEST (not in trials mode) ===");
+            GameObject chestObj = Instantiate(chest, position, Quaternion.identity);
+            TrackSpawned(chestObj);
+            return chestObj;
+        }
+    }
+
+    private GameObject CreateTrialFish(Vector3 position)
+    {
+        if (fishSpawner != null && trialSystemManager != null)
+        {
+            GameObject fish = fishSpawner.CreateTrialFish(position, trialSystemManager.CurrentTrialNumber);
+            if (fish != null)
+            {
+                TrackSpawned(fish);
+                Debug.Log($"Trial fish created: {fish.name}");
+                return fish;
+            }
+        }
+
+        // Emergency fallback
+        Debug.LogError("FishSpawner not available - creating emergency fish");
+        GameObject emergencyFish = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        emergencyFish.transform.position = position;
+        emergencyFish.transform.localScale = new Vector3(3f, 2f, 4f);
+        emergencyFish.name = "EmergencyFish";
+        emergencyFish.tag = "TrialFish";
+        emergencyFish.GetComponent<Collider>().isTrigger = true;
+        emergencyFish.GetComponent<MeshRenderer>().material.color = Color.red;
+        TrackSpawned(emergencyFish);
+        return emergencyFish;
+    }
+
+    // ========== OBJECT TRACKING ==========
+
+    private void TrackSpawned(GameObject go)
+    {
+        if (go != null && systemResetter != null)
+        {
+            systemResetter.TrackSpawned(go);
+        }
+    }
+
+    // ========== TRIAL SYSTEM PUBLIC API (delegates to managers) ==========
+
+    /// <summary>
+    /// Called by PlayerMovement when trial fish is reached
+    /// PUBLIC API: Must remain for backwards compatibility
+    /// </summary>
+    public void OnTrialFishReached(float finalOxygen, bool completed)
+    {
+        if (trialSystemManager != null)
+        {
+            trialSystemManager.OnTrialFishReached(finalOxygen, completed);
+        }
+        else
+        {
+            Debug.LogError("TrialSystemManager not found - cannot handle fish reach event");
+        }
+    }
+
+
+    private void OnGameEnded(float finalOxygen, bool completed)
+    {
+        // Trial system manager handles this via its own subscription
+        // This is just for logging in normal mode
+        if (trialSystemManager == null || !trialSystemManager.TrialsMode)
+        {
+            Debug.Log($"Game ended (normal mode): oxygen={finalOxygen:F1}%, completed={completed}");
+        }
+    }
+
+    // ========== CAVE FILE MANAGEMENT FOR TRIALS ==========
+
+
+    /// Load cave file for specific trial
+    /// PUBLIC API: Called by TrialSystemManager
+
+    public void LoadCaveFileForTrial(int trialNumber)
+    {
+        Debug.Log($"=== LOADING CAVE FILE FOR TRIAL {trialNumber} ===");
+        int caveIndex = trialNumber - 1;
+
+        // Try TextAsset array first
+        if (caveFiles != null && caveIndex >= 0 && caveIndex < caveFiles.Length && caveFiles[caveIndex] != null)
+        {
+            csvFile = caveFiles[caveIndex];
+            ReadCSVFromTextAsset();
+            Debug.Log($"SUCCESS: Loaded cave file from array: {caveFiles[caveIndex].name}");
+            return;
+        }
+
+        Debug.LogWarning($"Cave file {caveIndex} not in array, trying path pattern...");
+
+        // Try path pattern fallback
+        if (useCaveFilePathPattern && !string.IsNullOrEmpty(caveFilePathPattern))
+        {
+            string relative = caveFilePathPattern.Replace("{n}", trialNumber.ToString());
+            string absolute = System.IO.Path.Combine(Application.dataPath, relative.Replace("\\", "/"));
+
+            if (System.IO.File.Exists(absolute))
+            {
+                Debug.Log($"SUCCESS: Loading from path: {relative}");
+                ReadCSVFromAbsolutePath(absolute);
+                return;
+            }
+
+            Debug.LogError($"Cave CSV not found at path: {absolute}");
+        }
+
+        // Final fallback to original
+        Debug.LogWarning($"Using original cave file as last resort");
+        csvFile = originalCaveFile;
+        ReadCSVFromTextAsset();
+    }
+
+
+    /// Restore original cave file after trials
+    /// PUBLIC API: Called by TrialSystemManager
+
+    public void RestoreOriginalCaveFile()
+    {
+        if (originalCaveFile != null)
+        {
+            csvFile = originalCaveFile;
+            ReadCSVFromTextAsset();
+            Debug.Log($"Restored original cave file: {originalCaveFile.name}");
+        }
+        else
+        {
+            Debug.LogWarning("Original cave file was null - cannot restore");
+        }
+    }
+
+    // ========== TRIAL HELPER METHODS (FROM ORIGINAL CODE) ==========
+    // These methods are kept here for direct access by trial system
+
+    /// <summary>
+    /// Reset player to standardized start position
+    /// Position: (291.74, -35.95, 262.73)
+    /// Rotation: (3.91, 179.7, 0)
+    /// Scale: (5.6000, 5.5999, 1.4000)
+    /// </summary>
+    public void ResetPlayerToStartPosition()
+    {
+        if (playerMovement == null)
+        {
+            Debug.LogError("PlayerMovement component not found! Cannot reset player position!");
+            return;
+        }
+
+        // Stop any ongoing movement
+        playerMovement.StopAllCoroutines();
+
+        // Reset physics
+        var rb = playerMovement.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.Sleep();
+            rb.WakeUp();
+        }
+
+        // Always use fixed trial start position as specified
+        Vector3 spawnPosition = new Vector3(291.74f, -35.95f, 262.73f);
+        Quaternion spawnRotation = Quaternion.Euler(3.91f, 179.7f, 0f);
+        Debug.Log($"Using fixed trial start position: {spawnPosition} with rotation: {spawnRotation.eulerAngles}");
+
+        // Set position, rotation, and scale
+        playerMovement.transform.SetPositionAndRotation(spawnPosition, spawnRotation);
+
+        // Apply specified scale for trials
+        Vector3 trialScale = new Vector3(5.6000f, 5.5999f, 1.4000f);
+        playerMovement.transform.localScale = trialScale;
+        Debug.Log($"Applied trial scale: {trialScale}");
+
+        // Reset movement flags
+        playerMovement.afterText = false; // PlayerIntro will set this to true
+        playerMovement.canMove = true;
+
+        Debug.Log($"Player reset to position: {spawnPosition}, rotation: {spawnRotation.eulerAngles}");
+    }
+
+    /// <summary>
+    /// Reset all game systems for new trial
+    /// </summary>
+    public void ResetGameSystemsForTrial()
+    {
+        // Reset PlayerLife system
+        if (playerLife != null)
+        {
+            playerLife.StopAllCoroutines();
+            playerLife.didntGetInputsYet = true;
+            // Don't call ProcessUserInputs yet - wait for parameters to be loaded
+            Debug.Log("PlayerLife reset - ready for new parameters");
+        }
+
+        // Reset Health system
+        if (health != null)
+        {
+            health.StopAllCoroutines();
+            health.didntGetInputsYet = true;
+            health.heal(100f); // Full health for new trial
+            // Don't call ProcessUserInputs yet - wait for parameters to be loaded
+            Debug.Log("Health reset to 100% - ready for new parameters");
+        }
+
+        // Reset PlayerIntro
+        var playerIntro = FindObjectOfType<PlayerIntro>();
+        if (playerIntro != null)
+        {
+            playerIntro.ResetIntro();
+            Debug.Log("PlayerIntro reset - ready to show intro text");
+        }
+
+        // Reset progress UI
+        if (levelProgressUI != null)
+        {
+            var slider = levelProgressUI.GetComponent<UnityEngine.UI.Slider>();
+            if (slider != null)
+            {
+                slider.value = 0f;
+                Debug.Log("Progress bar reset to zero");
+            }
+        }
+
+        // Reset CaveTracker
+        var caveTracker = FindObjectOfType<CaveTracker>();
+        if (caveTracker != null)
+        {
+            caveTracker.currentCaveIndex = -1;
+            caveTracker.outsideCollisions = 0;
+            Debug.Log("CaveTracker reset");
+        }
+
+        // Reset GameStateManager for new trial
+        if (GameStateManager.Instance != null)
+        {
+            GameStateManager.Instance.ResetState();
+            Debug.Log("GameStateManager reset for new trial");
+        }
+
+        // Ensure trials mode is active
+        GameStateManager.SetTrialsActive(true);
+
+
+    }
 }

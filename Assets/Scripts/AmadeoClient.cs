@@ -44,9 +44,7 @@ public class AmadeoClient : MonoBehaviour
     private bool _isReceiving = false;                         // Flag to check if data reception is active.
     private UdpClient _udpClient;
     private const string EmulationDataFile = "Assets/AmadeoRecords/force_data.txt"; // Path to file where each row represents a sample of 10 forces (one per finger).
-
     private IPEndPoint _remoteEndPoint; // End point for the UDP connection.
-
     private float[] _forces = new float[5]; // Array to store the force values for five fingers.
     private readonly float[] _zeroForces = new float[5]; // Array to store zeroed force values for five fingers.
     private bool _isLeftHand = false; // Flag to check if we're handling data for the left hand.
@@ -55,20 +53,6 @@ public class AmadeoClient : MonoBehaviour
     public event Action<float[]> OnForcesUpdated;
 
     public GameObject Panel;
-
-    /* Singleton implementation; commented out because it did not work just before the experiment.
-    // private void Awake()
-    {
-        Debug.Log("AmadeoClient Awake called");
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-    }*/
-
 
     private void Start()
     {
@@ -101,7 +85,12 @@ public class AmadeoClient : MonoBehaviour
     // We call it after the PanelOpenUp is closed.
     public void StartReceiveData()
     {
-        if (_cancellationTokenSource.IsCancellationRequested)
+        // ✅ Ensure _cancellationTokenSource is not null
+        if (_cancellationTokenSource == null)
+        {
+            _cancellationTokenSource = new CancellationTokenSource();
+        }
+        else if (_cancellationTokenSource.IsCancellationRequested)
         {
             _cancellationTokenSource.Dispose();
             _cancellationTokenSource = new CancellationTokenSource();
@@ -283,19 +272,34 @@ public class AmadeoClient : MonoBehaviour
                 int i = 0;
                 while (i < numOfLinesToRead && !cancellationToken.IsCancellationRequested)
                 {
-                    UdpReceiveResult result = await _udpClient.ReceiveAsync();
-                    string receivedData = Encoding.ASCII.GetString(result.Buffer);
-                    Debug.Log(receivedData);
+                    // Check if UDP client is still valid before receiving
+                    if (_udpClient == null)
+                    {
+                        Debug.LogWarning("UDP client is null, stopping data reception");
+                        break;
+                    }
+                    
+                    try
+                    {
+                        UdpReceiveResult result = await _udpClient.ReceiveAsync();
+                        string receivedData = Encoding.ASCII.GetString(result.Buffer);
+                        Debug.Log(receivedData);
 
-                    HandleReceivedData(ParseDataFromAmadeo(receivedData));
+                        HandleReceivedData(ParseDataFromAmadeo(receivedData));
 
-                    lines[i] = receivedData;
-                    i++;
+                        lines[i] = receivedData;
+                        i++;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        Debug.LogWarning("UDP client was disposed during receive operation");
+                        break;
+                    }
                 }
 
                 if (i < numOfLinesToRead)
                 {
-                    Debug.LogError("Not enough data received from Amadeo device.");
+                    Debug.LogWarning("Not enough data received from Amadeo device.");
                 }
             }
 

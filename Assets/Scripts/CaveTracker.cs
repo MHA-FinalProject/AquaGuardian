@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 [System.Serializable]
@@ -44,11 +43,11 @@ public class CaveTracker : MonoBehaviour
     [SerializeField] private float caveBoundsEpsilon = 0.05f; // expand bounds slightly to avoid edge misses
     
     [Header("Collision Counting")]
-    [SerializeField] private float collisionDebounceSeconds = 2f; // Minimum interval between counted collisions
+    [SerializeField] private float collisionDebounceSeconds = 0.5f; // Minimum interval between counted collisions
     private float lastCollisionTimestamp = -999f;
 
     private readonly Dictionary<int, CaveStats> statsByIndex = new Dictionary<int, CaveStats>();
-    private int outsideCollisions = 0;
+    public int outsideCollisions = 0;
     private Vector3 lastPlayerPos;
     private float sessionStartTime;
     private Health health;
@@ -319,21 +318,23 @@ public class CaveTracker : MonoBehaviour
         // Debounce to avoid multiple counts from the same physical impact
         if (Time.time - lastCollisionTimestamp < collisionDebounceSeconds)
         {
+            Debug.Log($"CaveTracker: Collision ignored due to debounce (last: {lastCollisionTimestamp:F2}, now: {Time.time:F2}, diff: {Time.time - lastCollisionTimestamp:F2}s)");
             return;
         }
 
         lastCollisionTimestamp = Time.time;
+        float playerZ = player != null ? player.position.z : 0f;
 
         if (currentCaveIndex != -1 && statsByIndex.TryGetValue(currentCaveIndex, out var s)) 
         {
             s.collisions++;
             // Always show core collision info
-            Debug.Log($" COLLISION in Cave {currentCaveIndex}  | Total hits in this cave: {s.collisions}");
+            Debug.Log($"Collision in Cave {currentCaveIndex} at Z={playerZ:F1} - Total hits: {s.collisions}");
         }
         else
         {
             outsideCollisions++;
-            Debug.Log($"*** COLLISION OUTSIDE any cave *** | totalOutside={outsideCollisions}");
+            Debug.Log($" COLLISION OUTSIDE any cave at Z={playerZ:F1} | totalOutside={outsideCollisions}");
         }
     }
 
@@ -395,9 +396,7 @@ public class CaveTracker : MonoBehaviour
 
     public void PrintResults()
     {
-        // Print detailed console summary
-        Debug.Log("=== COLLISION SUMMARY ===");
-        
+
         // Show collisions per cave
         foreach (var kv in statsByIndex)
         {
@@ -411,12 +410,14 @@ public class CaveTracker : MonoBehaviour
         // Show totals
         var playerLife = FindObjectOfType<PlayerLife>();
         int totalCaveCollisions = GetTotalCollisions();
-        int overallCollisions = playerLife != null ? playerLife.GetCollisionCount() : -1;
+        int trackerTotalCollisions = totalCaveCollisions + outsideCollisions; // CaveTracker's total count
+        int playerLifeCollisions = playerLife != null ? playerLife.GetCollisionCount() : -1;
         
-     
-        Debug.Log($"Total collisions in caves: {totalCaveCollisions}");
-        Debug.Log($"Outside-cave collisions: {outsideCollisions}");
-        Debug.Log($"Total collisions overall: {overallCollisions}");
+        Debug.Log($"CaveTracker - In caves: {totalCaveCollisions}");
+        Debug.Log($"CaveTracker - Outside caves: {outsideCollisions}");
+        Debug.Log($"CaveTracker - Total: {trackerTotalCollisions}");
+        Debug.Log($"PlayerLife - Cave collisions (only when canCollide=true): {playerLifeCollisions}");
+        Debug.Log("Note: CaveTracker counts ALL collisions, PlayerLife only counts cave collisions when damage can be applied");
  
         
         // Export CSV and TXT files

@@ -33,6 +33,7 @@ DIFFICULTY_SETUP_GUIDE.md
 /Assets/Sci-Fi UI/
 /Assets/tokens.json
 /Assets/Cute-GUI-Pack-Lite/
+.cursor/rules/ 
 
 # Additional ignore patterns for Unity
 # Generated reports

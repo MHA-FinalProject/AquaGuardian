@@ -8,27 +8,20 @@ using UnityEngine.UI;
  * Keeps track of the player's oxygen level.
  * See also: PlayerLife
  */
-
- // 1. Move UI updates to a separate HealthUIManager class
-// 2. Create an interface IHealth for better abstraction
-// 3. Consider using ScriptableObjects for health settings
-// 4. Add validation for health values
 public class Health : MonoBehaviour
 {
-    // === UI Elements ===
+
     [Header("UI Components")]
     [SerializeField] private TextMeshProUGUI healthText;  // Reference to the TextMeshPro component displaying the health
     [SerializeField] private Image healthBar;  // Reference to the UI Image representing the health bar
     [SerializeField] private GameObject Panel;  // Reference to a UI panel
 
-    // === Health Settings ===
     [Header("Health Settings")]
     private float health = 100f;  // Current health value
     private float maxHealth = 100f;  // Maximum health value
     private float lerpSpeed;  // Speed for interpolating the health bar fill amount
     private float factorLerpSpeed = 3f;  // Multiplier for the lerp speed
 
-    // === Lifetime and Damage Settings ===
     [Header("Lifetime & Damage Settings")]
     private float lifeTime;  // Time to wait before applying automatic damage
     public TMP_InputField lifeTime_inputField;  // Input field for user-defined lifetime
@@ -70,8 +63,13 @@ public class Health : MonoBehaviour
 
         colorChanger();  // Update the health bar color based on the current health
 
-        // Start the coroutine when the panel is closed
-        if (Panel != null && !Panel.activeSelf && !moveOxygen)
+        // Start the coroutine when the panel is closed (supports GameStateManager too)
+        bool panelClosed = Panel != null ? !Panel.activeSelf : true;
+        if (GameStateManager.Instance != null)
+        {
+            panelClosed = GameStateManager.Instance.IsPanelClosed;
+        }
+        if (panelClosed && !moveOxygen)
         {
             moveOxygen = true;
             StartCoroutine(DisappearHealthPoints());
@@ -87,7 +85,7 @@ public class Health : MonoBehaviour
         lerpSpeed = factorLerpSpeed * Time.deltaTime;
     }
 
-    void ProcessUserInputs()
+    public void ProcessUserInputs()
     {
         // Parse user inputs for lifeTime and downHealthPairSec
         bool isLifeTimeValid = float.TryParse(lifeTime_inputField.text, out lifeTime);
@@ -103,6 +101,11 @@ public class Health : MonoBehaviour
             Debug.Log("error: " + lifeTime_inputField.text);
             Debug.Log("error: " + downHealthPairSec_inputField.text);
         }
+
+        // Ensure oxygen decrease coroutine restarts with the new parameters
+        // Stop any previous coroutine and allow Update() to start a fresh one
+        StopAllCoroutines();
+        moveOxygen = false;
 
         Debug.Log("lifeTime: " + lifeTime + ", downHealthPairSec: " + downHealthPairSec);
     }
@@ -163,7 +166,23 @@ public class Health : MonoBehaviour
     // Loads the game over scene when the player runs out of health
     void gameOver()
     {
+        //Notify GameStateManager that the game is over
+        GameStateManager.NotifyGameEnded(health, false);
+
+        //Check if trials are active
+        if (IsTrialModeActive())
+        {
+            Debug.Log("Trial mode active - not loading Game Over scene");
+            return;
+        }
+
         SceneManager.LoadScene("Game_Over");
+    }
+
+
+    bool IsTrialModeActive()
+    {
+        return GameStateManager.AreTrialsActive;
     }
 
     // Public getter for current oxygen level (0-100)
@@ -172,5 +191,5 @@ public class Health : MonoBehaviour
         return health;
     }
 
-    
+
 }

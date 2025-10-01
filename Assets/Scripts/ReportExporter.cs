@@ -67,7 +67,7 @@ public static class ReportExporter
                     if (stats == null)
                     {
                         Debug.LogWarning($"ReportExporter: no stats for cave {idx}");
-                        writer.WriteLine($"{idx},{info.diameter:F2},{info.height:F2},{info.length:F2},{info.minZ:F2},{info.maxZ:F2},{info.distanceFromPrevious:F2},{info.difficulty:F2},0,0,0,0,0,-1,-1,NOT_COMPLETED");
+                        writer.WriteLine($"{idx},{info.diameter:F2},{info.height:F2},{info.length:F2},{info.minZ:F2},{info.maxZ:F2},{info.distanceFromPrevious:F2},0.00,0,0,0,0,0,-1,-1,NOT_COMPLETED");
                         continue;
                     }
 
@@ -97,7 +97,7 @@ public static class ReportExporter
                     float diameter = info != null ? info.diameter : 0f;
                     float height = info != null ? info.height : 0f;
                     float length = info != null ? info.length : Mathf.Abs((info != null ? info.maxZ - info.minZ : 0f));
-                    float difficulty = info != null ? info.difficulty : 0f;
+                    float difficulty = 0f; // Difficulty calculation removed from PanelOpenUp
 
                     Debug.Log($"ReportExporter: Cave {idx} - geom(d={diameter:F2},h={height:F2},l={length:F2}), diff={difficulty:F2}, exactTime={exactTime:F2}s, estimatedTime={estimatedTime:F2}s, interActual={interActual:F2}s, interEstimated={interEstimated:F2}s, collisions={collisions}, avgSpeed={avgSpeed:F2}, reactionTime={reactionTime:F2}");
                     writer.WriteLine($"{idx},{diameter:F2},{height:F2},{length:F2},{difficulty:F2},{exactTime:F2},{estimatedTime:F2},{interActual:F2},{interEstimated:F2},{collisions},{avgSpeed:F2},{reactionTime:F2},{entryTimeStr},{exitTimeStr}");
@@ -116,18 +116,9 @@ public static class ReportExporter
                 var playerLife = UnityEngine.Object.FindObjectOfType<PlayerLife>();
                 int overallCollisions = playerLife != null ? playerLife.GetCollisionCount() : -1;
                 writer.WriteLine($"Total_Collisions_Overall,{overallCollisions}");
-                // If CaveTracker exposes outside collisions, include it too
-                try
-                {
-                    var outsideField = typeof(CaveTracker).GetField("outsideCollisions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (outsideField != null)
-                    {
-                        int outside = (int)outsideField.GetValue(tracker);
-                        writer.WriteLine($"Outside_Collisions,{outside}");
-                        writer.WriteLine($"Tracker_Total_IncludingOutside,{tracker.GetTotalCollisions() + outside}");
-                    }
-                }
-                catch {}
+                // Add CaveTracker collision data
+                writer.WriteLine($"Outside_Collisions,{tracker.outsideCollisions}");
+                writer.WriteLine($"Tracker_Total_IncludingOutside,{tracker.GetTotalCollisions() + tracker.outsideCollisions}");
 
                 // Add final oxygen back to summary
                 float finalOxygen = health != null ? SafeGetOxygen(health) : -1f;
@@ -225,10 +216,12 @@ public static class ReportExporter
                 writer.WriteLine($"Total_TimeInCaves,{totalTime:F2}");
                 writer.WriteLine($"Total_Collisions_InCaves,{totalCollisions}");
                 
-                // Get overall collision count from PlayerLife
+                // Get collision counts from both systems
                 var playerLife = UnityEngine.Object.FindObjectOfType<PlayerLife>();
                 int overallCollisions = playerLife != null ? playerLife.GetCollisionCount() : -1;
                 writer.WriteLine($"Total_Collisions_Overall,{overallCollisions}");
+                writer.WriteLine($"Outside_Collisions,{tracker.outsideCollisions}");
+                writer.WriteLine($"Tracker_Total_IncludingOutside,{tracker.GetTotalCollisions() + tracker.outsideCollisions}");
                 writer.WriteLine($"Reactions_Captured,{cavesWithReaction}/{(panel != null && panel.caveInfos != null ? panel.caveInfos.Count : 0)}");
                 float finalOxygenTxt = health != null ? SafeGetOxygen(health) : -1f;
                 if (finalOxygenTxt >= 0f) writer.WriteLine($"Final_Oxygen_Percent,{finalOxygenTxt:F0}");
