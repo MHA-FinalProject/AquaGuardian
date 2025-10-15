@@ -384,7 +384,7 @@ public class CaveTracker : MonoBehaviour
         return minZ;
     }
 
-    private PanelOpenUp.CaveInfo GetCaveInfoByIndex(int index)
+    private TrialDataModels.CaveInfo GetCaveInfoByIndex(int index)
     {
         if (panel == null || panel.caveInfos == null) return null;
         for (int i = 0; i < panel.caveInfos.Count; i++)

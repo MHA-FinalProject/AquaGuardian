@@ -97,17 +97,11 @@ public class Health : MonoBehaviour
         }
         else
         {
-            // Log errors if input parsing fails
-            Debug.Log("error: " + lifeTime_inputField.text);
-            Debug.Log("error: " + downHealthPairSec_inputField.text);
+            Debug.LogError($"Input parsing failed: lifeTime={lifeTime_inputField.text}, downHealthPairSec={downHealthPairSec_inputField.text}");
         }
 
-        // Ensure oxygen decrease coroutine restarts with the new parameters
-        // Stop any previous coroutine and allow Update() to start a fresh one
         StopAllCoroutines();
         moveOxygen = false;
-
-        Debug.Log("lifeTime: " + lifeTime + ", downHealthPairSec: " + downHealthPairSec);
     }
 
     // Smoothly updates the health bar fill amount
@@ -133,6 +127,7 @@ public class Health : MonoBehaviour
         else
         {
             health = 0;  // Set health to 0 if damage exceeds current health
+            
             gameOver();  // Trigger game over
         }
     }
@@ -163,19 +158,23 @@ public class Health : MonoBehaviour
         }
     }
 
-    // Loads the game over scene when the player runs out of health
     void gameOver()
     {
-        //Notify GameStateManager that the game is over
-        GameStateManager.NotifyGameEnded(health, false);
-
-        //Check if trials are active
-        if (IsTrialModeActive())
+        // Re-check trials state defensively to avoid race conditions across scene changes
+        bool trials = IsTrialModeActive();
+        if (!trials && GameStateManager.Instance == null)
         {
-            Debug.Log("Trial mode active - not loading Game Over scene");
+            // Attempt late recovery
+            trials = GameStateManager.AreTrialsActive;
+        }
+
+        if (trials)
+        {
+            GameStateManager.NotifyGameEnded(0f, false);
             return;
         }
 
+        GameStateManager.NotifyGameEnded(health, false);
         SceneManager.LoadScene("Game_Over");
     }
 

@@ -41,7 +41,13 @@ public class GoToEndGame : MonoBehaviour
         float finalOxygen = health != null ? health.GetOxygen() : 0f;
 
         // During trials (or when attached to the temporary TrialFish), do NOT load a scene
-        if (GameStateManager.AreTrialsActive || gameObject.CompareTag("TrialFish"))
+        bool trials = GameStateManager.AreTrialsActive;
+        if (!trials && GameStateManager.Instance == null)
+        {
+            // Try to recover instance and re-check
+            trials = GameStateManager.AreTrialsActive;
+        }
+        if (trials || gameObject.CompareTag("TrialFish"))
         {
             GameStateManager.NotifyGameEnded(finalOxygen, true);
             if (panel != null)

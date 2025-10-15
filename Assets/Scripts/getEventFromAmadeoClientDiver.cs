@@ -18,7 +18,7 @@ public class getEventFromAmadeoClientDiver : MonoBehaviour
 
     // === UI Elements ===
     [Header("UI Components")]
-    [SerializeField] GameObject Panel;  // Reference to a UI panel
+    [SerializeField] GameObject Panel;  
     public TMP_InputField factor_force_inputField;  // Input field to adjust the force multiplier
 
     // === Internal State ===

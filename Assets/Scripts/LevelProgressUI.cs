@@ -40,8 +40,7 @@ public class LevelProgressUI : MonoBehaviour
             float targetProgress = 1 - (distance / maxDistance);
             targetProgress = Mathf.Clamp01(targetProgress);
 
-            // Debug removed for cleaner gameplay
-
+         
             // Smoothly update the slider value
             currentSliderValue = Mathf.Lerp(currentSliderValue, targetProgress, Time.deltaTime * smoothSpeed);
             SetProgress(currentSliderValue);

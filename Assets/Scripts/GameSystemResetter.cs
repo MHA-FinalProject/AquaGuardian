@@ -2,11 +2,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 
-/**
- * GameSystemResetter - Manages player and game system resets for trials
- * Handles player positioning, component resets, and cleanup
-
- */
 public class GameSystemResetter : MonoBehaviour
 {
     [Header("Component References")]
@@ -23,11 +18,9 @@ public class GameSystemResetter : MonoBehaviour
     
     [Header("Protected Scene Objects")]
     [SerializeField] private List<string> protectedObjectNames = new List<string> { "tank", "OxygenBottle", "oxygen" };
-    [SerializeField] private List<string> protectedTags = new List<string> { "OxygenObject", "OxygenTank", "SceneObject" };
+    [SerializeField] private List<string> protectedTags = new List<string> { "OxygenObject" };
     
-    // Spawned objects tracking
     private List<GameObject> spawnedTrialObjects = new List<GameObject>();
-    
     private Dictionary<GameObject, ObjectState> sceneObjectStates = new Dictionary<GameObject, ObjectState>();
     
     private struct ObjectState
@@ -40,7 +33,6 @@ public class GameSystemResetter : MonoBehaviour
     
     void Awake()
     {
-        // Initialize trial start rotation if not set
         if (trialStartRotation == default(Quaternion))
         {
             trialStartRotation = Quaternion.Euler(3.91f, 179.7f, 0f);
@@ -63,7 +55,6 @@ public class GameSystemResetter : MonoBehaviour
                     scale = obj.transform.localScale,
                     wasActive = obj.activeSelf
                 };
-                Debug.Log($"Saved initial state for protected object: {objName}");
             }
         }
         
@@ -83,13 +74,12 @@ public class GameSystemResetter : MonoBehaviour
                             scale = obj.transform.localScale,
                             wasActive = obj.activeSelf
                         };
-                        Debug.Log($"Saved initial state for tagged object: {obj.name} (tag: {tag})");
                     }
                 }
             }
             catch (UnityException)
             {
-                Debug.LogWarning($"Tag '{tag}' not found in project - skipping");
+                continue;
             }
         }
     }
@@ -107,7 +97,6 @@ public class GameSystemResetter : MonoBehaviour
         {
             if (go.name.Contains(protectedName))
             {
-                Debug.Log($"Protected by name: {go.name}");
                 return true;
             }
         }
@@ -118,13 +107,12 @@ public class GameSystemResetter : MonoBehaviour
             {
                 if (go.CompareTag(protectedTag))
                 {
-                    Debug.Log($"Protected by tag: {go.name} (tag: {protectedTag})");
                     return true;
                 }
             }
             catch (UnityException)
             {
-                // Tag doesn't exist - continue
+                continue;
             }
         }
         
@@ -145,14 +133,12 @@ public class GameSystemResetter : MonoBehaviour
         
         if (IsProtectedSceneObject(go))
         {
-            Debug.Log($"Not tracking protected scene object: {go.name}");
             return;
         }
         
         if (!spawnedTrialObjects.Contains(go))
         {
             spawnedTrialObjects.Add(go);
-            Debug.Log($"Tracking spawned object: {go.name}");
         }
     }
     
@@ -180,8 +166,6 @@ public class GameSystemResetter : MonoBehaviour
         
         playerMovement.afterText = false;
         playerMovement.canMove = true;
-        
-        Debug.Log($"Player reset to EXACT trial position: {trialStartPosition}, rotation: {trialStartRotation.eulerAngles}, scale: {trialScale}");
     }
     
     public void ResetGameSystemsForTrial()
@@ -190,7 +174,7 @@ public class GameSystemResetter : MonoBehaviour
         {
             playerLife.StopAllCoroutines();
             playerLife.didntGetInputsYet = true;
-            Debug.Log("PlayerLife reset - ready for new parameters");
+            playerLife.ResetBloodSplatter(); // ✅ Reset blood splatter for new trial
         }
 
         if (health != null)
@@ -198,14 +182,12 @@ public class GameSystemResetter : MonoBehaviour
             health.StopAllCoroutines();
             health.didntGetInputsYet = true;
             health.heal(100f);
-            Debug.Log("Health reset to 100%");
         }
 
         var playerIntro = FindObjectOfType<PlayerIntro>();
         if (playerIntro != null)
         {
             playerIntro.ResetIntro();
-            Debug.Log("PlayerIntro reset");
         }
 
         if (levelProgressUI != null)
@@ -214,7 +196,6 @@ public class GameSystemResetter : MonoBehaviour
             if (slider != null)
             {
                 slider.value = 0f;
-                Debug.Log("Progress bar reset");
             }
         }
 
@@ -223,20 +204,16 @@ public class GameSystemResetter : MonoBehaviour
         {
             caveTracker.currentCaveIndex = -1;
             caveTracker.outsideCollisions = 0;
-            Debug.Log("CaveTracker reset");
         }
 
         if (GameStateManager.Instance != null)
         {
             GameStateManager.Instance.ResetState();
-            Debug.Log("GameStateManager reset");
         }
 
         GameStateManager.SetTrialsActive(true);
         
         RestoreSceneObjects();
-        
-        Debug.Log("All game systems reset for trial");
     }
     
     private void RestoreSceneObjects()
@@ -252,8 +229,6 @@ public class GameSystemResetter : MonoBehaviour
                 obj.transform.rotation = state.rotation;
                 obj.transform.localScale = state.scale;
                 obj.SetActive(state.wasActive);
-                
-                Debug.Log($"Restored scene object: {obj.name} to original state");
             }
         }
     }
@@ -273,19 +248,16 @@ public class GameSystemResetter : MonoBehaviour
     
     public void PrepareForNextTrial()
     {
-        Debug.Log("=== PREPARING FOR NEXT TRIAL ===");
-        
         try
         {
             if (health != null) 
             {
                 health.StopAllCoroutines();
-                Debug.Log("Health coroutines stopped");
             }
             if (playerLife != null) 
             {
                 playerLife.StopAllCoroutines();
-                Debug.Log("PlayerLife coroutines stopped");
+                playerLife.ResetBloodSplatter(); // ✅ Reset blood splatter between trials
             }
         }
         catch (System.Exception e)
@@ -301,25 +273,18 @@ public class GameSystemResetter : MonoBehaviour
         {
             Debug.LogError($"Error during CleanupSpawned: {e.Message}");
         }
-
-
-        RestoreSceneObjects();
         
-        Debug.Log("Trial preparation complete");
+        RestoreSceneObjects();
     }
     
     public void CleanupSpawned()
     {
-        Debug.Log($"CleanupSpawned called - {spawnedTrialObjects.Count} objects to clean");
-        
         if (spawnedTrialObjects.Count == 0) 
         {
-            Debug.Log("No spawned objects to clean up");
             return;
         }
         
         int destroyed = 0;
-        int protected_count = 0;
         var objectsToDestroy = new List<GameObject>(spawnedTrialObjects);
         
         foreach (var go in objectsToDestroy)
@@ -328,14 +293,11 @@ public class GameSystemResetter : MonoBehaviour
             {
                 if (IsProtectedSceneObject(go))
                 {
-                    Debug.Log($"Skipping protected scene object: {go.name}");
-                    protected_count++;
                     continue;
                 }
                 
                 try
                 {
-                    Debug.Log($"Destroying spawned object: {go.name}");
                     go.SetActive(false);
                     
                     #if UNITY_EDITOR
@@ -361,7 +323,6 @@ public class GameSystemResetter : MonoBehaviour
         }
         
         spawnedTrialObjects.Clear();
-        Debug.Log($"Cleanup complete - destroyed {destroyed} objects, protected {protected_count} scene objects");
 
         if (destroyed > 10)
         {
@@ -371,13 +332,7 @@ public class GameSystemResetter : MonoBehaviour
     
     public void CleanupAllTrialObjects()
     {
-        Debug.Log("Cleaning up trial objects...");
-        
         CleanupSpawned();
-        
-        // DON'T cleanup trial fish - they're managed by TrialFishSpawner
-        Debug.Log("Trial fish kept active (managed by spawner)");
-        
         RestoreSceneObjects();
     }
     
@@ -387,7 +342,6 @@ public class GameSystemResetter : MonoBehaviour
         {
             if (spawnedTrialObjects != null && spawnedTrialObjects.Count > 0)
             {
-                Debug.Log($"OnDestroy: Cleaning up {spawnedTrialObjects.Count} spawned objects");
                 CleanupSpawned();
             }
         }

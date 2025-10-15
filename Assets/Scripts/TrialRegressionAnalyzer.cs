@@ -5,28 +5,29 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Globalization;
+using System;
 
-/// <summary>
-/// Automatic Playtesting for Game Parameter Tuning via Active Learning
-/// Based on research by Zook et al. (2019): https://arxiv.org/abs/1908.01417
-/// 
-/// This system implements automated parameter tuning for AquaGuardian game:
-/// - Runs 5 trial games with varying parameters
-/// - Collects performance data (final oxygen remaining)
-/// - Uses linear regression to identify parameter correlations
-/// - Optimizes for target: oxygen > 0 but close to 0 (barely winning)
-/// - Reduces the need for extensive manual playtesting
-/// </summary>
+/**
+
+
+*/
 public class TrialRegressionAnalyzer : MonoBehaviour
 {
     [Header("UI References")]
-    [SerializeField] private GameObject regressionPanel;  // Panel to show regression results
-    [SerializeField] private TMP_Text regressionResultsText;  // Text to display regression results
-    [SerializeField] private Button calculateRegressionButton;  // Button to start regression calculation
-    [SerializeField] private Button closeRegressionButton;  // Button to close regression panel
+    [SerializeField] private GameObject regressionPanel;
+    [SerializeField] private TMP_Text regressionResultsText;
+    [SerializeField] private Button calculateRegressionButton;
+    [SerializeField] private Button closeRegressionButton;
+    [SerializeField] private Button saveResultsButton;
     
     [Header("Data Files")]
-    [SerializeField] private TextAsset trialDataCSV;  // DEPRECATED: No longer used - reads directly from file
+    [SerializeField] private TextAsset trialDataCSV;
+    
+    [Header("Save Settings")]
+    [SerializeField] private bool autoSaveResults = true;
+    [SerializeField] private string saveFolder = "RegressionResults";
+    
+    private string lastRegressionResults = "";
     
     [System.Serializable]
     public class TrialData
@@ -42,107 +43,73 @@ public class TrialRegressionAnalyzer : MonoBehaviour
         public float healHealthPoint;
         public float factorForce;
         public float finalOxygenRemaining;
-        public bool completed;                 // Added to match PanelOpenUp
+        public bool completed;
     }
     
     private List<TrialData> allTrialData = new List<TrialData>();
     
     void Start()
     {
-        // Setup button events
         if (calculateRegressionButton != null)
-        {
             calculateRegressionButton.onClick.AddListener(CalculateRegression);
-        }
         
         if (closeRegressionButton != null)
-        {
             closeRegressionButton.onClick.AddListener(CloseRegressionPanel);
-        }
         
-        // Hide regression panel initially
+        if (saveResultsButton != null)
+            saveResultsButton.onClick.AddListener(SaveRegressionResults);
+        
         if (regressionPanel != null)
-        {
             regressionPanel.SetActive(false);
-        }
     }
     
-    /// <summary>
-    /// Load trial data from CSV file and calculate regression
-    /// </summary>
     public void CalculateRegression()
     {
-        Debug.Log("=== STARTING REGRESSION ANALYSIS ===");
+        
         
         if (LoadTrialDataFromCSV())
         {
+            AppendOxygenWideToMaster(allTrialData);
+            
             string regressionResults = PerformRegressionAnalysis();
+            lastRegressionResults = regressionResults;
             ShowRegressionResults(regressionResults);
+            
+            if (autoSaveResults)
+                SaveRegressionResults();
         }
         else
         {
-            ShowError("Failed to load trial data from CSV file!");
+            ShowError("Failed to load trial data!");
         }
     }
     
-    /// <summary>
-    /// Public method to calculate and show regression results (alias for compatibility)
-    /// </summary>
-    public void CalculateAndShowRegression()
-    {
-        CalculateRegression();
-    }
+    public void CalculateAndShowRegression() => CalculateRegression();
     
-    /// <summary>
-    /// Load trial data from Trial_5_runs_.csv
-    /// </summary>
     private bool LoadTrialDataFromCSV()
     {
         try
         {
             allTrialData.Clear();
             
-            // Read directly from file to get updated data
-            string csvPath = System.IO.Path.Combine(UnityEngine.Application.dataPath, "Data", "Trial_5_runs_.csv");
-            Debug.Log($"TrialRegressionAnalyzer: Attempting to load CSV from: {csvPath}");
-            
-            if (!System.IO.File.Exists(csvPath))
+            if (trialDataCSV == null)
             {
-                Debug.LogError($"Trial CSV file not found at: {csvPath}");
-                Debug.LogError("Please ensure Trial_5_runs_.csv exists in Assets/Data/ folder");
+                Debug.LogError("Trial data TextAsset not assigned!");
                 return false;
             }
             
-            Debug.Log("CSV file found, reading contents...");
-            
-            string csvText = System.IO.File.ReadAllText(csvPath);
+            string csvText = trialDataCSV.text;
             string[] lines = csvText.Split(new[] { "\r\n", "\r", "\n" }, System.StringSplitOptions.RemoveEmptyEntries);
             
-            Debug.Log($"Loading trial data from: {csvPath}");
+            if (lines.Length <= 1) return false;
             
-            if (lines.Length <= 1)
-            {
-                Debug.LogError("CSV file is empty or has no data rows!");
-                return false;
-            }
-            
-            // Parse data lines (skip header at index 0)
             for (int i = 1; i < lines.Length; i++)
             {
                 string[] fields = lines[i].Split(',');
+                if (fields.Length < 11) continue;
                 
-                if (fields.Length < 11)
-                {
-                    Debug.LogWarning($"CSV line {i} doesn't have enough fields, skipping...");
-                    continue;
-                }
-                
-                // Check if final oxygen is filled
                 if (string.IsNullOrEmpty(fields[10]) || !float.TryParse(fields[10], out float finalOxygen))
-                {
-                    Debug.LogWarning($"Trial {i} missing final oxygen data, skipping...");
                     continue;
-                }
                 
                 var trialData = new TrialData
                 {
@@ -157,197 +124,104 @@ public class TrialRegressionAnalyzer : MonoBehaviour
                     healHealthPoint = float.Parse(fields[8]),
                     factorForce = float.Parse(fields[9]),
                     finalOxygenRemaining = finalOxygen,
-                    completed = finalOxygen > 0  // Assume completed if oxygen > 0
+                    completed = finalOxygen > 0
                 };
                 
-                Debug.Log($"Parsed CSV row {i}: Trial {trialData.trialId}");
-                Debug.Log($"  Speed: {trialData.speed}, VertSpeed: {trialData.verticalSpeed}, IdleUp: {trialData.idleUpwardSpeed}");
-                Debug.Log($"  DropPerSec: {trialData.downHealthPairSec}, LifeTime: {trialData.lifeTime}");
-                Debug.Log($"  CollDamage: {trialData.removeHealthWithCollide}, HealPoints: {trialData.healHealthPoint}");
-                
                 allTrialData.Add(trialData);
-                Debug.Log($"Loaded trial {trialData.trialId}: Final O2 = {trialData.finalOxygenRemaining:F1}%, Speed={trialData.speed:F1}");
             }
             
-            Debug.Log($"Successfully loaded {allTrialData.Count} trials for regression analysis");
-            
-            if (allTrialData.Count == 0)
-            {
-                Debug.LogError("No trial data loaded! All trials may be missing final oxygen values.");
-                Debug.LogError("Make sure to complete at least 2 trials before running regression analysis.");
-            }
-            else if (allTrialData.Count < 2)
-            {
-                Debug.LogWarning($"Only {allTrialData.Count} trial loaded. Need at least 2 trials for meaningful regression analysis.");
-            }
-            else
-            {
-                Debug.Log("Sufficient trial data loaded for regression analysis.");
-                
-                // Show summary of loaded trials
-                Debug.Log("=== LOADED TRIAL SUMMARY ===");
-                foreach (var trial in allTrialData)
-                {
-                    Debug.Log($"Trial {trial.trialId}: Speed={trial.speed}, DropPerSec={trial.downHealthPairSec}, FinalO2={trial.finalOxygenRemaining}%");
-                }
-                Debug.Log("=============================");
-            }
-            
-            return allTrialData.Count >= 2; // Need at least 2 trials for regression
+            Debug.Log($"Loaded {allTrialData.Count} trials");
+            return allTrialData.Count >= 2;
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"Error loading trial data: {e.Message}");
+            Debug.LogError($"Error loading CSV: {e.Message}");
             return false;
         }
     }
     
-    /// <summary>
-    /// Perform linear regression analysis
-    /// </summary>
     private string PerformRegressionAnalysis()
     {
-        if (allTrialData.Count < 2)
-        {
-            return "Need at least 2 completed trials for regression analysis!";
-        }
-        
-        // Prepare output values
         float[] outputs = allTrialData.Select(t => t.finalOxygenRemaining).ToArray();
         
-        // Calculate correlations for each feature
         var correlations = new Dictionary<string, float>();
         
         correlations["Speed"] = CalculateCorrelation(
             allTrialData.Select(t => t.speed).ToArray(), outputs);
-            
-        correlations["Vertical Speed"] = CalculateCorrelation(
+        correlations["VerticalSpeed"] = CalculateCorrelation(
             allTrialData.Select(t => t.verticalSpeed).ToArray(), outputs);
-            
-        correlations["Idle Upward Speed"] = CalculateCorrelation(
+        correlations["IdleUpwardSpeed"] = CalculateCorrelation(
             allTrialData.Select(t => t.idleUpwardSpeed).ToArray(), outputs);
-            
-        correlations["Life Time"] = CalculateCorrelation(
+        correlations["LifeTime"] = CalculateCorrelation(
             allTrialData.Select(t => t.lifeTime).ToArray(), outputs);
-            
-        correlations["Oxygen Drop Per Sec"] = CalculateCorrelation(
+        correlations["O2DropPerSec"] = CalculateCorrelation(
             allTrialData.Select(t => t.downHealthPairSec).ToArray(), outputs);
-            
-        correlations["Collision Damage"] = CalculateCorrelation(
+        correlations["CollisionDamage"] = CalculateCorrelation(
             allTrialData.Select(t => t.removeHealthWithCollide).ToArray(), outputs);
-            
-        correlations["Time Between Collides"] = CalculateCorrelation(
+        correlations["TimeBetweenCollides"] = CalculateCorrelation(
             allTrialData.Select(t => t.timeBetweenCollides).ToArray(), outputs);
-            
-        correlations["Oxygen Heal Points"] = CalculateCorrelation(
+        correlations["HealPoints"] = CalculateCorrelation(
             allTrialData.Select(t => t.healHealthPoint).ToArray(), outputs);
-            
-        correlations["Factor Force"] = CalculateCorrelation(
+        correlations["FactorForce"] = CalculateCorrelation(
             allTrialData.Select(t => t.factorForce).ToArray(), outputs);
+ 
+        string results = "REGRESSION ANALYSIS\n";
         
-        // Build results string
-        string results = "ACTIVE LEARNING REGRESSION ANALYSIS\n";
-      
-        results += $"Number of completed trials: {allTrialData.Count}\n\n";
-        
-        results += "TRIAL OXYGEN RESULTS:\n";
-        results += "--------------------\n";
         float totalOxygen = 0f;
         int perfectTrials = 0;
         int failedTrials = 0;
         
         foreach (var trial in allTrialData)
         {
-            string quality = GetOxygenQuality(trial.finalOxygenRemaining);
-            results += $"Trial {trial.trialId}: {trial.finalOxygenRemaining:F1}% {quality}\n";
             totalOxygen += trial.finalOxygenRemaining;
-            
-            if (trial.finalOxygenRemaining <= 0) failedTrials++;
-            else if (trial.finalOxygenRemaining <= 5) perfectTrials++;
+            if (trial.finalOxygenRemaining <= 5f && trial.finalOxygenRemaining > 0f)
+                perfectTrials++;
+            if (trial.finalOxygenRemaining <= 0f)
+                failedTrials++;
         }
         
         float avgOxygen = totalOxygen / allTrialData.Count;
-        results += $"\nAverage Final Oxygen: {avgOxygen:F1}%\n";
-        results += $"Perfect Trials (≤5%): {perfectTrials}/{allTrialData.Count}\n";
-        results += $"Failed Trials (0%): {failedTrials}/{allTrialData.Count}\n\n";
-        
-        results += "FEATURE CORRELATIONS:\n";
-        results += "--------------------\n";
-        foreach (var corr in correlations.OrderByDescending(x => x.Value))
+        results += $"Trials:{allTrialData.Count} Avg:{avgOxygen:F1}% Perfect:{perfectTrials} Failed:{failedTrials}\n";
+        results += "TOP CORRELATIONS:\n";
+ 
+        var top3 = correlations.OrderByDescending(x => Mathf.Abs(x.Value)).Take(3);
+        foreach (var corr in top3)
         {
-            string impact = corr.Value > 0 ? "HELPFUL" : "HARMFUL";
-            string strength = Mathf.Abs(corr.Value) > 0.7f ? "STRONG" : 
-                             Mathf.Abs(corr.Value) > 0.3f ? "MODERATE" : "WEAK";
-            results += $"{corr.Key}: {corr.Value:F3} ({strength} {impact})\n";
+            string sign = corr.Value > 0 ? "+" : "";
+            results += $"{sign}{corr.Value:F2} {corr.Key}\n";
         }
         
-        results += "\nINTERPRETATION:\n";
-        results += "---------------\n";
-        results += "• Positive values = Parameter INCREASES final oxygen\n";
-        results += "• Negative values = Parameter DECREASES final oxygen\n";
-        results += "• Values closer to ±1 = STRONGER relationship\n\n";
+        results += "\nRECOMMENDATIONS:\n";
         
-        // Find most important parameters
         var mostPositive = correlations.OrderByDescending(x => x.Value).First();
         var mostNegative = correlations.OrderBy(x => x.Value).First();
         
-      
-        results += $"Most helpful: {mostPositive.Key} ({mostPositive.Value:F3})\n";
-        results += $"Most harmful: {mostNegative.Key} ({mostNegative.Value:F3})\n\n";
-        
-       
-     
-        
-        if (mostPositive.Value > 0.3f)
+        if (Mathf.Abs(mostPositive.Value) > 0.3f)
         {
-            results += $"INCREASE {mostPositive.Key}\n   → Helps preserve more oxygen\n\n";
+            results += $"INCREASE {mostPositive.Key}\n";
         }
-        if (mostNegative.Value < -0.3f)
+        if (Mathf.Abs(mostNegative.Value) > 0.3f)
         {
-            results += $" DECREASE {mostNegative.Key}\n   → Reduces oxygen waste\n\n";
+            results += $"DECREASE {mostNegative.Key}\n";
         }
         
-       
-        if (mostPositive.Value > 0.3f)
+        if (avgOxygen > 20f)
         {
-            results += $"INCREASE {mostPositive.Key} to preserve more oxygen\n\n";
+            results += "\nStatus: TOO EASY - increase difficulty\n";
         }
-        if (mostNegative.Value < -0.3f)
+        else if (failedTrials > allTrialData.Count / 2)
         {
-            results += $"DECREASE {mostNegative.Key} to reduce oxygen waste\n\n";
+            results += "\nStatus: TOO HARD - decrease difficulty\n";
         }
-        
-        // Target optimization analysis
-        results += "TARGET ANALYSIS:\n";
-        results += "----------------\n";
-        results += "GOAL: Final oxygen between 1-5% (close to zero but > 0)\n\n";
-        
-        if (failedTrials > 0)
+        else if (perfectTrials >= allTrialData.Count / 2)
         {
-            results += $"{failedTrials} trials failed (0% oxygen)\n";
-            results += "REDUCE difficulty (decrease drain, increase heal)\n\n";
+            results += "\nStatus: WELL CALIBRATED\n";
         }
         
-        if (avgOxygen > 15)
-        {
-            results += "Average oxygen too high - wasted efficiency\n";
-            results += "INCREASE difficulty (increase drain, reduce heal)\n\n";
-        }
-        else if (avgOxygen >= 1 && avgOxygen <= 10)
-        {
-            results += "Excellent balance - near optimal difficulty\n\n";
-        }
-        else if (avgOxygen < 1 && failedTrials == 0)
-        {
-            results += "PERFECT! Very close to target zone\n\n";
-        }
-        
+        Debug.Log(results);
         return results;
     }
     
-    /// <summary>
-    /// Calculate Pearson correlation coefficient
-    /// </summary>
     private float CalculateCorrelation(float[] x, float[] y)
     {
         if (x.Length != y.Length || x.Length == 0) return 0f;
@@ -372,77 +246,192 @@ public class TrialRegressionAnalyzer : MonoBehaviour
         return denominator == 0f ? 0f : numerator / denominator;
     }
     
-    /// <summary>
-    /// Show regression results in panel
-    /// </summary>
     private void ShowRegressionResults(string results)
     {
         if (regressionPanel != null)
         {
             regressionPanel.SetActive(true);
+            // Ensure regression panel is on top
+            regressionPanel.transform.SetAsLastSibling();
         }
         
         if (regressionResultsText != null)
-        {
             regressionResultsText.text = results;
-        }
         
-        Debug.Log("=== REGRESSION ANALYSIS COMPLETE ===");
         Debug.Log(results);
     }
     
-    /// <summary>
-    /// Show error message
-    /// </summary>
     private void ShowError(string errorMessage)
     {
         if (regressionPanel != null)
-        {
             regressionPanel.SetActive(true);
-        }
         
         if (regressionResultsText != null)
-        {
-            regressionResultsText.text = $"ERROR:\n{errorMessage}\n\nMake sure all 5 trials are completed with final oxygen values!";
-        }
+            regressionResultsText.text = $"ERROR:\n{errorMessage}";
         
         Debug.LogError(errorMessage);
     }
     
-    /// <summary>
-    /// Close regression panel
-    /// </summary>
     public void CloseRegressionPanel()
     {
         if (regressionPanel != null)
-        {
             regressionPanel.SetActive(false);
-        }
-
-        // Restore gameplay time and keep cursor always accessible
-        Time.timeScale = 1f;
+        
+        var trialUIController = FindObjectOfType<TrialUIController>();
+        if (trialUIController != null)
+            trialUIController.OpenTrialControlPanel();
+        
+        Time.timeScale = 0f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
     
     /// <summary>
-    /// Get oxygen quality indicator for display
+    /// Force close regression panel without opening trial panel (used when starting new game/trial)
     /// </summary>
-    private string GetOxygenQuality(float oxygen)
+    public void ForceCloseRegressionPanel()
     {
-        if (oxygen <= 0) return "FAILED";
-       
-        else if (oxygen <= 15) return "GOOD";
-        else if (oxygen <= 30) return "OK";
-        else return "TOO HIGH";
+        if (regressionPanel != null && regressionPanel.activeSelf)
+        {
+            regressionPanel.SetActive(false);
+        }
     }
     
-    /// <summary>
-    /// Public method to check if regression can be calculated
-    /// </summary>
     public bool CanCalculateRegression()
     {
         return LoadTrialDataFromCSV() && allTrialData.Count >= 2;
+    }
+    
+    public void SaveRegressionResults()
+    {
+        if (string.IsNullOrEmpty(lastRegressionResults))
+        {
+            Debug.LogWarning("No results to save!");
+            return;
+        }
+        
+        try
+        {
+            string dataPath = Path.Combine(Application.dataPath, "Data");
+            string savePath = Path.Combine(dataPath, saveFolder);
+            
+            if (!Directory.Exists(savePath))
+                Directory.CreateDirectory(savePath);
+            
+            string timestamp = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            string fileName = $"RegressionAnalysis_{timestamp}.txt";
+            string fullPath = Path.Combine(savePath, fileName);
+            
+            string fileContent = "=====================================\n";
+            fileContent += "REGRESSION ANALYSIS\n";
+            fileContent += "=====================================\n";
+            fileContent += $"Generated: {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}\n";
+            fileContent += $"Trials analyzed: {allTrialData.Count}\n";
+            fileContent += "=====================================\n\n";
+            fileContent += lastRegressionResults;
+            fileContent += "\n\n=====================================\n";
+            fileContent += "RAW TRIAL DATA:\n";
+            
+            foreach (var trial in allTrialData)
+            {
+                fileContent += $"\nTrial {trial.trialId}:\n";
+                fileContent += $"  Speed: {trial.speed:F2}\n";
+                fileContent += $"  VerticalSpeed: {trial.verticalSpeed:F2}\n";
+                fileContent += $"  IdleUpwardSpeed: {trial.idleUpwardSpeed:F2}\n";
+                fileContent += $"  LifeTime: {trial.lifeTime:F2}\n";
+                fileContent += $"  O2DropPerSec: {trial.downHealthPairSec:F2}\n";
+                fileContent += $"  CollisionDamage: {trial.removeHealthWithCollide:F2}\n";
+                fileContent += $"  TimeBetweenCollides: {trial.timeBetweenCollides:F2}\n";
+                fileContent += $"  HealPoints: {trial.healHealthPoint:F2}\n";
+                fileContent += $"  FactorForce: {trial.factorForce:F2}\n";
+                fileContent += $"  FinalO2: {trial.finalOxygenRemaining:F1}%\n";
+            }
+            
+            File.WriteAllText(fullPath, fileContent);
+            Debug.Log($"Results saved: {fullPath}");
+            
+            if (regressionResultsText != null)
+                regressionResultsText.text += $"\n\nSaved: {fileName}";
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Save failed: {e.Message}");
+        }
+    }
+    
+    private string GetWritableDataDir()
+    {
+        #if UNITY_EDITOR
+        string dir = Path.Combine(Application.dataPath, "Data", "RegressionResults");
+        #else
+        string dir = Application.persistentDataPath;
+        #endif
+        if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+        return dir;
+    }
+    
+    private void AppendOxygenWideToMaster(List<TrialData> trials, string masterFileName = "O2_Wide_AllSets.csv")
+    {
+        if (trials == null || trials.Count == 0) return;
+        
+        string dir = GetWritableDataDir();
+        string path = Path.Combine(dir, masterFileName);
+        
+        var values = trials
+            .OrderBy(t => t.trialId)
+            .Select(t => t.finalOxygenRemaining.ToString("0.###", CultureInfo.InvariantCulture))
+            .ToList();
+        
+        var header = new List<string> { "timestamp" };
+        for (int i = 0; i < values.Count; i++)
+            header.Add($"o2_remaining_{i+1}");
+        
+        var newRow = new List<string>();
+        newRow.Add(System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+        newRow.AddRange(values);
+        
+        if (!File.Exists(path))
+        {
+            File.WriteAllLines(path, new[]
+            {
+                string.Join(",", header),
+                string.Join(",", newRow)
+            });
+            Debug.Log($"Created master wide file: {path}");
+            return;
+        }
+        
+        var allLines = File.ReadAllLines(path).ToList();
+        if (allLines.Count == 0)
+            allLines.Add(string.Join(",", header));
+        
+        var existingHeader = allLines[0].Split(',').ToList();
+        int existingO2Cols = Math.Max(0, existingHeader.Count - 1);
+        int neededCols = values.Count;
+        
+        if (existingO2Cols < neededCols)
+        {
+            for (int i = existingO2Cols; i < neededCols; i++)
+                existingHeader.Add($"o2_remaining_{i+1}");
+            
+            for (int i = 1; i < allLines.Count; i++)
+            {
+                var parts = allLines[i].Split(',').ToList();
+                while (parts.Count < existingHeader.Count)
+                    parts.Add(string.Empty);
+                allLines[i] = string.Join(",", parts);
+            }
+            
+            allLines[0] = string.Join(",", existingHeader);
+        }
+        
+        while (newRow.Count < existingHeader.Count)
+            newRow.Add(string.Empty);
+        
+        allLines.Add(string.Join(",", newRow));
+        File.WriteAllLines(path, allLines);
+        
+        //Debug.Log($"Appended set to master wide file: {path}");
     }
 }
 

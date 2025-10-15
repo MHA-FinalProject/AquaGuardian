@@ -85,7 +85,7 @@ public class AmadeoClient : MonoBehaviour
     // We call it after the PanelOpenUp is closed.
     public void StartReceiveData()
     {
-        // ✅ Ensure _cancellationTokenSource is not null
+        //  Ensure _cancellationTokenSource is not null
         if (_cancellationTokenSource == null)
         {
             _cancellationTokenSource = new CancellationTokenSource();
