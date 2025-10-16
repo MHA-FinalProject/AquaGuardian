@@ -218,8 +218,6 @@ public class TrialSystemManager : MonoBehaviour
         if (uiController != null)
             uiController.UpdateTrialUI(currentTrialNumber, totalTrials);
 
-        yield return new WaitForSeconds(2f);
-        
         GameStateManager.Instance?.NotifyPanelClosed();
         _startingNext = false;
     }
@@ -292,8 +290,6 @@ public class TrialSystemManager : MonoBehaviour
         if (uiController != null)
             uiController.UpdateTrialUI(currentTrialNumber, totalTrials);
 
-        yield return new WaitForSeconds(2f);
-        
         GameStateManager.Instance?.NotifyPanelClosed();
         _startingNext = false;
     }

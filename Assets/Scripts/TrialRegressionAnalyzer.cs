@@ -10,7 +10,7 @@ using System;
 /**
 
 
-*/
+ */
 public class TrialRegressionAnalyzer : MonoBehaviour
 {
     [Header("UI References")]
@@ -164,7 +164,7 @@ public class TrialRegressionAnalyzer : MonoBehaviour
             allTrialData.Select(t => t.healHealthPoint).ToArray(), outputs);
         correlations["FactorForce"] = CalculateCorrelation(
             allTrialData.Select(t => t.factorForce).ToArray(), outputs);
- 
+        
         string results = "REGRESSION ANALYSIS\n";
         
         float totalOxygen = 0f;
