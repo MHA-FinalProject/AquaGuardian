@@ -12,30 +12,18 @@ public class GameStateManager : MonoBehaviour
     public static event Action OnGameStart;
     public static event Action<float, bool> OnGameEnded; // finalOxygen, completed
     
+    // Static trials state (not tied to Instance)
+    private static bool _trialsActive = false;
+    
     [Header("Game State")]
     [SerializeField] private bool panelClosed = false;
     [SerializeField] private bool introComplete = false;
-    [SerializeField] private bool trialsActive = false;
+    
     public bool IsPanelClosed => panelClosed;
     public bool IsIntroComplete => introComplete;
     public bool IsGameReady => panelClosed && introComplete;
-    public static bool AreTrialsActive
-    {
-        get
-        {
-            if (Instance == null)
-            {
-                // Try to recover the instance if called before Awake or after a scene change
-                var found = UnityEngine.Object.FindObjectOfType<GameStateManager>();
-                if (found != null)
-                {
-                    Instance = found;
-                    DontDestroyOnLoad(found.gameObject);
-                }
-            }
-            return Instance != null && Instance.trialsActive;
-        }
-    }
+    
+    public static bool AreTrialsActive => _trialsActive;
     
     void Awake()
     {
@@ -90,25 +78,16 @@ public class GameStateManager : MonoBehaviour
     }
     
         
-  
-    public static void NotifyGameEnded(float finalOxygen, bool completed)
-    {
-        Debug.Log($"GameStateManager: Game ended - O2: {finalOxygen:F2}, Completed: {completed}");
-        OnGameEnded?.Invoke(finalOxygen, completed);
-    }
-    
-    
-    // Set trials active
     public static void SetTrialsActive(bool active)
     {
-        if (Instance != null)
-        {
-            Instance.trialsActive = active;
-        }
-        else
-        {
-            Debug.LogError("Cannot set trials active - GameStateManager.Instance is NULL!");
-        }
+        _trialsActive = active;
+        Debug.Log($"[GameStateManager] Trials set to: {active}");
+    }
+    
+    public static void NotifyGameEnded(float oxygen, bool completed)
+    {
+        Debug.Log($"[GameStateManager] Game ended - Oxygen: {oxygen}, Completed: {completed}, TrialsActive: {_trialsActive}");
+        OnGameEnded?.Invoke(oxygen, completed);
     }
     
  

@@ -12,33 +12,30 @@ public class Health : MonoBehaviour
 {
 
     [Header("UI Components")]
-    [SerializeField] private TextMeshProUGUI healthText;  // Reference to the TextMeshPro component displaying the health
-    [SerializeField] private Image healthBar;  // Reference to the UI Image representing the health bar
-    [SerializeField] private GameObject Panel;  // Reference to a UI panel
+    [SerializeField] private TextMeshProUGUI healthText;
+    [SerializeField] private Image healthBar;
+    [SerializeField] private GameObject Panel;
 
     [Header("Health Settings")]
-    private float health = 100f;  // Current health value
-    private float maxHealth = 100f;  // Maximum health value
-    private float lerpSpeed;  // Speed for interpolating the health bar fill amount
-    private float factorLerpSpeed = 3f;  // Multiplier for the lerp speed
+    private float health = 100f;
+    private float maxHealth = 100f;
+    private float lerpSpeed;
+    private float factorLerpSpeed = 3f;
 
     [Header("Lifetime & Damage Settings")]
-    private float lifeTime;  // Time to wait before applying automatic damage
-    public TMP_InputField lifeTime_inputField;  // Input field for user-defined lifetime
-    private float downHealthPairSec;  // Damage applied every life time interval
-    public TMP_InputField downHealthPairSec_inputField;  // Input field for user-defined damage per interval
+    private float lifeTime;
+    public TMP_InputField lifeTime_inputField;
+    private float downHealthPairSec;
+    public TMP_InputField downHealthPairSec_inputField;
 
-    // === Internal States ===
     [Header("Internal States")]
-    private bool moveOxygen = false;  // Flag to start oxygen decrease coroutine, initially set to false
-    public bool didntGetInputsYet = false;  // Flag to check if inputs have been received yet
+    private bool moveOxygen = false;
+    public bool didntGetInputsYet = false;
 
-    // Start is called before the first frame update
     void Start()
     {
-        health = maxHealth;  // Initialize health to maximum value
+        health = maxHealth;
 
-        // Check if the panel is initially closed and start the coroutine if it is
         if (Panel != null && !Panel.activeSelf)
         {
             moveOxygen = true;
@@ -46,24 +43,19 @@ public class Health : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
-        // Get user inputs for lifeTime and downHealthPairSec
         if (didntGetInputsYet)
         {
             ProcessUserInputs();
-            didntGetInputsYet = false;  // Inputs have now been received
+            didntGetInputsYet = false;
         }
 
-        // Update health text with the current health percentage
         healthText.text = "Oxygen: " + health + "%";
 
-        healthBarFiller();  // Update the health bar fill amount
+        healthBarFiller();
+        colorChanger();
 
-        colorChanger();  // Update the health bar color based on the current health
-
-        // Start the coroutine when the panel is closed (supports GameStateManager too)
         bool panelClosed = Panel != null ? !Panel.activeSelf : true;
         if (GameStateManager.Instance != null)
         {
@@ -75,25 +67,22 @@ public class Health : MonoBehaviour
             StartCoroutine(DisappearHealthPoints());
         }
 
-        // Ensure health does not exceed the maximum value
         if (health > maxHealth)
         {
             health = maxHealth;
         }
 
-        // Update the lerp speed based on the time delta
         lerpSpeed = factorLerpSpeed * Time.deltaTime;
     }
 
     public void ProcessUserInputs()
     {
-        // Parse user inputs for lifeTime and downHealthPairSec
         bool isLifeTimeValid = float.TryParse(lifeTime_inputField.text, out lifeTime);
         bool isDownHealthPairSecValid = float.TryParse(downHealthPairSec_inputField.text, out downHealthPairSec);
         if (isLifeTimeValid && isDownHealthPairSecValid)
         {
-            lifeTime = float.Parse(lifeTime_inputField.text);  // Convert input to float
-            downHealthPairSec = float.Parse(downHealthPairSec_inputField.text);  // Convert input to float
+            lifeTime = float.Parse(lifeTime_inputField.text);
+            downHealthPairSec = float.Parse(downHealthPairSec_inputField.text);
         }
         else
         {
@@ -104,7 +93,6 @@ public class Health : MonoBehaviour
         moveOxygen = false;
     }
 
-    // Smoothly updates the health bar fill amount
     void healthBarFiller()
     {
         healthBar.fillAmount = Mathf.Lerp(healthBar.fillAmount, health / maxHealth, lerpSpeed);
@@ -117,78 +105,118 @@ public class Health : MonoBehaviour
         healthBar.color = healthColor;
     }
 
-    // Applies damage to the player's health
     public void damage(float damagePoint)
     {
         if (health > damagePoint)
         {
-            health -= damagePoint;  // Subtract the damage from health
+            health -= damagePoint;
         }
         else
         {
-            health = 0;  // Set health to 0 if damage exceeds current health
-            
-            gameOver();  // Trigger game over
+            health = 0;
+            gameOver();
         }
     }
 
-    // Heals the player's health
     public void heal(float healingPoint)
     {
         if (health < maxHealth)
         {
-            health += healingPoint;  // Add the healing points to the current health
+            health += healingPoint;
         }
     }
 
-    // Coroutine that decreases health over time
     IEnumerator DisappearHealthPoints()
     {
         for (float i = health; i > 0; i--)
         {
-            yield return new WaitForSeconds(lifeTime); // Wait for the specified lifetime
+            yield return new WaitForSeconds(lifeTime);
 
-            damage(downHealthPairSec);  // Apply damage after each interval
+            damage(downHealthPairSec);
 
-            // Check if all health points have disappeared
             if (i <= 0)
             {
-                gameOver();  // Trigger game over if health reaches 0
+                gameOver();
             }
         }
     }
 
     void gameOver()
     {
-        // Re-check trials state defensively to avoid race conditions across scene changes
-        bool trials = IsTrialModeActive();
-        if (!trials && GameStateManager.Instance == null)
+        bool trialsActive = IsTrialModeActive();
+        
+        Debug.Log($"[Health] gameOver() called - Trials Active: {trialsActive}, Health: {health}");
+        
+        if (trialsActive)
         {
-            // Attempt late recovery
-            trials = GameStateManager.AreTrialsActive;
+            // In trials: Open trial panel and notify
+            Debug.Log("[Health] Trial failed - Opening trial panel");
+            
+            // Stop game time
+            Time.timeScale = 0f;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            
+            // Find and open trial UI panel
+            var trialUIController = FindObjectOfType<TrialUIController>();
+            if (trialUIController != null)
+            {
+                trialUIController.OpenTrialControlPanel();
+                Debug.Log("[Health] Trial panel opened");
+            }
+            else
+            {
+                Debug.LogError("[Health] TrialUIController not found!");
+            }
+            
+            // Notify the system
+            GameStateManager.NotifyGameEnded(health, false);
+            return; 
         }
 
-        if (trials)
-        {
-            GameStateManager.NotifyGameEnded(0f, false);
-            return;
-        }
-
+        // In normal game: Load the Game_Over scene
+        Debug.Log("[Health] Loading Game_Over scene (not in trials)");
         GameStateManager.NotifyGameEnded(health, false);
         SceneManager.LoadScene("Game_Over");
     }
 
-
+  
     bool IsTrialModeActive()
     {
-        return GameStateManager.AreTrialsActive;
+        // Check if the trial mode is active via GameStateManager.AreTrialsActive (static property)
+        if (GameStateManager.AreTrialsActive)
+        {
+            Debug.Log("[Health] Trials detected via GameStateManager.AreTrialsActive");
+            return true;
+        }
+
+        // Check if the TrialSystemManager exists and is in trials mode
+        var trialSystem = FindObjectOfType<TrialSystemManager>();
+        if (trialSystem != null && trialSystem.TrialsMode)
+        {
+            Debug.Log("[Health] Trials detected via TrialSystemManager.TrialsMode");
+            return true;
+        }
+
+       
+        // Redundant check - already checked AreTrialsActive above
+        // if (GameStateManager.Instance != null)
+        // {
+        //     bool trials = GameStateManager.AreTrialsActive;
+        //     if (trials)
+        //     {
+        //         Debug.Log("[Health] Trials detected via GameStateManager.Instance");
+        //         return true;
+        //     }
+        // }
+
+        // No active trials
+        Debug.Log("[Health] No trials detected - normal game mode");
+        return false;
     }
 
-    // Public getter for current oxygen level (0-100)
     public float GetOxygen()
     {
         return health;
     }
-
-
 }

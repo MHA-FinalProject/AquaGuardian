@@ -117024,14 +117024,17 @@ MonoBehaviour:
   trialButton: {fileID: 697992919}
   trialControlPanel: {fileID: 743308456}
   mainPanel: {fileID: 1618970796}
-  trialStatusText: {fileID: 919082681}
+  startStatusText: {fileID: 0}
+  duringTrialStatusText: {fileID: 0}
+  endStatusText: {fileID: 0}
+  instructionsText: {fileID: 0}
   trialResultsText: {fileID: 1054235811}
   startTrialButton: {fileID: 1393945402}
   continueTrialButton: {fileID: 1989215323}
   analyzeTrialsButton: {fileID: 1802237376}
   closeTrialButton: {fileID: 262359038}
   trialSystemManager: {fileID: 263091700}
-  regressionAnalyzer: {fileID: 9829502}
+  regressionUI: {fileID: 0}
 --- !u!4 &675330659
 Transform:
   m_ObjectHideFlags: 0
@@ -215168,12 +215171,15 @@ MonoBehaviour:
   fishSpawner: {fileID: 1819964091}
   uiController: {fileID: 675330658}
   systemResetter: {fileID: 390842400}
+  caveBuilder: {fileID: 0}
   caveFiles:
   - {fileID: 4900000, guid: 3d8cd56b75788cc49a4d4241e113248b, type: 3}
   - {fileID: 4900000, guid: 51528cc31c69edc49a28f1c5276df741, type: 3}
   - {fileID: 4900000, guid: 3ec59112d4a27da43a2c591191cd9197, type: 3}
   - {fileID: 4900000, guid: 3ee1a3d00f2f66a40842e2b9aa6104cc, type: 3}
   - {fileID: 4900000, guid: 63c139219b2082a46ac66423731b4c89, type: 3}
+  useCaveFilePathPattern: 1
+  caveFilePathPattern: Data/Cave{n}.csv
 --- !u!114 &1194887434
 MonoBehaviour:
   m_ObjectHideFlags: 0

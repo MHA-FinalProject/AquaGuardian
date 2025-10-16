@@ -53,16 +53,25 @@ public class TrialParameterManager : MonoBehaviour
                 return false;
             }
             
-            // Save to BOTH locations:
+            // Save to THREE locations:
             // 1. Update original Trial_5_runs_.csv
             bool originalUpdated = UpdateOriginalCSV(trialData);
             
             // 2. Append to timestamped results file
             bool timestampedSaved = SaveToTimestampedCSV(trialData);
             
+            // 3. CACHE the oxygen value for regression (NO CSV READING NEEDED!)
+            TrialDataCache.Instance.SaveTrialOxygen(trialData.trialId, trialData.finalOxygenRemaining);
+            
+            // 4. Update O2_Wide_AllSets.csv if this is trial 5 (end of set)
+            if (trialData.trialId == 5)
+            {
+                UpdateO2WideAllSets();
+            }
+            
             if (originalUpdated && timestampedSaved)
             {
-                Debug.Log("$ Trial {trialData.trialId} saved: Oxygen={trialData.finalOxygenRemaining:F1}%, Completed={trialData.completed}");
+                Debug.Log($"Trial {trialData.trialId} saved: Oxygen={trialData.finalOxygenRemaining:F1}%, Completed={trialData.completed}");
                 return true;
             }
             else
@@ -170,7 +179,7 @@ public class TrialParameterManager : MonoBehaviour
             if (updated)
             {
                 System.IO.File.WriteAllLines(csvPath, lines);
-                //Debug.Log($"✓ Updated Trial_5_runs_.csv: Trial {trialData.trialId} → {newColumnName} = {trialData.finalOxygenRemaining:F1}%");
+                //Debug.Log($"Updated Trial_5_runs_.csv: Trial {trialData.trialId} to {newColumnName} = {trialData.finalOxygenRemaining:F1}%");
                 return true;
             }
             else
@@ -416,5 +425,169 @@ public class TrialParameterManager : MonoBehaviour
         Debug.Log($"Health: LifeTime={data.lifeTime:F2}, DropPerSec={data.downHealthPairSec:F2}");
         Debug.Log($"Collision: Damage={data.removeHealthWithCollide:F1}, TimeBetween={data.timeBetweenCollides:F1}");
         Debug.Log($"Oxygen: Heal={data.healHealthPoint:F1}, FactorForce={data.factorForce:F1}");
+    }
+    
+    /// <summary>
+    /// Update O2_Wide_AllSets.csv with ALL oxygen values from all trials
+    /// Called automatically when Trial 5 completes
+    /// </summary>
+    private void UpdateO2WideAllSets()
+    {
+        try
+        {
+            Debug.Log("=== UPDATING O2_WIDE_ALLSETS.CSV ===");
+            
+            string csvPath = System.IO.Path.Combine(Application.dataPath, trialParametersPath);
+            
+            if (!System.IO.File.Exists(csvPath))
+            {
+                Debug.LogError($"Trial_5_runs_.csv not found at: {csvPath}");
+                return;
+            }
+            
+            var lines = System.IO.File.ReadAllLines(csvPath);
+            if (lines.Length <= 1)
+            {
+                Debug.LogError("Trial_5_runs_.csv is empty!");
+                return;
+            }
+            
+            // Parse header to find o2_run columns
+            var headerFields = lines[0].Split(',');
+            var o2ColumnIndices = new System.Collections.Generic.List<int>();
+            
+            for (int i = 0; i < headerFields.Length; i++)
+            {
+                if (headerFields[i].StartsWith("o2_run"))
+                {
+                    o2ColumnIndices.Add(i);
+                }
+            }
+            
+            if (o2ColumnIndices.Count == 0)
+            {
+                Debug.LogError("No o2_run columns found in Trial_5_runs_.csv!");
+                return;
+            }
+            
+            // Find the LAST o2_run column (most recent run)
+            int lastO2ColumnIndex = o2ColumnIndices[o2ColumnIndices.Count - 1];
+            string lastO2ColumnName = headerFields[lastO2ColumnIndex];
+            Debug.Log($"Using last oxygen column: {lastO2ColumnName} (index {lastO2ColumnIndex})");
+            
+            // Extract ALL oxygen values from ALL trials for this run
+            var oxygenValues = new System.Collections.Generic.List<string>();
+            
+            for (int i = 1; i < lines.Length; i++) // Skip header
+            {
+                var fields = lines[i].Split(',');
+                
+                if (fields.Length <= lastO2ColumnIndex)
+                    continue;
+                    
+                string oxygenValue = fields[lastO2ColumnIndex].Trim();
+                
+                if (!string.IsNullOrEmpty(oxygenValue) && float.TryParse(oxygenValue, out float o2))
+                {
+                    oxygenValues.Add(o2.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
+                    Debug.Log($"  Trial {i}: {o2:F1}%");
+                }
+            }
+            
+            if (oxygenValues.Count == 0)
+            {
+                Debug.LogWarning("No oxygen values found in last column!");
+                return;
+            }
+            
+            // Now update O2_Wide_AllSets.csv
+            string o2WidePath = System.IO.Path.Combine(Application.dataPath, "Data", "RegressionResults", "O2_Wide_AllSets.csv");
+            
+            // Ensure directory exists
+            string directory = System.IO.Path.GetDirectoryName(o2WidePath);
+            if (!System.IO.Directory.Exists(directory))
+            {
+                System.IO.Directory.CreateDirectory(directory);
+            }
+            
+            // Build header
+            var wideHeader = new System.Collections.Generic.List<string> { "timestamp" };
+            for (int i = 0; i < oxygenValues.Count; i++)
+            {
+                wideHeader.Add($"o2_remaining_{i+1}");
+            }
+            
+            // Build new row
+            var newRow = new System.Collections.Generic.List<string>();
+            newRow.Add(System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            newRow.AddRange(oxygenValues);
+            
+            // If file doesn't exist, create it with header
+            if (!System.IO.File.Exists(o2WidePath))
+            {
+                System.IO.File.WriteAllLines(o2WidePath, new[]
+                {
+                    string.Join(",", wideHeader),
+                    string.Join(",", newRow)
+                });
+                Debug.Log($"Created O2_Wide_AllSets.csv with {oxygenValues.Count} oxygen values");
+                return;
+            }
+            
+            // File exists - read it and append
+            var allLines = System.IO.File.ReadAllLines(o2WidePath).ToList();
+            
+            if (allLines.Count == 0)
+            {
+                allLines.Add(string.Join(",", wideHeader));
+            }
+            
+            // Update header if needed (in case we have more columns now)
+            var existingHeader = allLines[0].Split(',').ToList();
+            int existingO2Cols = System.Math.Max(0, existingHeader.Count - 1);
+            int neededCols = oxygenValues.Count;
+            
+            if (existingO2Cols < neededCols)
+            {
+                // Add more column headers
+                for (int i = existingO2Cols; i < neededCols; i++)
+                {
+                    existingHeader.Add($"o2_remaining_{i+1}");
+                }
+                
+                // Pad existing rows with empty values
+                for (int i = 1; i < allLines.Count; i++)
+                {
+                    var parts = allLines[i].Split(',').ToList();
+                    while (parts.Count < existingHeader.Count)
+                    {
+                        parts.Add(string.Empty);
+                    }
+                    allLines[i] = string.Join(",", parts);
+                }
+                
+                allLines[0] = string.Join(",", existingHeader);
+            }
+            
+            // Pad new row if needed
+            while (newRow.Count < existingHeader.Count)
+            {
+                newRow.Add(string.Empty);
+            }
+            
+            // Append new row
+            allLines.Add(string.Join(",", newRow));
+            
+            // Save file
+            System.IO.File.WriteAllLines(o2WidePath, allLines);
+            
+            Debug.Log($"Updated O2_Wide_AllSets.csv: Added {oxygenValues.Count} oxygen values from {lastO2ColumnName}");
+            Debug.Log($"   Values: {string.Join(", ", oxygenValues)}");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Error updating O2_Wide_AllSets.csv: {e.Message}");
+            Debug.LogError($"Stack trace: {e.StackTrace}");
+        }
     }
 }

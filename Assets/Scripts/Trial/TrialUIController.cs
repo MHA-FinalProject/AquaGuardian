@@ -32,10 +32,23 @@ public class TrialUIController : MonoBehaviour
     
     [Header("References")]
     [SerializeField] private TrialSystemManager trialSystemManager;
-    [SerializeField] private TrialRegressionAnalyzer regressionAnalyzer;
+    [SerializeField] private TrialRegressionUI regressionUI;
     
     void Start()
     {
+        Debug.Log("=== TrialUIController Start ===");
+        
+        // Check references
+        if (regressionUI == null)
+            Debug.LogError("regressionUI is NULL! Please assign TrialRegressionUI in Inspector!");
+        else
+            Debug.Log("regressionUI assigned correctly");
+            
+        if (trialSystemManager == null)
+            Debug.LogWarning("trialSystemManager is NULL!");
+        else
+            Debug.Log("trialSystemManager assigned correctly");
+        
         InitializeTrialUI();
         SetupTrialButtons();
         
@@ -100,6 +113,11 @@ public class TrialUIController : MonoBehaviour
         {
             analyzeTrialsButton.onClick.RemoveAllListeners();
             analyzeTrialsButton.onClick.AddListener(AnalyzeTrialResults);
+            Debug.Log("Analyze button listener added successfully");
+        }
+        else
+        {
+            Debug.LogError("analyzeTrialsButton is NULL! Not assigned in Inspector!");
         }
         
        // Close button
@@ -335,6 +353,8 @@ public class TrialUIController : MonoBehaviour
    
     public void AnalyzeTrialResults()
     {
+        Debug.Log("=== ANALYZE TRIAL RESULTS BUTTON CLICKED ===");
+        
         // Close trial panel without showing main (regression panel will appear)
         CloseTrialControlPanel(false);
         
@@ -343,10 +363,16 @@ public class TrialUIController : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         
-        if (regressionAnalyzer != null)
-            regressionAnalyzer.CalculateAndShowRegression();
+        if (regressionUI != null)
+        {
+            Debug.Log("Calling regressionUI.CalculateAndShowRegression()...");
+            regressionUI.CalculateAndShowRegression();
+        }
         else
-            Debug.LogError("Regression analyzer not assigned in Inspector");
+        {
+            Debug.LogError("ERROR: regressionUI is NULL! Not assigned in Inspector!");
+            Debug.LogError("Please assign TrialRegressionUI in the Inspector for TrialUIController");
+        }
     }
     
    

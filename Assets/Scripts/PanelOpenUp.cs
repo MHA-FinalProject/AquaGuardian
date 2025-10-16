@@ -171,10 +171,10 @@ public partial class PanelOpenUp : MonoBehaviour
         }
 
         // Close any open regression panel (without opening trial panel)
-        var regressionAnalyzer = FindObjectOfType<TrialRegressionAnalyzer>();
-        if (regressionAnalyzer != null)
+        var regressionUI = FindObjectOfType<TrialRegressionUI>();
+        if (regressionUI != null)
         {
-            regressionAnalyzer.ForceCloseRegressionPanel();
+            regressionUI.ForceCloseRegressionPanel();
         }
 
         // Build caves using CaveBuilder

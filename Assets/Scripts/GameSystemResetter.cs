@@ -174,7 +174,7 @@ public class GameSystemResetter : MonoBehaviour
         {
             playerLife.StopAllCoroutines();
             playerLife.didntGetInputsYet = true;
-            playerLife.ResetBloodSplatter(); // ✅ Reset blood splatter for new trial
+            playerLife.ResetBloodSplatter(); // Reset blood splatter for new trial
         }
 
         if (health != null)
@@ -257,7 +257,7 @@ public class GameSystemResetter : MonoBehaviour
             if (playerLife != null) 
             {
                 playerLife.StopAllCoroutines();
-                playerLife.ResetBloodSplatter(); // ✅ Reset blood splatter between trials
+                playerLife.ResetBloodSplatter(); // Reset blood splatter between trials
             }
         }
         catch (System.Exception e)

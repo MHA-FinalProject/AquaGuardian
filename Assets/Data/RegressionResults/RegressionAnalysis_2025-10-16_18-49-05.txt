@@ -1,0 +1,81 @@
+=====================================
+REGRESSION ANALYSIS
+=====================================
+Generated: 2025-10-16 18:49:05
+Trials analyzed: 5
+=====================================
+
+REGRESSION ANALYSIS
+Trials:5 Avg:76.2% Perfect:0 Failed:0
+TOP CORRELATIONS:
++0.93 LifeTime
+-0.78 O2DropPerSec
++0.19 TimeBetweenCollides
+
+RECOMMENDATIONS:
+INCREASE LifeTime
+DECREASE O2DropPerSec
+
+
+=====================================
+RAW TRIAL DATA:
+
+Trial 1:
+  Speed: 15.00
+  VerticalSpeed: 30.00
+  IdleUpwardSpeed: 0.01
+  LifeTime: 2.00
+  O2DropPerSec: 2.00
+  CollisionDamage: 5.00
+  TimeBetweenCollides: 2.00
+  HealPoints: 10.00
+  FactorForce: 3.00
+  FinalO2: 80.0%
+
+Trial 2:
+  Speed: 12.00
+  VerticalSpeed: 30.00
+  IdleUpwardSpeed: 0.01
+  LifeTime: 1.00
+  O2DropPerSec: 2.00
+  CollisionDamage: 8.00
+  TimeBetweenCollides: 2.50
+  HealPoints: 8.00
+  FactorForce: 3.00
+  FinalO2: 58.0%
+
+Trial 3:
+  Speed: 22.00
+  VerticalSpeed: 30.00
+  IdleUpwardSpeed: 0.01
+  LifeTime: 1.00
+  O2DropPerSec: 3.00
+  CollisionDamage: 6.00
+  TimeBetweenCollides: 1.50
+  HealPoints: 5.00
+  FactorForce: 3.00
+  FinalO2: 60.0%
+
+Trial 4:
+  Speed: 18.00
+  VerticalSpeed: 30.00
+  IdleUpwardSpeed: 0.01
+  LifeTime: 2.00
+  O2DropPerSec: 1.00
+  CollisionDamage: 10.00
+  TimeBetweenCollides: 3.00
+  HealPoints: 7.00
+  FactorForce: 3.00
+  FinalO2: 97.0%
+
+Trial 5:
+  Speed: 14.00
+  VerticalSpeed: 30.00
+  IdleUpwardSpeed: 0.01
+  LifeTime: 2.00
+  O2DropPerSec: 2.00
+  CollisionDamage: 4.00
+  TimeBetweenCollides: 1.00
+  HealPoints: 6.00
+  FactorForce: 3.00
+  FinalO2: 86.0%

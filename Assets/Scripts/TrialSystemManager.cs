@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 /**
  * TrialSystemManager - Manages the trial system lifecycle
- * Handles trial flow: Start → Run → End → Continue → Complete
+ * Handles trial flow: Start - Run - End - Continue - Complete
  
  */
 public class TrialSystemManager : MonoBehaviour
@@ -156,9 +156,9 @@ public class TrialSystemManager : MonoBehaviour
         if (uiController != null)
             uiController.CloseTrialControlPanel(false);
         
-        var regressionAnalyzer = FindObjectOfType<TrialRegressionAnalyzer>();
-        if (regressionAnalyzer != null)
-            regressionAnalyzer.ForceCloseRegressionPanel();
+        var regressionUI = FindObjectOfType<TrialRegressionUI>();
+        if (regressionUI != null)
+            regressionUI.ForceCloseRegressionPanel();
 
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.None;
@@ -230,9 +230,9 @@ public class TrialSystemManager : MonoBehaviour
         if (uiController != null)
             uiController.CloseTrialControlPanel(false);
         
-        var regressionAnalyzer = FindObjectOfType<TrialRegressionAnalyzer>();
-        if (regressionAnalyzer != null)
-            regressionAnalyzer.ForceCloseRegressionPanel();
+        var regressionUI = FindObjectOfType<TrialRegressionUI>();
+        if (regressionUI != null)
+            regressionUI.ForceCloseRegressionPanel();
 
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.None;
