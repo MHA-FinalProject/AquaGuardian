@@ -17,7 +17,8 @@ public class TrialRegressionAlgorithm
     /// </summary>
     public class RegressionResult
     {
-        public string summaryText;
+        public string summaryText; // Short version for UI display
+        public string fullDetailsText; // Full version for file export
         public Dictionary<string, float> correlations;
         public float averageOxygen;
         public int perfectTrials;
@@ -29,6 +30,7 @@ public class TrialRegressionAlgorithm
     /// <summary>
     /// Load trial data from TrialDataCache (primary method)
     /// Falls back to CSV if cache is empty
+    /// Randomly selects 5 different trials instead of taking first 5
     /// </summary>
     public static List<TrialDataModels.TrialData> LoadTrialDataFromCache()
     {
@@ -63,13 +65,22 @@ public class TrialRegressionAlgorithm
             
             if (lines.Length <= 1) return trialDataList;
             
+            // Count available trials (lines with valid data)
+            int availableTrials = Mathf.Min(lines.Length - 1, latestOxygenValues.Count());
+            int trialsToSelect = Mathf.Min(5, availableTrials);
+            
+            // Select 5 random DIFFERENT trial indices
+            List<int> selectedIndices = SelectRandomIndices(availableTrials, trialsToSelect);
+            Debug.Log($"Randomly selected {trialsToSelect} trials: [{string.Join(", ", selectedIndices.Select(x => x + 1))}]");
+            
             // Load parameters from CSV but use CACHED oxygen values
-            for (int i = 1; i < lines.Length && i <= latestOxygenValues.Count(); i++)
+            foreach (int idx in selectedIndices)
             {
-                string[] fields = lines[i].Split(',');
+                int lineIndex = idx + 1; // +1 to skip header
+                string[] fields = lines[lineIndex].Split(',');
                 if (fields.Length < 10) continue;
                 
-                float cachedOxygen = latestOxygenValues[i - 1];
+                float cachedOxygen = latestOxygenValues[idx];
                 
                 var trialData = new TrialDataModels.TrialData
                 {
@@ -91,7 +102,7 @@ public class TrialRegressionAlgorithm
                 Debug.Log($"  Trial {trialData.trialId}: Oxygen={cachedOxygen:F1}% (from cache)");
             }
             
-            Debug.Log($"Loaded {trialDataList.Count} trials from cache");
+            Debug.Log($"Loaded {trialDataList.Count} random trials from cache");
             return trialDataList;
         }
         catch (System.Exception e)
@@ -104,6 +115,7 @@ public class TrialRegressionAlgorithm
     /// <summary>
     /// Load trial data directly from CSV (fallback method)
     /// Reads the last non-empty o2_runX column for each trial
+    /// Randomly selects 5 different trials instead of taking all
     /// </summary>
     public static List<TrialDataModels.TrialData> LoadTrialDataFromCSV()
     {
@@ -126,6 +138,9 @@ public class TrialRegressionAlgorithm
             
             if (lines.Length <= 1) return trialDataList;
             
+            // First pass: collect all valid trials
+            List<(int lineIndex, TrialDataModels.TrialData data)> allValidTrials = new List<(int, TrialDataModels.TrialData)>();
+            
             for (int i = 1; i < lines.Length; i++)
             {
                 string[] fields = lines[i].Split(',');
@@ -134,8 +149,8 @@ public class TrialRegressionAlgorithm
                 float finalOxygen = 0f;
                 bool foundValue = false;
                 
-                // Search backwards from last column (o2_run10) to first (o2_run1)
-                for (int col = 20; col >= 11; col--) // Columns 11-20 are o2_run1 to o2_run10
+                // Search backwards from last column (o2_run30) to first (o2_run1)
+                for (int col = Mathf.Min(40, fields.Length - 1); col >= 10; col--) // o2_run1 starts at column 10
                 {
                     if (col < fields.Length)
                     {
@@ -143,7 +158,6 @@ public class TrialRegressionAlgorithm
                         if (!string.IsNullOrEmpty(val) && float.TryParse(val, out finalOxygen))
                         {
                             foundValue = true;
-                            Debug.Log($"Trial {i}: Using column {col} (o2_run{col-10}) = {finalOxygen}%");
                             break; // Found the last non-empty value
                         }
                     }
@@ -167,10 +181,24 @@ public class TrialRegressionAlgorithm
                     completed = finalOxygen > 0
                 };
                 
-                trialDataList.Add(trialData);
+                allValidTrials.Add((i, trialData));
             }
             
-            Debug.Log($"Loaded {trialDataList.Count} trials from CSV");
+            // Second pass: randomly select 5 different trials
+            int availableTrials = allValidTrials.Count;
+            int trialsToSelect = Mathf.Min(5, availableTrials);
+            
+            List<int> selectedIndices = SelectRandomIndices(availableTrials, trialsToSelect);
+            Debug.Log($"Randomly selected {trialsToSelect} trials from CSV: [{string.Join(", ", selectedIndices.Select(i => allValidTrials[i].data.trialId))}]");
+            
+            foreach (int idx in selectedIndices)
+            {
+                var selectedTrial = allValidTrials[idx].data;
+                trialDataList.Add(selectedTrial);
+                Debug.Log($"  Trial {selectedTrial.trialId}: Oxygen={selectedTrial.finalOxygenRemaining:F1}%");
+            }
+            
+            Debug.Log($"Loaded {trialDataList.Count} random trials from CSV");
             return trialDataList;
         }
         catch (System.Exception e)
@@ -181,50 +209,64 @@ public class TrialRegressionAlgorithm
     }
     
     /// <summary>
-    /// Perform regression analysis on trial data
-    /// Returns formatted text results and correlation data
+    /// Select N random different indices from range [0, maxIndex)
+    /// Ensures no duplicates
+    /// </summary>
+    private static List<int> SelectRandomIndices(int maxIndex, int count)
+    {
+        if (count > maxIndex)
+            count = maxIndex;
+        
+        // Create list of all possible indices
+        List<int> allIndices = new List<int>();
+        for (int i = 0; i < maxIndex; i++)
+            allIndices.Add(i);
+        
+        // Shuffle using Fisher-Yates algorithm
+        System.Random rng = new System.Random();
+        for (int i = allIndices.Count - 1; i > 0; i--)
+        {
+            int j = rng.Next(0, i + 1);
+            int temp = allIndices[i];
+            allIndices[i] = allIndices[j];
+            allIndices[j] = temp;
+        }
+        
+        // Take first N indices (they're already shuffled)
+        List<int> selected = allIndices.Take(count).ToList();
+        selected.Sort(); // Sort for cleaner output
+        
+        return selected;
+    }
+    
+    /// <summary>
+    /// Perform ML regression analysis using Multiple Linear Regression
+    /// Returns formatted text results with predictions and model metrics
     /// </summary>
     public static RegressionResult PerformRegressionAnalysis(List<TrialDataModels.TrialData> allTrialData)
     {
-        if (allTrialData == null || allTrialData.Count == 0)
+        if (allTrialData == null || allTrialData.Count < 3)
         {
+            string errorMsg = $"ERROR: Need at least 3 trials for ML analysis\nFound: {allTrialData?.Count ?? 0} trials";
             return new RegressionResult
             {
-                summaryText = "ERROR: No trial data available",
+                summaryText = errorMsg,
+                fullDetailsText = errorMsg,
                 correlations = new Dictionary<string, float>(),
-                totalTrials = 0
+                totalTrials = allTrialData?.Count ?? 0
             };
         }
+        
+        Debug.Log("=== MULTIPLE LINEAR REGRESSION ANALYSIS ===");
         
         var result = new RegressionResult
         {
             correlations = new Dictionary<string, float>(),
-            analyzedTrials = new List<TrialDataModels.TrialData>(allTrialData)
+            analyzedTrials = new List<TrialDataModels.TrialData>(allTrialData),
+            totalTrials = allTrialData.Count
         };
         
-        // Calculate correlations
-        float[] outputs = allTrialData.Select(t => t.finalOxygenRemaining).ToArray();
-        
-        result.correlations["Speed"] = CalculateCorrelation(
-            allTrialData.Select(t => t.speed).ToArray(), outputs);
-        result.correlations["VerticalSpeed"] = CalculateCorrelation(
-            allTrialData.Select(t => t.verticalSpeed).ToArray(), outputs);
-        result.correlations["IdleUpwardSpeed"] = CalculateCorrelation(
-            allTrialData.Select(t => t.idleUpwardSpeed).ToArray(), outputs);
-        result.correlations["LifeTime"] = CalculateCorrelation(
-            allTrialData.Select(t => t.lifeTime).ToArray(), outputs);
-        result.correlations["O2DropPerSec"] = CalculateCorrelation(
-            allTrialData.Select(t => t.downHealthPairSec).ToArray(), outputs);
-        result.correlations["CollisionDamage"] = CalculateCorrelation(
-            allTrialData.Select(t => t.removeHealthWithCollide).ToArray(), outputs);
-        result.correlations["TimeBetweenCollides"] = CalculateCorrelation(
-            allTrialData.Select(t => t.timeBetweenCollides).ToArray(), outputs);
-        result.correlations["HealPoints"] = CalculateCorrelation(
-            allTrialData.Select(t => t.healHealthPoint).ToArray(), outputs);
-        result.correlations["FactorForce"] = CalculateCorrelation(
-            allTrialData.Select(t => t.factorForce).ToArray(), outputs);
-        
-        // Calculate statistics
+        // Calculate basic statistics
         float totalOxygen = 0f;
         int perfectTrials = 0;
         int failedTrials = 0;
@@ -232,52 +274,198 @@ public class TrialRegressionAlgorithm
         foreach (var trial in allTrialData)
         {
             totalOxygen += trial.finalOxygenRemaining;
-            if (trial.finalOxygenRemaining <= 5f && trial.finalOxygenRemaining > 0f)
+            // Perfect = within ±2.5% of target (5% ± 2.5% = 2.5% - 7.5%)
+            if (trial.finalOxygenRemaining >= 2.5f && trial.finalOxygenRemaining <= 7.5f)
                 perfectTrials++;
             if (trial.finalOxygenRemaining <= 0f)
                 failedTrials++;
         }
         
-        result.totalTrials = allTrialData.Count;
         result.averageOxygen = totalOxygen / allTrialData.Count;
         result.perfectTrials = perfectTrials;
         result.failedTrials = failedTrials;
         
-        // Generate summary text
-        string summaryText = "REGRESSION ANALYSIS\n";
-        summaryText += $"Trials:{result.totalTrials} Avg:{result.averageOxygen:F1}% Perfect:{perfectTrials} Failed:{failedTrials}\n";
-        summaryText += "TOP CORRELATIONS:\n";
+        // Create and train ML predictor
+        var predictor = new OxygenPredictor();
+        predictor.topKFeatures = 4; // Use top 4 features for small datasets
+        bool trained = predictor.TrainModel(allTrialData, enableFeatureSelection: true);
         
-        var top3 = result.correlations.OrderByDescending(x => Mathf.Abs(x.Value)).Take(3);
-        foreach (var corr in top3)
+        if (!trained)
         {
-            string sign = corr.Value > 0 ? "+" : "";
-            summaryText += $"{sign}{corr.Value:F2} {corr.Key}\n";
+            string errorMsg = "ERROR: Failed to train ML model\nNot enough variance in data";
+            result.summaryText = errorMsg;
+            result.fullDetailsText = errorMsg;
+            return result;
         }
         
-        summaryText += "\nRECOMMENDATIONS:\n";
+        // Get model (trained by predictor)
+        var model = predictor.GetModel();
         
-        var mostPositive = result.correlations.OrderByDescending(x => x.Value).First();
-        var mostNegative = result.correlations.OrderBy(x => x.Value).First();
+        // Perform K-Fold CV for validation
+        var (X, y) = BuildFeatureMatrix(allTrialData);
+        int kFolds = Mathf.Min(5, Mathf.Max(2, allTrialData.Count));
+        var (cvRmse, cvMae, cvR2) = model.KFoldCV(X, y, kFolds);
         
-        if (Mathf.Abs(mostPositive.Value) > 0.3f)
+        // Interpret R2
+        string quality = cvR2 > 0.7f ? "Excellent!" :
+                        cvR2 > 0.5f ? "Good" :
+                        cvR2 > 0.3f ? "Fair" : "Poor";
+        
+        // Find optimal parameters first (for both UI and file)
+        var optimal = predictor.FindOptimalParameters(targetOxygen: 5.0f);
+        
+        // Generate SHORT summary for UI display
+        string summaryText = "=== REGRESSION ANALYSIS COMPLETE ===\n";
+        summaryText += $"Trials Analyzed: {result.totalTrials}\n";
+        summaryText += $"Average Oxygen: {result.averageOxygen:F1}%\n";
+        summaryText += $"Perfect Trials (2.5-7.5%): {perfectTrials}\n";
+        summaryText += $"Failed Trials (0%): {failedTrials}\n";
+        summaryText += $"Model Quality : {cvR2:F3} ({quality})\n\n";
+        
+        // Prediction errors (compact format)
+        summaryText += "=== PREDICTION ACCURACY ===\n";
+        float totalError = 0f;
+        for (int i = 0; i < allTrialData.Count; i++)
         {
-            summaryText += $"INCREASE {mostPositive.Key}\n";
+            float actual = allTrialData[i].finalOxygenRemaining;
+            float predicted = predictor.PredictOxygen(allTrialData[i]);
+            float error = Mathf.Abs(actual - predicted);
+            totalError += error;
+            
+            summaryText += $"Trial {allTrialData[i].trialId}: Actual={actual:F1}%, Predicted={predicted:F1}% -> Error={error:F1}%\n";
         }
-        if (Mathf.Abs(mostNegative.Value) > 0.3f)
+        float avgError = totalError / allTrialData.Count;
+        summaryText += $"Average Error = {avgError:F2}%\n";
+        
+        if (optimal != null)
         {
-            summaryText += $"DECREASE {mostNegative.Key}\n";
+            float predictedOptimal = predictor.PredictOxygen(optimal);
+            summaryText += "=== RECOMMENDED PARAMETERS ===\n";
+            summaryText += $"Target: 5.0% -> Predicted: {predictedOptimal:F1}%\n";
+            summaryText += $"Speed: {optimal.speed:F2}\n";
+            summaryText += $"Vertical Speed: {optimal.verticalSpeed:F2}\n";
+            summaryText += $"Idle Upward Speed: {optimal.idleUpwardSpeed:F3}\n";
+            summaryText += $"Life Time: {optimal.lifeTime:F2}\n";
+            summaryText += $"O2 Drop/sec: {optimal.downHealthPairSec:F2}\n";
+            summaryText += $"Collision Damage: {optimal.removeHealthWithCollide:F2}\n";
+            summaryText += $"Time Between Collides: {optimal.timeBetweenCollides:F2}\n";
+            summaryText += $"Heal Points: {optimal.healHealthPoint:F2}\n";
         }
         
-        result.summaryText = summaryText;
+        summaryText += "Full details saved to:\n";
+        summaryText += "Assets/Data/RegressionResults/\n";
+        summaryText += "RegressionAnalysis_[timestamp].txt\n";
+        
+        // Generate FULL detailed text for file export
+        string fullDetailsText = "=== MULTIPLE LINEAR REGRESSION (Ridge) ===\n\n";
+        fullDetailsText += $"Trials Analyzed: {result.totalTrials}\n";
+        fullDetailsText += $"Average Oxygen: {result.averageOxygen:F1}%\n";
+        fullDetailsText += $"Perfect Trials (2.5-7.5%): {perfectTrials}\n";
+        fullDetailsText += $"Failed Trials (0%): {failedTrials}\n\n";
+        
+        // K-Fold CV results
+        fullDetailsText += "=== MODEL VALIDATION (K-Fold CV) ===\n";
+        fullDetailsText += $"Folds: {kFolds}\n";
+        fullDetailsText += $"Cross-Val RMSE: {cvRmse:F2}%\n";
+        fullDetailsText += $"Cross-Val MAE: {cvMae:F2}%\n";
+        fullDetailsText += $"Cross-Val R2: {cvR2:F3}\n";
+        fullDetailsText += $"Model Quality: {quality}\n\n";
+        
+        fullDetailsText += "=== MODEL PREDICTIONS ===\n";
+        fullDetailsText += "(Actual vs Predicted Oxygen)\n\n";
+        
+        for (int i = 0; i < allTrialData.Count; i++)
+        {
+            float actual = allTrialData[i].finalOxygenRemaining;
+            float predicted = predictor.PredictOxygen(allTrialData[i]);
+            float error = Mathf.Abs(actual - predicted);
+            
+            fullDetailsText += $"Trial {allTrialData[i].trialId}:\n";
+            fullDetailsText += $"  Actual: {actual:F1}%  Predicted: {predicted:F1}%\n";
+            fullDetailsText += $"  Error: {error:F1}%\n\n";
+        }
+        
+        fullDetailsText += $"Average Prediction Error: {avgError:F2}%\n\n";
+        
+        // Feature importance
+        fullDetailsText += "=== FEATURE IMPORTANCE ===\n";
+        fullDetailsText += "(Impact on oxygen level)\n\n";
+        
+        var importance = predictor.GetFeatureImportance();
+        foreach (var (feature, value) in importance.Take(5))
+        {
+            string bar = new string('█', Mathf.RoundToInt(value * 20));
+            fullDetailsText += $"{feature}:\n  {value:F4} {bar}\n";
+            
+            // Store in correlations dict for compatibility
+            result.correlations[feature] = value;
+        }
+        
+        fullDetailsText += "\n=== OPTIMAL PARAMETERS ===\n";
+        fullDetailsText += "Target: 5.0% oxygen remaining\n\n";
+        
+        // Use optimal parameters calculated earlier
+        if (optimal != null)
+        {
+            float predictedOptimal = predictor.PredictOxygen(optimal);
+            
+            fullDetailsText += $"Predicted Oxygen: {predictedOptimal:F2}%\n\n";
+            fullDetailsText += "Recommended Parameters:\n";
+            fullDetailsText += $"  Speed: {optimal.speed:F2}\n";
+            fullDetailsText += $"  Vertical Speed: {optimal.verticalSpeed:F2}\n";
+            fullDetailsText += $"  Idle Upward Speed: {optimal.idleUpwardSpeed:F3}\n";
+            fullDetailsText += $"  Life Time: {optimal.lifeTime:F2}\n";
+            fullDetailsText += $"  O2 Drop/sec: {optimal.downHealthPairSec:F2}\n";
+            fullDetailsText += $"  Collision Damage: {optimal.removeHealthWithCollide:F2}\n";
+            fullDetailsText += $"  Time Between Collides: {optimal.timeBetweenCollides:F2}\n";
+            fullDetailsText += $"  Heal Points: {optimal.healHealthPoint:F2}\n";
+        }
+        else
+        {
+            fullDetailsText += "Could not find optimal parameters\n";
+        }
+        
+        result.summaryText = summaryText; // SHORT version for UI
+        result.fullDetailsText = fullDetailsText; // FULL version for file
         
         Debug.Log(summaryText);
         return result;
     }
     
     /// <summary>
+    /// Build feature matrix and target vector from trial data
+    /// </summary>
+    private static (float[][], float[]) BuildFeatureMatrix(List<TrialDataModels.TrialData> trials)
+    {
+        int n = trials.Count;
+        int k = 8; // 8 features
+        
+        float[][] X = new float[n][];
+        float[] y = new float[n];
+        
+        for (int i = 0; i < n; i++)
+        {
+            X[i] = new float[k];
+            X[i][0] = trials[i].speed;
+            X[i][1] = trials[i].verticalSpeed;
+            X[i][2] = trials[i].idleUpwardSpeed;
+            X[i][3] = trials[i].lifeTime;
+            X[i][4] = trials[i].downHealthPairSec;
+            X[i][5] = trials[i].removeHealthWithCollide;
+            X[i][6] = trials[i].timeBetweenCollides;
+            X[i][7] = trials[i].healHealthPoint;
+            
+            y[i] = trials[i].finalOxygenRemaining;
+        }
+        
+        return (X, y);
+    }
+    
+    /// <summary>
     /// Calculate Pearson correlation coefficient between two arrays
     /// Returns value between -1 (negative correlation) and +1 (positive correlation)
+    /// NOTE: This function is no longer used in main regression analysis
+    /// The ML model (Multiple Linear Regression) is used instead
     /// </summary>
     public static float CalculateCorrelation(float[] x, float[] y)
     {
@@ -308,7 +496,7 @@ public class TrialRegressionAlgorithm
     /// </summary>
     public static bool SaveRegressionResultsToFile(RegressionResult result, string saveFolder = "RegressionResults")
     {
-        if (result == null || string.IsNullOrEmpty(result.summaryText))
+        if (result == null || string.IsNullOrEmpty(result.fullDetailsText))
         {
             Debug.LogWarning("No results to save!");
             return false;
@@ -327,12 +515,12 @@ public class TrialRegressionAlgorithm
             string fullPath = Path.Combine(savePath, fileName);
             
             string fileContent = "=====================================\n";
-            fileContent += "REGRESSION ANALYSIS\n";
+            fileContent += "REGRESSION ANALYSIS - FULL REPORT\n";
             fileContent += "=====================================\n";
             fileContent += $"Generated: {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}\n";
             fileContent += $"Trials analyzed: {result.totalTrials}\n";
             fileContent += "=====================================\n\n";
-            fileContent += result.summaryText;
+            fileContent += result.fullDetailsText;
             fileContent += "\n\n=====================================\n";
             fileContent += "RAW TRIAL DATA:\n";
             
@@ -368,7 +556,7 @@ public class TrialRegressionAlgorithm
     /// </summary>
     public static TrialDataModels.TrialData PredictOptimalParameters(
         List<TrialDataModels.TrialData> trials,
-        float targetOxygen = 2.5f)
+        float targetOxygen = 5.0f)
     {
         if (trials == null || trials.Count < 3)
         {

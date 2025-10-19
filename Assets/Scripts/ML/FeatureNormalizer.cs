@@ -1,18 +1,18 @@
 using UnityEngine;
-using System.Linq;
 
 /// <summary>
 /// Normalize features for better regression performance
 /// Stores normalization parameters for inverse transform
+/// Uses sample standard deviation (n-1) for better estimation with small datasets
 /// </summary>
 public class FeatureNormalizer
 {
     public float[] means;
     public float[] stdDevs;
     public int numFeatures;
-    
+
     /// <summary>
-    /// Fit normalizer to data (calculate mean and std for each feature)
+    /// Fit normalizer to data (calculate mean and sample std for each feature)
     /// </summary>
     public void Fit(float[][] X)
     {
@@ -21,46 +21,51 @@ public class FeatureNormalizer
             Debug.LogError("Cannot fit normalizer on empty data");
             return;
         }
-        
+
         int m = X.Length;
         numFeatures = X[0].Length;
-        
+
         means = new float[numFeatures];
         stdDevs = new float[numFeatures];
-        
+
         // Calculate mean for each feature
         for (int j = 0; j < numFeatures; j++)
         {
-            float sum = 0f;
+            double sum = 0.0;
             for (int i = 0; i < m; i++)
             {
                 sum += X[i][j];
             }
-            means[j] = sum / m;
+            means[j] = (float)(sum / m);
         }
-        
-        // Calculate standard deviation for each feature
+
+        // Calculate sample standard deviation (n-1) for each feature
         for (int j = 0; j < numFeatures; j++)
         {
-            float sumSquares = 0f;
+            double sumSquares = 0.0;
             for (int i = 0; i < m; i++)
             {
-                float diff = X[i][j] - means[j];
+                double diff = X[i][j] - means[j];
                 sumSquares += diff * diff;
             }
-            stdDevs[j] = Mathf.Sqrt(sumSquares / m);
+            
+            // Use sample std (n-1) for better estimation with small datasets
+            double denom = Mathf.Max(1, m - 1);
+            double sd = System.Math.Sqrt(sumSquares / denom);
             
             // Avoid division by zero
-            if (stdDevs[j] < 1e-10f)
+            if (sd < 1e-10)
             {
-                stdDevs[j] = 1f;
-                Debug.LogWarning($"Feature {j} has zero variance, using stdDev=1");
+                sd = 1.0;
+                Debug.LogWarning($"Feature {j} has ~zero variance, using stdDev=1");
             }
+            
+            stdDevs[j] = (float)sd;
         }
-        
-        Debug.Log($"Normalizer fitted: {numFeatures} features");
+
+        Debug.Log($"Normalizer fitted: {numFeatures} features (sample std, n-1)");
     }
-    
+
     /// <summary>
     /// Normalize data: Z = (X - mean) / std
     /// </summary>
@@ -72,29 +77,29 @@ public class FeatureNormalizer
             Debug.LogError("Normalizer not fitted! Call Fit() first.");
             return X;
         }
-        
+
         int m = X.Length;
         int n = X[0].Length;
-        
+
         if (n != numFeatures)
         {
             Debug.LogError($"Feature count mismatch: expected {numFeatures}, got {n}");
             return X;
         }
-        
-        float[][] normalized = new float[m][];
+
+        var Z = new float[m][];
         for (int i = 0; i < m; i++)
         {
-            normalized[i] = new float[n];
+            Z[i] = new float[n];
             for (int j = 0; j < n; j++)
             {
-                normalized[i][j] = (X[i][j] - means[j]) / stdDevs[j];
+                Z[i][j] = (X[i][j] - means[j]) / stdDevs[j];
             }
         }
-        
-        return normalized;
+
+        return Z;
     }
-    
+
     /// <summary>
     /// Normalize single sample
     /// </summary>
@@ -106,22 +111,22 @@ public class FeatureNormalizer
             Debug.LogError("Normalizer not fitted! Call Fit() first.");
             return x;
         }
-        
+
         if (x.Length != numFeatures)
         {
             Debug.LogError($"Feature count mismatch: expected {numFeatures}, got {x.Length}");
             return x;
         }
-        
-        float[] normalized = new float[x.Length];
+
+        var z = new float[x.Length];
         for (int i = 0; i < x.Length; i++)
         {
-            normalized[i] = (x[i] - means[i]) / stdDevs[i];
+            z[i] = (x[i] - means[i]) / stdDevs[i];
         }
-        
-        return normalized;
+
+        return z;
     }
-    
+
     /// <summary>
     /// Denormalize data: X = Z * std + mean
     /// </summary>
@@ -133,23 +138,23 @@ public class FeatureNormalizer
             Debug.LogError("Normalizer not fitted!");
             return Z;
         }
-        
+
         int m = Z.Length;
         int n = Z[0].Length;
-        
-        float[][] denormalized = new float[m][];
+
+        var X = new float[m][];
         for (int i = 0; i < m; i++)
         {
-            denormalized[i] = new float[n];
+            X[i] = new float[n];
             for (int j = 0; j < n; j++)
             {
-                denormalized[i][j] = Z[i][j] * stdDevs[j] + means[j];
+                X[i][j] = Z[i][j] * stdDevs[j] + means[j];
             }
         }
-        
-        return denormalized;
+
+        return X;
     }
-    
+
     /// <summary>
     /// Denormalize single sample
     /// </summary>
@@ -161,16 +166,16 @@ public class FeatureNormalizer
             Debug.LogError("Normalizer not fitted!");
             return z;
         }
-        
-        float[] denormalized = new float[z.Length];
+
+        var x = new float[z.Length];
         for (int i = 0; i < z.Length; i++)
         {
-            denormalized[i] = z[i] * stdDevs[i] + means[i];
+            x[i] = z[i] * stdDevs[i] + means[i];
         }
-        
-        return denormalized;
+
+        return x;
     }
-    
+
     /// <summary>
     /// Fit and transform in one step
     /// </summary>
@@ -180,4 +185,3 @@ public class FeatureNormalizer
         return Transform(X);
     }
 }
-

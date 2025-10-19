@@ -1,0 +1,72 @@
+=====================================
+REGRESSION ANALYSIS - FULL REPORT
+=====================================
+Generated: 2025-10-19 17:32:07
+Trials analyzed: 5
+=====================================
+
+ERROR: Failed to train ML model
+Not enough variance in data
+
+=====================================
+RAW TRIAL DATA:
+
+Trial 1:
+  Speed: 15.00
+  VerticalSpeed: 30.00
+  IdleUpwardSpeed: 0.01
+  LifeTime: 2.00
+  O2DropPerSec: 2.00
+  CollisionDamage: 5.00
+  TimeBetweenCollides: 2.00
+  HealPoints: 10.00
+  FactorForce: 3.00
+  FinalO2: 78.0%
+
+Trial 2:
+  Speed: 12.00
+  VerticalSpeed: 35.00
+  IdleUpwardSpeed: 0.02
+  LifeTime: 1.50
+  O2DropPerSec: 2.50
+  CollisionDamage: 8.00
+  TimeBetweenCollides: 1.00
+  HealPoints: 8.00
+  FactorForce: 2.50
+  FinalO2: 48.0%
+
+Trial 3:
+  Speed: 22.00
+  VerticalSpeed: 28.00
+  IdleUpwardSpeed: 0.03
+  LifeTime: 1.00
+  O2DropPerSec: 3.00
+  CollisionDamage: 9.00
+  TimeBetweenCollides: 1.50
+  HealPoints: 4.00
+  FactorForce: 3.50
+  FinalO2: 60.0%
+
+Trial 4:
+  Speed: 18.00
+  VerticalSpeed: 38.00
+  IdleUpwardSpeed: 0.04
+  LifeTime: 0.50
+  O2DropPerSec: 1.00
+  CollisionDamage: 10.00
+  TimeBetweenCollides: 0.80
+  HealPoints: 7.00
+  FactorForce: 4.00
+  FinalO2: 78.0%
+
+Trial 5:
+  Speed: 14.00
+  VerticalSpeed: 40.00
+  IdleUpwardSpeed: 0.10
+  LifeTime: 1.20
+  O2DropPerSec: 2.00
+  CollisionDamage: 12.00
+  TimeBetweenCollides: 1.20
+  HealPoints: 6.00
+  FactorForce: 4.50
+  FinalO2: 76.0%

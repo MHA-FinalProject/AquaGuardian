@@ -1,0 +1,6 @@
+trialId,speed,verticalSpeed,idleUpwardSpeed,lifeTime,downHealthPairSec,removeHealthWithCollide,timeBetweenCollides,healHealthPoint,factorForce,o2_run1
+0,6.0,10.0,0.3,90.0,1.8,20.0,0.8,3.0,2.0,
+1,7.0,12.0,0.4,95.0,1.5,18.0,0.9,3.5,2.0,
+2,8.0,14.0,0.5,100.0,1.3,16.0,1.0,4.0,2.0,
+3,9.0,16.0,0.6,105.0,1.1,14.0,1.1,4.5,2.0,
+4,10.0,18.0,0.7,110.0,0.9,12.0,1.2,5.0,2.0,

@@ -61,5 +61,6 @@ public class GoToEndGame : MonoBehaviour
         GameStateManager.NotifyGameEnded(finalOxygen, true);
         yield return new WaitForEndOfFrame();
         SceneManager.LoadScene(sceneName);
+        
     }
 }

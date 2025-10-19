@@ -1,0 +1,136 @@
+=====================================
+REGRESSION ANALYSIS - FULL REPORT
+=====================================
+Generated: 2025-10-19 18:05:43
+Trials analyzed: 5
+=====================================
+
+=== MULTIPLE LINEAR REGRESSION (Ridge) ===
+
+Trials Analyzed: 5
+Average Oxygen: 66.7%
+Perfect Trials (0-5%): 0
+Failed Trials (0%): 0
+
+=== MODEL VALIDATION (K-Fold CV) ===
+Folds: 5
+Cross-Val RMSE: NaN%
+Cross-Val MAE: NaN%
+Cross-Val R²: NaN
+Model Quality: Poor
+
+=== MODEL PREDICTIONS ===
+(Actual vs Predicted Oxygen)
+
+Trial 1:
+  Actual: 85.0%  Predicted: 83.6%
+  Error: 1.4%
+
+Trial 2:
+  Actual: 62.5%  Predicted: 64.0%
+  Error: 1.5%
+
+Trial 3:
+  Actual: 50.0%  Predicted: 50.8%
+  Error: 0.8%
+
+Trial 4:
+  Actual: 76.0%  Predicted: 74.5%
+  Error: 1.5%
+
+Trial 5:
+  Actual: 60.0%  Predicted: 60.6%
+  Error: 0.6%
+
+Average Prediction Error: 1.17%
+
+=== FEATURE IMPORTANCE ===
+(Impact on oxygen level)
+
+downHealthPairSec:
+  8.1851 ████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+healHealthPoint:
+  5.0780 ██████████████████████████████████████████████████████████████████████████████████████████████████████
+removeHealthWithCollide:
+  3.5174 ██████████████████████████████████████████████████████████████████████
+timeBetweenCollides:
+  2.5506 ███████████████████████████████████████████████████
+
+=== OPTIMAL PARAMETERS ===
+Target: 2.5% oxygen remaining
+
+Predicted Oxygen: 59.54%
+
+Recommended Parameters:
+  Speed: 17.50
+  Vertical Speed: 27.50
+  Idle Upward Speed: 1.250
+  Life Time: 1.90
+  O2 Drop/sec: 2.00
+  Collision Damage: 15.00
+  Time Between Collides: 3.00
+  Heal Points: 3.00
+
+
+=====================================
+RAW TRIAL DATA:
+
+Trial 1:
+  Speed: 15.00
+  VerticalSpeed: 30.00
+  IdleUpwardSpeed: 0.01
+  LifeTime: 2.00
+  O2DropPerSec: 2.00
+  CollisionDamage: 5.00
+  TimeBetweenCollides: 2.00
+  HealPoints: 10.00
+  FactorForce: 3.00
+  FinalO2: 85.0%
+
+Trial 2:
+  Speed: 12.00
+  VerticalSpeed: 35.00
+  IdleUpwardSpeed: 0.02
+  LifeTime: 1.50
+  O2DropPerSec: 2.50
+  CollisionDamage: 8.00
+  TimeBetweenCollides: 1.00
+  HealPoints: 8.00
+  FactorForce: 2.50
+  FinalO2: 62.5%
+
+Trial 3:
+  Speed: 22.00
+  VerticalSpeed: 28.00
+  IdleUpwardSpeed: 0.03
+  LifeTime: 1.00
+  O2DropPerSec: 3.00
+  CollisionDamage: 9.00
+  TimeBetweenCollides: 1.50
+  HealPoints: 4.00
+  FactorForce: 3.50
+  FinalO2: 50.0%
+
+Trial 4:
+  Speed: 18.00
+  VerticalSpeed: 38.00
+  IdleUpwardSpeed: 0.04
+  LifeTime: 0.50
+  O2DropPerSec: 1.00
+  CollisionDamage: 10.00
+  TimeBetweenCollides: 0.80
+  HealPoints: 7.00
+  FactorForce: 4.00
+  FinalO2: 76.0%
+
+Trial 5:
+  Speed: 14.00
+  VerticalSpeed: 40.00
+  IdleUpwardSpeed: 0.10
+  LifeTime: 1.20
+  O2DropPerSec: 2.00
+  CollisionDamage: 12.00
+  TimeBetweenCollides: 1.20
+  HealPoints: 6.00
+  FactorForce: 4.50
+  FinalO2: 60.0%
