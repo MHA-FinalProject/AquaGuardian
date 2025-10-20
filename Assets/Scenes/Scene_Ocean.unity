@@ -210698,16 +210698,16 @@ MonoBehaviour:
   playerMovement: {fileID: 2141276940}
   playerLife: {fileID: 2141276941}
   health: {fileID: 1280722523}
-  trialParametersPath: Data/Trial_5_runs_.csv
+  trialParametersPath: Data/Trials/Trial_5_runs_.csv
   trialParametersFile: {fileID: 4900000, guid: 380d0eb98333b734ea31e0b100175d78, type: 3}
   parameterRanges:
     speedRange: {x: 10, y: 25}
     verticalSpeedRange: {x: 15, y: 40}
     idleUpwardSpeedRange: {x: 0.5, y: 2}
-    oxygenHealRange: {x: 3, y: 15}
+    healHealthPointRange: {x: 3, y: 15}
     timeBetweenCollidesRange: {x: 1, y: 5}
-    collisionDamageRange: {x: 5, y: 15}
-    oxygenDropPerSecRange: {x: 0.5, y: 2}
+    removeHealthWithCollideRange: {x: 5, y: 15}
+    downHealthPairSecRange: {x: 0.5, y: 3.5}
     lifeTimeRange: {x: 0.8, y: 3}
 --- !u!4 &1181505043
 Transform:

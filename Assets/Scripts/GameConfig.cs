@@ -37,7 +37,7 @@ public class GameConfig : ScriptableObject
     [Header("Trial System Config")]
     [Tooltip("Number of trials to run in trial mode")] public int totalTrials = 5;
     [Tooltip("If true, use random parameters instead of CSV")] public bool useRandomParameters = false;
-    [Tooltip("Relative path under Assets/ to Trial parameters CSV")] public string trialParametersPath = "Data/Trial_5_runs_.csv";
+    [Tooltip("Relative path under Assets/ to Trial parameters CSV")] public string trialParametersPath = "Data/Trials/Trial_5_runs_.csv";
     [Tooltip("Load caves per trial via path pattern (e.g. Data/Cave_{n}.csv)")] public bool useCaveFilePathPattern = true;
     [Tooltip("Relative path pattern under Assets/ for caves per trial")] public string caveFilePathPattern = "Data/caves{n}.csv";
 

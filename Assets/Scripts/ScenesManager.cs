@@ -27,12 +27,10 @@ public class ScenesManager : MonoBehaviour
         SceneManager.LoadScene("how_to_play");
     }
     
-    /// <summary>
-    /// Restart the current scene with full reset
-    /// </summary>
+  
     public void RestartGame()
     {
-        Debug.Log("=== RESTARTING GAME ===");
+       
         
         // Reset game state
         ResetGameState();
@@ -47,9 +45,7 @@ public class ScenesManager : MonoBehaviour
         Debug.Log($"Restarted scene: {currentScene}");
     }
     
-    /// <summary>
-    /// Reset GameStateManager and other persistent systems
-    /// </summary>
+    
     private void ResetGameState()
     {
         // Reset GameStateManager

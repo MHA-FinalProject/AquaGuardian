@@ -61,17 +61,14 @@ public class TrialDataCache : MonoBehaviour
             // Save previous run to history if it had data
             if (currentRunOxygenValues.Count > 0)
             {
+                // CRITICAL: Always save exactly 5 values to maintain index alignment
                 var runData = new List<float>();
                 for (int i = 1; i <= 5; i++)
                 {
-                    if (currentRunOxygenValues.ContainsKey(i))
-                        runData.Add(currentRunOxygenValues[i]);
+                    runData.Add(currentRunOxygenValues.ContainsKey(i) ? currentRunOxygenValues[i] : 0f);
                 }
-                if (runData.Count > 0)
-                {
-                    allRunsHistory.Add(runData);
-                    Debug.Log($" Saved Run {allRunsHistory.Count} to history: {string.Join(", ", runData.Select(v => v.ToString("F1")))}");
-                }
+                allRunsHistory.Add(runData);
+                Debug.Log($" Saved Run {allRunsHistory.Count} to history: {string.Join(", ", runData.Select(v => v.ToString("F1")))}");
             }
             
             // Clear for new run
@@ -87,25 +84,23 @@ public class TrialDataCache : MonoBehaviour
         // If this is trial 5, finalize the run
         if (trialId == 5)
         {
+            // CRITICAL: Always save exactly 5 values to maintain index alignment
             var runData = new List<float>();
             for (int i = 1; i <= 5; i++)
             {
-                if (currentRunOxygenValues.ContainsKey(i))
-                    runData.Add(currentRunOxygenValues[i]);
+                runData.Add(currentRunOxygenValues.ContainsKey(i) ? currentRunOxygenValues[i] : 0f);
             }
             
-            if (runData.Count > 0)
-            {
-                allRunsHistory.Add(runData);
-               
-                Debug.Log($"    Values: {string.Join(", ", runData.Select(v => v.ToString("F1") + "%"))}");
-                Debug.Log($"    Average: {runData.Average():F1}%");
-            }
+            allRunsHistory.Add(runData);
+           
+            Debug.Log($"    Values: {string.Join(", ", runData.Select(v => v.ToString("F1") + "%"))}");
+            Debug.Log($"    Average: {runData.Average():F1}%");
         }
     }
     
     /// <summary>
     /// Get the LATEST complete run's oxygen values (for regression)
+    /// Returns exactly 5 values (0 for missing trials to maintain index alignment)
     /// </summary>
     public List<float> GetLatestRunOxygenValues()
     {
@@ -115,11 +110,12 @@ public class TrialDataCache : MonoBehaviour
         }
         
         // If no complete run yet, return current run data (even if incomplete)
+        // CRITICAL: Always return 5 values to match trial IDs (1-5)
         var currentData = new List<float>();
         for (int i = 1; i <= 5; i++)
         {
-            if (currentRunOxygenValues.ContainsKey(i))
-                currentData.Add(currentRunOxygenValues[i]);
+            // Add 0 for missing trials to maintain index alignment
+            currentData.Add(currentRunOxygenValues.ContainsKey(i) ? currentRunOxygenValues[i] : 0f);
         }
         return currentData;
     }
@@ -175,17 +171,17 @@ public class TrialDataCache : MonoBehaviour
     [ContextMenu("Print Cache State")]
     public void PrintCacheState()
     {
-        Debug.Log("=== TRIAL DATA CACHE STATE ===");
+        
         Debug.Log($"Current Run: {currentRunNumber}");
         Debug.Log($"Total Complete Runs: {allRunsHistory.Count}");
         
-        Debug.Log("\nCurrent Run Data:");
+       
         foreach (var kvp in currentRunOxygenValues.OrderBy(x => x.Key))
         {
             Debug.Log($"  Trial {kvp.Key}: {kvp.Value:F1}%");
         }
         
-        Debug.Log("\nHistorical Runs:");
+       
         for (int i = 0; i < allRunsHistory.Count; i++)
         {
             var run = allRunsHistory[i];

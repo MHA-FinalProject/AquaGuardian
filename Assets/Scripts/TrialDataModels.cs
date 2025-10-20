@@ -1,11 +1,11 @@
 using UnityEngine;
 using System;
 
-/// <summary>
-/// Shared data models for trial system
-/// Centralized location for all trial-related data structures
-/// Extracted from PanelOpenUp.cs for better code organization and reusability
-/// </summary>
+
+/**  TrialDataModels
+  * This static class contains data models used in the trial system,
+  * including TrialData, CaveInfo, and ParameterRanges.
+  */
 public static class TrialDataModels
 {
    
@@ -45,14 +45,14 @@ public static class TrialDataModels
     {
         [Header("Movement Parameters")]
         public Vector2 speedRange = new Vector2(10f, 25f);
-        public Vector2 verticalSpeedRange = new Vector2(15f, 40f);
-        public Vector2 idleUpwardSpeedRange = new Vector2(0.5f, 2f);
+        public Vector2 verticalSpeedRange = new Vector2(15f, 45f);
+        public Vector2 idleUpwardSpeedRange = new Vector2(0.01f, 2f);
 
         [Header("Health Parameters")]
-        public Vector2 oxygenHealRange = new Vector2(3f, 15f);
+        public Vector2 healHealthPointRange = new Vector2(3f, 15f);
         public Vector2 timeBetweenCollidesRange = new Vector2(1f, 5f);
-        public Vector2 collisionDamageRange = new Vector2(5f, 15f);
-        public Vector2 oxygenDropPerSecRange = new Vector2(0.5f, 2f);
+        public Vector2 removeHealthWithCollideRange = new Vector2(5f, 15f);
+        public Vector2 downHealthPairSecRange = new Vector2(0.5f, 3.5f);
         public Vector2 lifeTimeRange = new Vector2(0.8f, 3f);
     }
 }

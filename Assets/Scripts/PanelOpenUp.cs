@@ -4,11 +4,15 @@ using TMPro;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-
+/**
+   * PanelOpenUp
+   * This class manages the opening and closing of the main panel,
+   * cave building, trial management, and interaction with other
+   * game systems such as AmadeoClient and TrialSystemManager.
+   */
 
 public partial class PanelOpenUp : MonoBehaviour
 {
-
 
     [Header("Amadeo Client and UI Components")]
     [SerializeField] private AmadeoClient _client;
@@ -44,8 +48,6 @@ public partial class PanelOpenUp : MonoBehaviour
 
     [Header("Cave Building")]
     [SerializeField] private CaveBuilder caveBuilder;
-
-
 
     // Cave info is now managed by CaveBuilder
     public List<TrialDataModels.CaveInfo> caveInfos => caveBuilder != null ? caveBuilder.CaveInfos : new List<TrialDataModels.CaveInfo>();
@@ -92,8 +94,6 @@ public partial class PanelOpenUp : MonoBehaviour
     {
         GameStateManager.OnGameEnded -= OnGameEnded;
     }
-
-
 
     private void AutoWireManagers()
     {
@@ -235,8 +235,6 @@ public partial class PanelOpenUp : MonoBehaviour
         }
     }
 
-
-
     private GameObject CreateEndObject(Vector3 position)
     {
         if (trialSystemManager != null)
@@ -307,8 +305,6 @@ public partial class PanelOpenUp : MonoBehaviour
             //Debug.Log($"Game ended (normal mode): oxygen={finalOxygen:F1}%, completed={completed}");
         }
     }
-
-    // ========== CAVE FILE MANAGEMENT FOR TRIALS ==========
 
     public void LoadCaveFileForTrial(int trialNumber)
     {

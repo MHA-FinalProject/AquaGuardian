@@ -7,7 +7,6 @@ using System.Collections.Generic;
 /**
  * TrialSystemManager - Manages the trial system lifecycle
  * Handles trial flow: Start - Run - End - Continue - Complete
- 
  */
 public class TrialSystemManager : MonoBehaviour
 {
@@ -58,10 +57,9 @@ public class TrialSystemManager : MonoBehaviour
             var gsm = FindObjectOfType<GameStateManager>();
             if (gsm == null)
             {
-                Debug.LogWarning("[TrialSystemManager] GameStateManager not found in scene. Creating one automatically...");
                 GameObject gsmObj = new GameObject("GameStateManager");
                 gsmObj.AddComponent<GameStateManager>();
-                Debug.Log("[TrialSystemManager] GameStateManager created successfully.");
+                
             }
         }
         

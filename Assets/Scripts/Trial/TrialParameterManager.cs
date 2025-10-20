@@ -16,7 +16,7 @@ public class TrialParameterManager : MonoBehaviour
     [SerializeField] private Health health;
     
     [Header("Parameter Settings")]
-    [SerializeField] private string trialParametersPath = "Data/Trial_5_runs_.csv";
+    [SerializeField] private string trialParametersPath = "Data/Trials/Trial_5_runs_.csv";
     [SerializeField] private TextAsset trialParametersFile;
     [SerializeField] private TrialDataModels.ParameterRanges parameterRanges = new TrialDataModels.ParameterRanges();
     
@@ -360,10 +360,10 @@ public class TrialParameterManager : MonoBehaviour
             speed = Random.Range(parameterRanges.speedRange.x, parameterRanges.speedRange.y),
             verticalSpeed = Random.Range(parameterRanges.verticalSpeedRange.x, parameterRanges.verticalSpeedRange.y),
             idleUpwardSpeed = Random.Range(parameterRanges.idleUpwardSpeedRange.x, parameterRanges.idleUpwardSpeedRange.y),
-            healHealthPoint = Random.Range(parameterRanges.oxygenHealRange.x, parameterRanges.oxygenHealRange.y),
+            healHealthPoint = Random.Range(parameterRanges.healHealthPointRange.x, parameterRanges.healHealthPointRange.y),
             timeBetweenCollides = Random.Range(parameterRanges.timeBetweenCollidesRange.x, parameterRanges.timeBetweenCollidesRange.y),
-            removeHealthWithCollide = Random.Range(parameterRanges.collisionDamageRange.x, parameterRanges.collisionDamageRange.y),
-            downHealthPairSec = Random.Range(parameterRanges.oxygenDropPerSecRange.x, parameterRanges.oxygenDropPerSecRange.y),
+            removeHealthWithCollide = Random.Range(parameterRanges.removeHealthWithCollideRange.x, parameterRanges.removeHealthWithCollideRange.y),
+            downHealthPairSec = Random.Range(parameterRanges.downHealthPairSecRange.x, parameterRanges.downHealthPairSecRange.y),
             lifeTime = Random.Range(parameterRanges.lifeTimeRange.x, parameterRanges.lifeTimeRange.y),
             factorForce = 3f
         };
@@ -435,7 +435,7 @@ public class TrialParameterManager : MonoBehaviour
     {
         try
         {
-            Debug.Log("=== UPDATING O2_WIDE_ALLSETS.CSV ===");
+           
             
             string csvPath = System.IO.Path.Combine(Application.dataPath, trialParametersPath);
             

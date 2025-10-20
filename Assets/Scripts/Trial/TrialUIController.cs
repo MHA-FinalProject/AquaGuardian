@@ -275,7 +275,7 @@ public class TrialUIController : MonoBehaviour
             string resultText;
             if (!completed)
             {
-                resultText = $"Trial {currentTrial}/{totalTrials} - Failed\nOxygen: {finalOxygen:F1}%";
+                resultText = $"Trial {currentTrial}/{totalTrials} - Try again\nOxygen: {finalOxygen:F1}%";
             }
             else
             {

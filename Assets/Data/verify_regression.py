@@ -31,7 +31,7 @@ FEATURE_NAMES = [
 # Ridge regularization strength (must match C# lambda)
 RIDGE_LAMBDA = 0.5
 
-def load_trial_data(csv_path='Trial_5_runs_.csv'):
+def load_trial_data(csv_path='Trials/Trial_5_runs_.csv'):
     """
     Load trial data from CSV
     Returns X (features), Y (oxygen), trial_params (full data)
@@ -61,7 +61,7 @@ def load_trial_data(csv_path='Trial_5_runs_.csv'):
             if pd.notna(val) and val != '':
                 try:
                     o2_values.append(float(val))
-                except:
+                except (ValueError, TypeError):
                     pass
         
         if o2_values:
@@ -239,7 +239,7 @@ def calculate_feature_importance(model, scaler=None):
         name = FEATURE_NAMES[idx]
         value = importance[idx]
         bar_length = int((value / max_importance) * 200) if max_importance > 0 else 0
-        bar = '█' * bar_length
+        bar = '#' * bar_length
         print(f"{name}:")
         print(f"  {value:.4f} {bar}")
     
@@ -273,9 +273,7 @@ def compare_with_csharp_results(regression_file='RegressionResults/RegressionAna
     """
     Load C# regression results and compare
     """
-    print(f"\n{'='*60}")
-    print(f"COMPARING WITH C# RESULTS")
-    print(f"{'='*60}")
+
     
     if not Path(regression_file).exists():
         print(f"C# results file not found: {regression_file}")
@@ -309,7 +307,7 @@ def main():
     
     # Change to Data directory
     script_dir = Path(__file__).parent
-    csv_path = script_dir / 'Trial_5_runs_.csv'
+    csv_path = script_dir / 'Trials' / 'Trial_5_runs_.csv'
     
     if not csv_path.exists():
         print(f"ERROR: {csv_path} not found!")

@@ -405,7 +405,7 @@ public class OxygenPredictor
         
         foreach (var (feature, value) in importance)
         {
-            string bar = new string('█', Mathf.RoundToInt(value * 10));
+            string bar = new string('#', Mathf.RoundToInt(value * 10));
             string marker = (useFeatureSelection && selectedFeatureNames != null && selectedFeatureNames.Contains(feature)) ? " [SELECTED]" : "";
             Debug.Log($"{feature,-25} {value:F4} {bar}{marker}");
         }
@@ -428,10 +428,10 @@ public class OxygenPredictor
             verticalSpeed = (ranges.verticalSpeedRange.x + ranges.verticalSpeedRange.y) / 2f,
             idleUpwardSpeed = (ranges.idleUpwardSpeedRange.x + ranges.idleUpwardSpeedRange.y) / 2f,
             lifeTime = (ranges.lifeTimeRange.x + ranges.lifeTimeRange.y) / 2f,
-            downHealthPairSec = (ranges.oxygenDropPerSecRange.x + ranges.oxygenDropPerSecRange.y) / 2f,
-            removeHealthWithCollide = (ranges.collisionDamageRange.x + ranges.collisionDamageRange.y) / 2f,
+            downHealthPairSec = (ranges.downHealthPairSecRange.x + ranges.downHealthPairSecRange.y) / 2f,
+            removeHealthWithCollide = (ranges.removeHealthWithCollideRange.x + ranges.removeHealthWithCollideRange.y) / 2f,
             timeBetweenCollides = (ranges.timeBetweenCollidesRange.x + ranges.timeBetweenCollidesRange.y) / 2f,
-            healHealthPoint = (ranges.oxygenHealRange.x + ranges.oxygenHealRange.y) / 2f
+            healHealthPoint = (ranges.healHealthPointRange.x + ranges.healHealthPointRange.y) / 2f
         };
         
         // Generate grid only for top 3 features
@@ -476,16 +476,16 @@ public class OxygenPredictor
                 data.lifeTime = Mathf.Lerp(ranges.lifeTimeRange.x, ranges.lifeTimeRange.y, t);
                 break;
             case "downHealthPairSec":
-                data.downHealthPairSec = Mathf.Lerp(ranges.oxygenDropPerSecRange.x, ranges.oxygenDropPerSecRange.y, t);
+                data.downHealthPairSec = Mathf.Lerp(ranges.downHealthPairSecRange.x, ranges.downHealthPairSecRange.y, t);
                 break;
             case "removeHealthWithCollide":
-                data.removeHealthWithCollide = Mathf.Lerp(ranges.collisionDamageRange.x, ranges.collisionDamageRange.y, t);
+                data.removeHealthWithCollide = Mathf.Lerp(ranges.removeHealthWithCollideRange.x, ranges.removeHealthWithCollideRange.y, t);
                 break;
             case "timeBetweenCollides":
                 data.timeBetweenCollides = Mathf.Lerp(ranges.timeBetweenCollidesRange.x, ranges.timeBetweenCollidesRange.y, t);
                 break;
             case "healHealthPoint":
-                data.healHealthPoint = Mathf.Lerp(ranges.oxygenHealRange.x, ranges.oxygenHealRange.y, t);
+                data.healHealthPoint = Mathf.Lerp(ranges.healHealthPointRange.x, ranges.healHealthPointRange.y, t);
                 break;
         }
     }

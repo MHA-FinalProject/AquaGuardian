@@ -57,7 +57,7 @@ timeBetweenCollides:
   2.5506 ███████████████████████████████████████████████████
 
 === OPTIMAL PARAMETERS ===
-Target: 2.5% oxygen remaining
+Target: 5 % oxygen remaining
 
 Predicted Oxygen: 59.54%
 
