@@ -24,6 +24,7 @@ public static class TrialDataModels
         public float factorForce;
         public float finalOxygenRemaining;
         public bool completed;
+        public bool isRandomParameters; // true if loaded from random_trial.csv
     }
 
  

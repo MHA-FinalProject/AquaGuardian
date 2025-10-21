@@ -45,7 +45,9 @@ public class TrialRegressionUI : MonoBehaviour
 
     public void CalculateRegression()
     {
-        var trialData = TrialRegressionAlgorithm.LoadTrialDataFromCache();
+        // ALWAYS load from CSV to get access to ALL trials (not just latest 5 from cache)
+        // This enables random selection from all 10 trials in the CSV file
+        var trialData = TrialRegressionAlgorithm.LoadTrialDataFromCSV();
 
         if (trialData == null || trialData.Count < 2)
         {
@@ -119,7 +121,7 @@ public class TrialRegressionUI : MonoBehaviour
 
     public bool CanCalculateRegression()
     {
-        var trialData = TrialRegressionAlgorithm.LoadTrialDataFromCache();
+        var trialData = TrialRegressionAlgorithm.LoadTrialDataFromCSV();
         return trialData != null && trialData.Count >= 2;
     }
 
@@ -136,7 +138,7 @@ public class TrialRegressionUI : MonoBehaviour
         if (success && regressionResultsText != null)
         {
             string timestamp = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-            regressionResultsText.text += $"\n\nSaved: RegressionAnalysis_{timestamp}.txt";
+            regressionResultsText.text += $"\nSaved:RegressionAnalysis_{timestamp}.txt";
         }
     }
 }

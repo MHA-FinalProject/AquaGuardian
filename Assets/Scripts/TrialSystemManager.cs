@@ -185,7 +185,10 @@ public class TrialSystemManager : MonoBehaviour
             if (panelOpenUp != null)
                 panelOpenUp.LoadCaveFileForTrial(currentTrialNumber);
             if (parameterManager != null)
-                currentTrialData = parameterManager.LoadAndApplyTrialParameters(currentTrialNumber);
+            {
+                bool useRandom = uiController != null && uiController.IsRandomParametersMode();
+                currentTrialData = parameterManager.LoadAndApplyTrialParameters(currentTrialNumber, useRandom);
+            }
         }
         catch (System.Exception e)
         {
@@ -257,7 +260,10 @@ public class TrialSystemManager : MonoBehaviour
             if (panelOpenUp != null)
                 panelOpenUp.LoadCaveFileForTrial(currentTrialNumber);
             if (parameterManager != null)
-                currentTrialData = parameterManager.LoadAndApplyTrialParameters(currentTrialNumber);
+            {
+                bool useRandom = uiController != null && uiController.IsRandomParametersMode();
+                currentTrialData = parameterManager.LoadAndApplyTrialParameters(currentTrialNumber, useRandom);
+            }
         }
         catch (System.Exception e)
         {

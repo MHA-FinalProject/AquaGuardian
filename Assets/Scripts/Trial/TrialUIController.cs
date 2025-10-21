@@ -26,9 +26,13 @@ public class TrialUIController : MonoBehaviour
     [Header("UI Buttons")]
     [SerializeField] private Button startTrialButton;
     [SerializeField] private Button continueTrialButton;
+    [SerializeField] private Button backButton; // Show only after all trials complete
     
     [SerializeField] private Button analyzeTrialsButton;
     [SerializeField] private Button closeTrialButton;
+    
+    [Header("Parameter Mode Toggle")]
+    [SerializeField] private Toggle useRandomParametersToggle; // Toggle for random vs CSV (label is static in UI)
     
     [Header("References")]
     [SerializeField] private TrialSystemManager trialSystemManager;
@@ -106,7 +110,25 @@ public class TrialUIController : MonoBehaviour
             });
         }
         
-   
+        // Back button (shown only after all trials complete)
+        if (backButton != null)
+        {
+            backButton.onClick.RemoveAllListeners();
+            backButton.onClick.AddListener(() => {
+                Debug.Log("Back button clicked - Exiting trial mode");
+                if (trialSystemManager != null)
+                    trialSystemManager.CompleteAllTrials();
+            });
+            backButton.gameObject.SetActive(false); // Hide by default
+        }
+        
+        // Random Parameters Toggle
+        if (useRandomParametersToggle != null)
+        {
+            useRandomParametersToggle.onValueChanged.RemoveAllListeners();
+            useRandomParametersToggle.onValueChanged.AddListener(OnRandomModeToggled);
+            // Label text is static in UI, only toggle checkbox changes
+        }
         
         // Analyze button
         if (analyzeTrialsButton != null)
@@ -120,13 +142,21 @@ public class TrialUIController : MonoBehaviour
             Debug.LogError("analyzeTrialsButton is NULL! Not assigned in Inspector!");
         }
         
-       // Close button
+       // Close button - Restart game (same as ScenesManager.RestartGame)
         if (closeTrialButton != null)
         {
             closeTrialButton.onClick.RemoveAllListeners();
             closeTrialButton.onClick.AddListener(() => {
-                Debug.Log("Close button clicked!");
-                CloseTrialControlPanel();
+                Debug.Log("Close button clicked - Restarting game...");
+                var scenesManager = FindObjectOfType<ScenesManager>();
+                if (scenesManager != null)
+                {
+                    scenesManager.RestartGame();
+                }
+                else
+                {
+                    Debug.LogError("ScenesManager not found!");
+                }
             });
         }
         
@@ -329,6 +359,13 @@ public class TrialUIController : MonoBehaviour
             }
         }
         
+        // Back button - show only after all trials complete
+        if (backButton != null)
+        {
+            bool showBack = trialsMode && currentTrial >= totalTrials;
+            backButton.gameObject.SetActive(showBack);
+            Debug.Log($"Back button: trialsMode={trialsMode}, currentTrial={currentTrial}, totalTrials={totalTrials}, showBack={showBack}");
+        }
       
         if (analyzeTrialsButton != null)
         {
@@ -392,6 +429,21 @@ public class TrialUIController : MonoBehaviour
         if (trialResultsText != null) trialResultsText.text = $"All {totalTrials} trials completed!";
         
         UpdateTrialButtonsState(true, totalTrials, totalTrials);
+    }
+    
+    
+    // Random Parameters Mode - Toggle only (label is static in UI)
+    private void OnRandomModeToggled(bool isOn)
+    {
+        Debug.Log($"Random Parameters Mode: {(isOn ? "ON  - Will generate random parameters" : "OFF - Will load from CSV")}");
+    }
+    
+    /// <summary>
+    /// Returns true if random parameters mode is enabled
+    /// </summary>
+    public bool IsRandomParametersMode()
+    {
+        return useRandomParametersToggle != null && useRandomParametersToggle.isOn;
     }
 }
 

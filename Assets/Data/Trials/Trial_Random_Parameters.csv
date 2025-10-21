@@ -1,0 +1,6 @@
+trial_id,speed,verticalSpeed,idleUpwardSpeed,lifeTime,downHealthPairSec,removeHealthWithCollide,timeBetweenCollides,healHealthPoint,factor_force,o2_result
+1,28.64,41.52,0.69,1.54,2.13,14.54,3.02,6.08,3.00,60.06
+2,22.02,22.16,1.13,1.72,1.91,12.02,2.71,9.13,3.00,54.00
+3,16.35,32.63,0.89,2.34,1.66,14.26,2.63,13.71,3.00,80.72
+4,24.05,28.87,1.99,2.29,2.62,13.92,1.19,10.11,3.00,69.20
+5,12.33,22.67,0.86,2.15,3.44,10.90,1.61,14.71,3.00,65.96

@@ -30,7 +30,7 @@ public class TrialDataCache : MonoBehaviour
     private Dictionary<int, float> currentRunOxygenValues = new Dictionary<int, float>();
     
     /// <summary>
-    /// All historical runs: each list contains 5 oxygen values (one per trial)
+    /// All historical runs: each list contains up to 10 oxygen values (one per trial)
     /// </summary>
     private List<List<float>> allRunsHistory = new List<List<float>>();
     
@@ -38,6 +38,11 @@ public class TrialDataCache : MonoBehaviour
     /// Current run number (increments when trial 1 starts)
     /// </summary>
     private int currentRunNumber = 0;
+    
+    /// <summary>
+    /// Maximum number of trials per run (configurable: 5 or 10)
+    /// </summary>
+    private const int MAX_TRIALS = 10;
     
     void Awake()
     {
@@ -61,9 +66,9 @@ public class TrialDataCache : MonoBehaviour
             // Save previous run to history if it had data
             if (currentRunOxygenValues.Count > 0)
             {
-                // CRITICAL: Always save exactly 5 values to maintain index alignment
+                // CRITICAL: Always save exactly MAX_TRIALS values to maintain index alignment
                 var runData = new List<float>();
-                for (int i = 1; i <= 5; i++)
+                for (int i = 1; i <= MAX_TRIALS; i++)
                 {
                     runData.Add(currentRunOxygenValues.ContainsKey(i) ? currentRunOxygenValues[i] : 0f);
                 }
@@ -81,12 +86,12 @@ public class TrialDataCache : MonoBehaviour
         currentRunOxygenValues[trialId] = oxygenRemaining;
         Debug.Log($" Cached Trial {trialId}: Oxygen={oxygenRemaining:F1}%");
         
-        // If this is trial 5, finalize the run
-        if (trialId == 5)
+        // If this is the last trial, finalize the run
+        if (trialId == MAX_TRIALS)
         {
-            // CRITICAL: Always save exactly 5 values to maintain index alignment
+            // CRITICAL: Always save exactly MAX_TRIALS values to maintain index alignment
             var runData = new List<float>();
-            for (int i = 1; i <= 5; i++)
+            for (int i = 1; i <= MAX_TRIALS; i++)
             {
                 runData.Add(currentRunOxygenValues.ContainsKey(i) ? currentRunOxygenValues[i] : 0f);
             }

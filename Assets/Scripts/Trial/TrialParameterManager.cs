@@ -17,25 +17,40 @@ public class TrialParameterManager : MonoBehaviour
     
     [Header("Parameter Settings")]
     [SerializeField] private string trialParametersPath = "Data/Trials/Trial_5_runs_.csv";
+    [SerializeField] private string randomParametersPath = "Data/Trials/random_trial.csv";
     [SerializeField] private TextAsset trialParametersFile;
     [SerializeField] private TrialDataModels.ParameterRanges parameterRanges = new TrialDataModels.ParameterRanges();
     
+    private bool currentModeIsRandom = false; // Track current mode for saving
+    
     // Load and apply parameters for a given trial number
-    public TrialDataModels.TrialData LoadAndApplyTrialParameters(int trialNumber)
+    public TrialDataModels.TrialData LoadAndApplyTrialParameters(int trialNumber, bool useRandomParameters = false)
     {
-        Debug.Log($"Loading parameters for trial {trialNumber}");
+        currentModeIsRandom = useRandomParameters;
+        Debug.Log($"Loading parameters for trial {trialNumber} - Mode: {(useRandomParameters ? "RANDOM" : "CSV")}");
         
-        // Load parameters from CSV
-        TrialDataModels.TrialData data = LoadParametersFromFilePath(trialNumber);
+        TrialDataModels.TrialData data;
         
-        if (data == null)
+        if (useRandomParameters)
         {
-            Debug.LogError($"CRITICAL: Failed to load parameters for trial {trialNumber}!");
-            data = GenerateRandomParametersInternal(); // Emergency fallback
+            // Generate random parameters
+            data = GenerateRandomParametersInternal();
+            Debug.Log($"Generated random parameters: Speed={data.speed:F2}, Heal={data.healHealthPoint:F2}");
+        }
+        else
+        {
+            // Load parameters from CSV
+            data = LoadParametersFromFilePath(trialNumber);
+            
+            if (data == null)
+            {
+                Debug.LogError($"CRITICAL: Failed to load parameters for trial {trialNumber}!");
+                data = GenerateRandomParametersInternal(); // Emergency fallback
+            }
+            Debug.Log($"Parameters loaded from CSV: Speed={data.speed:F2}, Heal={data.healHealthPoint:F2}");
         }
         
         data.trialId = trialNumber;
-        Debug.Log($"Parameters loaded: Speed={data.speed}, Heal={data.healHealthPoint}");
         
         // Apply parameters to game components
         ApplyParametersToGame(data);
@@ -53,25 +68,37 @@ public class TrialParameterManager : MonoBehaviour
                 return false;
             }
             
-            // Save to THREE locations:
-            // 1. Update original Trial_5_runs_.csv
-            bool originalUpdated = UpdateOriginalCSV(trialData);
+            bool originalUpdated, timestampedSaved;
             
-            // 2. Append to timestamped results file
-            bool timestampedSaved = SaveToTimestampedCSV(trialData);
-            
-            // 3. CACHE the oxygen value for regression (NO CSV READING NEEDED!)
-            TrialDataCache.Instance.SaveTrialOxygen(trialData.trialId, trialData.finalOxygenRemaining);
-            
-            // 4. Update O2_Wide_AllSets.csv if this is trial 5 (end of set)
-            if (trialData.trialId == 5)
+            if (currentModeIsRandom)
             {
-                UpdateO2WideAllSets();
+                // RANDOM MODE: Save to separate random parameters file
+                Debug.Log($"Saving random parameters trial {trialData.trialId} to {randomParametersPath}");
+                originalUpdated = SaveToRandomParametersCSV(trialData);
+                timestampedSaved = SaveToTimestampedCSV(trialData, "_Random");
             }
+            else
+            {
+                // CSV MODE: Save to THREE locations:
+                // 1. Update original Trial_5_runs_.csv
+                originalUpdated = UpdateOriginalCSV(trialData);
+                
+                // 2. Append to timestamped results file
+                timestampedSaved = SaveToTimestampedCSV(trialData);
+                
+                // 3. Update O2_Wide_AllSets.csv if this is trial 5 (end of set)
+                if (trialData.trialId == 5)
+                {
+                    UpdateO2WideAllSets();
+                }
+            }
+            
+            // 4. ALWAYS CACHE the oxygen value for regression (NO CSV READING NEEDED!)
+            TrialDataCache.Instance.SaveTrialOxygen(trialData.trialId, trialData.finalOxygenRemaining);
             
             if (originalUpdated && timestampedSaved)
             {
-                Debug.Log($"Trial {trialData.trialId} saved: Oxygen={trialData.finalOxygenRemaining:F1}%, Completed={trialData.completed}");
+                Debug.Log($"Trial {trialData.trialId} saved: Oxygen={trialData.finalOxygenRemaining:F1}%, Completed={trialData.completed}, Mode={( currentModeIsRandom ? "Random" : "CSV")}");
                 return true;
             }
             else
@@ -196,13 +223,92 @@ public class TrialParameterManager : MonoBehaviour
     }
     
     /// <summary>
-    /// Save to timestamped results file (backup/history)
+    /// Save random parameters to random_trial.csv
+    /// Keeps random trials separate from regular CSV trials
     /// </summary>
-    private bool SaveToTimestampedCSV(TrialDataModels.TrialData trialData)
+    private bool SaveToRandomParametersCSV(TrialDataModels.TrialData trialData)
     {
         try
         {
-            string resultsPath = GetResultsCSVPath();
+            string csvPath = System.IO.Path.Combine(Application.dataPath, randomParametersPath);
+            bool fileExists = System.IO.File.Exists(csvPath);
+            
+            // Read existing file or create header
+            System.Collections.Generic.List<string> lines;
+            if (fileExists)
+            {
+                lines = new System.Collections.Generic.List<string>(ReadAllLinesWithRetry(csvPath));
+            }
+            else
+            {
+                // Create new file with header
+                string header = "trial_id,speed,verticalSpeed,idleUpwardSpeed,lifeTime,downHealthPairSec,removeHealthWithCollide,timeBetweenCollides,healHealthPoint,factor_force,o2_result";
+                lines = new System.Collections.Generic.List<string> { header };
+                Debug.Log($"Creating new random parameters file: {csvPath}");
+            }
+            
+            // Check if this trial already exists
+            bool trialExists = false;
+            for (int i = 1; i < lines.Count; i++)
+            {
+                var fields = lines[i].Split(',');
+                if (fields.Length > 0 && fields[0] == trialData.trialId.ToString())
+                {
+                    // Update existing trial
+                    lines[i] = FormatTrialDataLine(trialData);
+                    trialExists = true;
+                    Debug.Log($"Updated existing trial {trialData.trialId} in random parameters file");
+                    break;
+                }
+            }
+            
+            if (!trialExists)
+            {
+                // Add new trial
+                lines.Add(FormatTrialDataLine(trialData));
+                Debug.Log($"Added new trial {trialData.trialId} to random parameters file");
+            }
+            
+            // Save file
+            WriteAllLinesWithRetry(csvPath, lines.ToArray());
+            return true;
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Error saving to random parameters CSV: {e.Message}");
+            return false;
+        }
+    }
+    
+    /// <summary>
+    /// Format trial data as CSV line
+    /// </summary>
+    private string FormatTrialDataLine(TrialDataModels.TrialData trialData)
+    {
+        return string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            "{0},{1:F2},{2:F2},{3:F2},{4:F2},{5:F2},{6:F2},{7:F2},{8:F2},{9:F2},{10:F2}",
+            trialData.trialId,
+            trialData.speed,
+            trialData.verticalSpeed,
+            trialData.idleUpwardSpeed,
+            trialData.lifeTime,
+            trialData.downHealthPairSec,
+            trialData.removeHealthWithCollide,
+            trialData.timeBetweenCollides,
+            trialData.healHealthPoint,
+            trialData.factorForce,
+            trialData.finalOxygenRemaining
+        );
+    }
+    
+    /// <summary>
+    /// Save to timestamped results file (backup/history)
+    /// </summary>
+    private bool SaveToTimestampedCSV(TrialDataModels.TrialData trialData, string suffix = "")
+    {
+        try
+        {
+            string resultsPath = GetResultsCSVPath(suffix);
             bool fileExists = System.IO.File.Exists(resultsPath);
             
             using (System.IO.StreamWriter writer = new System.IO.StreamWriter(resultsPath, true))
@@ -243,9 +349,9 @@ public class TrialParameterManager : MonoBehaviour
         }
     }
 
-    private string GetResultsCSVPath()
+    private string GetResultsCSVPath(string suffix = "")
     {
-        string fileName = $"TrialResults_{System.DateTime.Now:yyyyMMdd_HHmmss}.csv";
+        string fileName = $"TrialResults{suffix}_{System.DateTime.Now:yyyyMMdd_HHmmss}.csv";
         string path = System.IO.Path.Combine(Application.persistentDataPath, fileName);
         Debug.Log($"========================================");
         Debug.Log($"SAVING TRIAL RESULTS TO: {path}");
@@ -283,7 +389,7 @@ public class TrialParameterManager : MonoBehaviour
         try
         {
             string absolutePath = System.IO.Path.Combine(Application.dataPath, trialParametersPath.Replace("\\", "/"));
-          //  Debug.Log($"Attempting to load trial parameters from: {absolutePath}");
+            Debug.Log($"Attempting to load trial parameters from: {absolutePath}");
             
             if (!System.IO.File.Exists(absolutePath))
             {
@@ -291,7 +397,13 @@ public class TrialParameterManager : MonoBehaviour
                 return null;
             }
 
-            var lines = System.IO.File.ReadAllLines(absolutePath);
+            // Use ReadAllLinesWithRetry to handle file locks (e.g., Excel)
+            var lines = ReadAllLinesWithRetry(absolutePath);
+            // Trim line endings (especially \r from Windows line endings)
+            for (int i = 0; i < lines.Length; i++)
+            {
+                lines[i] = lines[i].TrimEnd('\r');
+            }
             Debug.Log($"Trial parameters file has {lines.Length} lines");
             
             if (lines.Length <= 1)
@@ -302,19 +414,34 @@ public class TrialParameterManager : MonoBehaviour
 
             // Find the correct row for this trial number
             int dataIndex = -1;
+            Debug.Log($"Searching for trial {trialNumber} in {lines.Length} lines...");
             for (int i = 1; i < lines.Length; i++)
             {
                 string[] searchFields = lines[i].Split(',');
-                if (searchFields.Length > 0 && int.TryParse(searchFields[0], out int trialId) && trialId == trialNumber)
+                if (searchFields.Length > 0)
                 {
-                    dataIndex = i;
-                    break;
+                    Debug.Log($"  Line {i}: First field = '{searchFields[0]}' (length={searchFields.Length})");
+                    if (int.TryParse(searchFields[0], out int trialId))
+                    {
+                        Debug.Log($"    Parsed trial ID: {trialId}");
+                        if (trialId == trialNumber)
+                        {
+                            dataIndex = i;
+                            Debug.Log($"  FOUND: Trial {trialNumber} at line {i}");
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"    Could not parse '{searchFields[0]}' as integer");
+                    }
                 }
             }
             
             if (dataIndex == -1)
             {
                 Debug.LogError($"Trial {trialNumber} not found in CSV file!");
+                Debug.LogError($"Available trials: {string.Join(", ", lines.Skip(1).Select(l => l.Split(',')[0]))}");
                 return null;
             }
             
@@ -322,9 +449,11 @@ public class TrialParameterManager : MonoBehaviour
             
             string[] dataFields = lines[dataIndex].Split(',');
             
-            if (dataFields.Length < 11)
+            // Need only 10 fields for parameters (0-9: trialId + 9 parameters)
+            // Oxygen columns (10+) are written AFTER running the trial
+            if (dataFields.Length < 10)
             {
-                Debug.LogError($"File row {dataIndex} has insufficient fields: {dataFields.Length}, needs 11");
+                Debug.LogError($"File row {dataIndex} has insufficient fields: {dataFields.Length}, needs at least 10 (trialId + 9 parameters)");
                 return null;
             }
 
@@ -589,5 +718,63 @@ public class TrialParameterManager : MonoBehaviour
             Debug.LogError($"Error updating O2_Wide_AllSets.csv: {e.Message}");
             Debug.LogError($"Stack trace: {e.StackTrace}");
         }
+    }
+    
+    /// <summary>
+    /// Read all lines from a file with retry logic to handle file locks
+    /// </summary>
+    private string[] ReadAllLinesWithRetry(string path, int maxRetries = 3, int delayMs = 100)
+    {
+        for (int i = 0; i < maxRetries; i++)
+        {
+            try
+            {
+                using (var stream = new System.IO.FileStream(path, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite))
+                using (var reader = new System.IO.StreamReader(stream))
+                {
+                    var lines = new System.Collections.Generic.List<string>();
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        lines.Add(line);
+                    }
+                    return lines.ToArray();
+                }
+            }
+            catch (System.IO.IOException) when (i < maxRetries - 1)
+            {
+                Debug.LogWarning($"File locked, retrying... ({i + 1}/{maxRetries})");
+                System.Threading.Thread.Sleep(delayMs);
+            }
+        }
+        throw new System.IO.IOException($"Failed to read file after {maxRetries} attempts: {path}");
+    }
+    
+    /// <summary>
+    /// Write all lines to a file with retry logic to handle file locks
+    /// </summary>
+    private void WriteAllLinesWithRetry(string path, string[] lines, int maxRetries = 3, int delayMs = 100)
+    {
+        for (int i = 0; i < maxRetries; i++)
+        {
+            try
+            {
+                using (var stream = new System.IO.FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.Read))
+                using (var writer = new System.IO.StreamWriter(stream))
+                {
+                    foreach (var line in lines)
+                    {
+                        writer.WriteLine(line);
+                    }
+                }
+                return;
+            }
+            catch (System.IO.IOException) when (i < maxRetries - 1)
+            {
+                Debug.LogWarning($"File locked, retrying write... ({i + 1}/{maxRetries})");
+                System.Threading.Thread.Sleep(delayMs);
+            }
+        }
+        throw new System.IO.IOException($"Failed to write file after {maxRetries} attempts: {path}");
     }
 }
