@@ -116,13 +116,14 @@ public class TrialSystemManager : MonoBehaviour
 
     public void CompleteAllTrials()
     {
+        Debug.Log("[TrialSystem] Completing all trials");
+        
         ExitTrialsMode();
         
         if (systemResetter != null)
             systemResetter.CleanupAllTrialObjects();
         
-        RestoreOriginalGameState();
-        
+        // Show completion UI first
         if (uiController != null)
             uiController.UpdateCompletionUI();
     }
@@ -357,12 +358,42 @@ public class TrialSystemManager : MonoBehaviour
     
     private void RestoreOriginalGameState()
     {
+        Debug.Log("[TrialSystem] Restoring original game state after trials complete");
+        
+        // Ensure time is running (critical for intro animations)
+        Time.timeScale = 1f;
+        Debug.Log($"[TrialSystem] Set Time.timeScale = {Time.timeScale}");
+        
         ReenableFinishers();
         
         if (panelOpenUp != null)
             panelOpenUp.RestoreOriginalCaveFile();
         
+        // Reset PlayerIntro so it can run again in normal mode
+        var playerIntro = FindObjectOfType<PlayerIntro>();
+        if (playerIntro != null)
+        {
+            Debug.Log("[TrialSystem] Resetting PlayerIntro");
+            playerIntro.ResetIntro();
+        }
+        else
+        {
+            Debug.LogWarning("[TrialSystem] PlayerIntro not found!");
+        }
+        
+        // Reset GameStateManager so intro and panel states are cleared
+        if (GameStateManager.Instance != null)
+        {
+            Debug.Log("[TrialSystem] Resetting GameStateManager");
+            GameStateManager.Instance.ResetState();
+        }
+        else
+        {
+            Debug.LogWarning("[TrialSystem] GameStateManager.Instance is null!");
+        }
+        
         currentTrialNumber = 0;
+        Debug.Log("[TrialSystem] Original game state restored");
     }
     
     

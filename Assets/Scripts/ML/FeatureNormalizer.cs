@@ -1,19 +1,18 @@
 using UnityEngine;
 
-/// <summary>
-/// Normalize features for better regression performance
-/// Stores normalization parameters for inverse transform
-/// Uses sample standard deviation (n-1) for better estimation with small datasets
-/// </summary>
+/**
+* Normalize features for better regression performance
+* Stores normalization parameters for inverse transform
+* Uses sample standard deviation (n-1) for better estimation with small datasets
+*/
+
 public class FeatureNormalizer
 {
     public float[] means;
     public float[] stdDevs;
     public int numFeatures;
 
-    /// <summary>
-    /// Fit normalizer to data (calculate mean and sample std for each feature)
-    /// </summary>
+   // Fit normalizer to data (calculate mean and sample std for each feature)
     public void Fit(float[][] X)
     {
         if (X == null || X.Length == 0)
@@ -66,9 +65,8 @@ public class FeatureNormalizer
         Debug.Log($"Normalizer fitted: {numFeatures} features (sample std, n-1)");
     }
 
-    /// <summary>
-    /// Normalize data: Z = (X - mean) / std
-    /// </summary>
+  
+    // Normalize data: Z = (X - mean) / std
     public float[][] Transform(float[][] X)
     {
         if (X == null || X.Length == 0) return null;
@@ -100,9 +98,7 @@ public class FeatureNormalizer
         return Z;
     }
 
-    /// <summary>
-    /// Normalize single sample
-    /// </summary>
+    // Normalize single sample
     public float[] TransformSample(float[] x)
     {
         if (x == null || x.Length == 0) return null;
@@ -127,9 +123,7 @@ public class FeatureNormalizer
         return z;
     }
 
-    /// <summary>
-    /// Denormalize data: X = Z * std + mean
-    /// </summary>
+    // Denormalize data: X = Z * std + mean
     public float[][] InverseTransform(float[][] Z)
     {
         if (Z == null || Z.Length == 0) return null;
@@ -155,9 +149,7 @@ public class FeatureNormalizer
         return X;
     }
 
-    /// <summary>
-    /// Denormalize single sample
-    /// </summary>
+// Denormalize single sample
     public float[] InverseTransformSample(float[] z)
     {
         if (z == null || z.Length == 0) return null;
@@ -176,9 +168,7 @@ public class FeatureNormalizer
         return x;
     }
 
-    /// <summary>
-    /// Fit and transform in one step
-    /// </summary>
+   // Fit and transform in one step
     public float[][] FitTransform(float[][] X)
     {
         Fit(X);

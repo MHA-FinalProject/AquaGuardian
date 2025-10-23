@@ -39,6 +39,7 @@ public class PlayerIntro : MonoBehaviour
 
         if (show && panelClosed)
         {
+            Debug.Log($"[PlayerIntro] Starting intro (show={show}, panelClosed={panelClosed})");
             ProcessUserInputsInInitialForm();
             StartCoroutine(ShowInfoTextAndKeys());
             show = false;
@@ -47,6 +48,21 @@ public class PlayerIntro : MonoBehaviour
 
     void ProcessUserInputsInInitialForm()
     {
+        // Null checks to prevent errors
+        if (playerMovement == null)
+        {
+            Debug.LogWarning("[PlayerIntro] playerMovement is null, skipping input processing");
+            return;
+        }
+        
+        if (playerMovement.speed_inputField == null || 
+            playerMovement.vertical_speed_inputField == null || 
+            playerMovement.idle_upward_speed_inputField == null)
+        {
+            Debug.LogWarning("[PlayerIntro] Input fields not assigned, using default values");
+            return;
+        }
+
         bool isSpeedValid = float.TryParse(playerMovement.speed_inputField.text, out float speed);
         bool isSpeedVerticalValid = float.TryParse(playerMovement.vertical_speed_inputField.text, out float verticalSpeed);
         bool isIdleUpwardSpeedValid = float.TryParse(playerMovement.idle_upward_speed_inputField.text, out float idleUpwardSpeed);
@@ -56,14 +72,14 @@ public class PlayerIntro : MonoBehaviour
             playerMovement.speed = speed;
             playerMovement.verticalSpeed = verticalSpeed;
             playerMovement.idleUpwardSpeed = idleUpwardSpeed;
+            Debug.Log($"[PlayerIntro] Speed values set: speed={speed}, verticalSpeed={verticalSpeed}, idleUpwardSpeed={idleUpwardSpeed}");
         }
         else
         {
-            Debug.Log($"error: {playerMovement.speed_inputField.text}");
-            Debug.Log(playerMovement.vertical_speed_inputField.text);
-            Debug.Log(playerMovement.idle_upward_speed_inputField.text);
+            Debug.LogWarning($"[PlayerIntro] Invalid input - speed: {playerMovement.speed_inputField.text}, " +
+                           $"verticalSpeed: {playerMovement.vertical_speed_inputField.text}, " +
+                           $"idleUpward: {playerMovement.idle_upward_speed_inputField.text}");
         }
-        Debug.Log($"speed: {speed}, vertical speed: {verticalSpeed}, idleUpwardSpeed: {idleUpwardSpeed}");
     }
 
     public void ResetIntro()
@@ -85,21 +101,35 @@ public class PlayerIntro : MonoBehaviour
 
     private IEnumerator ShowInfoTextAndKeys()
     {
+        Debug.Log("[PlayerIntro] ShowInfoTextAndKeys started");
+        
         if (infoText6 != null && infoText7 != null)
         {
+            Debug.Log("[PlayerIntro] Showing READY text");
             infoText6.gameObject.SetActive(true);
             yield return WaitForSecondsOrSkip(1f);
             infoText6.gameObject.SetActive(false);
 
             yield return WaitForSecondsOrSkip(1f);
 
+            Debug.Log("[PlayerIntro] Showing GO text");
             infoText7.gameObject.SetActive(true);
             yield return WaitForSecondsOrSkip(1f);
             infoText7.gameObject.SetActive(false);
-            playerMovement.afterText = true;
+            
+            if (playerMovement != null)
+            {
+                playerMovement.afterText = true;
+                Debug.Log("[PlayerIntro] Set playerMovement.afterText = true");
+            }
 
             // Notify GameStateManager that intro is complete
             GameStateManager.Instance?.NotifyIntroComplete();
+            Debug.Log("[PlayerIntro] Intro complete, notified GameStateManager");
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerIntro] infoText6 or infoText7 is null, skipping intro animation");
         }
     }
 
@@ -108,12 +138,15 @@ public class PlayerIntro : MonoBehaviour
         float elapsedTime = 0f;
         while (elapsedTime < seconds)
         {
-            elapsedTime += Time.deltaTime;
+            // Use unscaledDeltaTime to work even when Time.timeScale = 0
+            elapsedTime += Time.unscaledDeltaTime;
             if (Input.GetKeyDown(KeyCode.Return))
             {
+                Debug.Log("[PlayerIntro] Skipping intro (Enter pressed)");
                 yield break;
             }
             yield return null;
         }
+        Debug.Log($"[PlayerIntro] Wait completed ({seconds}s)");
     }
 }

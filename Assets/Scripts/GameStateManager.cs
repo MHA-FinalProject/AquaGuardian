@@ -94,6 +94,7 @@ public class GameStateManager : MonoBehaviour
  
     public void ResetState()
     {
+        Debug.Log($"[GameStateManager] Resetting state (panelClosed: {panelClosed} → false, introComplete: {introComplete} → false)");
         panelClosed = false;
         introComplete = false;
     }

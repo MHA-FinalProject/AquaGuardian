@@ -245,7 +245,7 @@ public static class TrialDataLoader
                 int trialId = ParseIntField(fields, colId, 0);
                 if (trialId == 0) trialId = i;
 
-                // Calculate AVERAGE oxygen from all available runs
+                // Get oxygen values from all available runs
                 var validO2Values = new List<float>();
                 foreach (int col in o2Cols)
                 {
@@ -260,8 +260,9 @@ public static class TrialDataLoader
 
                 if (validO2Values.Count == 0) continue;
 
-                float finalOxygen = validO2Values.Average();
-                Debug.Log($"[{fileName}] Trial {trialId}: Found {validO2Values.Count} O2 values: [{string.Join(", ", validO2Values)}] → Average: {finalOxygen:F2}%");
+                // Use LAST run (most recent) instead of average
+                float finalOxygen = validO2Values[validO2Values.Count - 1];
+                Debug.Log($"[{fileName}] Trial {trialId}: Found {validO2Values.Count} O2 runs: [{string.Join(", ", validO2Values)}] → Using LAST run: {finalOxygen:F1}%");
 
                 allValid.Add((i, new TrialDataModels.TrialData
                 {

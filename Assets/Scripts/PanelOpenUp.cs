@@ -81,6 +81,17 @@ public partial class PanelOpenUp : MonoBehaviour
 
         // Subscribe to events
         GameStateManager.OnGameEnded += OnGameEnded;
+        
+        // Check if panel is already closed (e.g., after scene restart)
+        // If panel is closed, notify GameStateManager immediately
+        if (Panel != null && !Panel.activeSelf)
+        {
+            Debug.Log("[PanelOpenUp] Panel is already closed at Start - notifying GameStateManager");
+            if (GameStateManager.Instance != null)
+            {
+                GameStateManager.Instance.NotifyPanelClosed();
+            }
+        }
     }
 
     void Update()

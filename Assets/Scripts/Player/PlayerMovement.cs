@@ -31,6 +31,7 @@ public class PlayerMovement : MonoBehaviour
     public bool canMove = true;  // Flag to control if the player can move
     public float collisionDelay = 2f;  // Delay between collisions
     public bool afterText = false;  // Flag to check if the intro text has been shown
+    private bool _debugLoggedOnce = false;  // Flag to log state once after intro
 
 
     // ----- Scene References -----
@@ -89,6 +90,18 @@ public class PlayerMovement : MonoBehaviour
             if (Panel != null)
             {
                 canMove = !Panel.activeSelf && afterText;
+            }
+        }
+
+        // Debug log once after intro completes to see state
+        if (afterText && !_debugLoggedOnce)
+        {
+            _debugLoggedOnce = true;
+            bool isPanelClosed = GameStateManager.Instance != null ? GameStateManager.Instance.IsPanelClosed : !Panel.activeSelf;
+            Debug.Log($"[PlayerMovement] After intro: afterText={afterText}, IsPanelClosed={isPanelClosed}, canMove={canMove}");
+            if (!canMove)
+            {
+                Debug.LogWarning("[PlayerMovement] WARNING: CANNOT MOVE! Panel might not be properly closed.");
             }
         }
 

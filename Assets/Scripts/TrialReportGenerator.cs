@@ -30,13 +30,29 @@ public static class TrialReportGenerator
             summary += $"Random: [{string.Join(", ", randomIds)}]\n";
         }
         
-        summary += $"Average Error: {avgError.ToString("F1", CI)}%\n";
+        summary += $"\nModel Accuracy:\n";
+        summary += $"Average Error: {avgError.ToString("F1", CI)}%\n\n";
+        
+        // Show prediction accuracy table
+        summary += "Actual vs Predicted:\n";
+        summary += "Trial | Actual  | Predict | Error\n";
+        summary += "------|---------|---------|-------\n";
+        
+        foreach (var trial in trials)
+        {
+            float actual = trial.finalOxygenRemaining;
+            float predicted = predictor.PredictOxygen(trial);
+            float error = Mathf.Abs(actual - predicted);
+            summary += $"  {trial.trialId}   | {actual,6:F1}% | {predicted,6:F1}% | {error,4:F1}%\n";
+        }
+        summary += "------|---------|---------|-------\n\n";
+        
         summary += $"Target: 5.0% oxygen remaining\n";
 
         if (optimalParams != null)
         {
             float predictedOptimal = predictor.PredictOxygen(optimalParams);
-            summary += "Recommended parameters:\n";
+            summary += "\nRecommended parameters:\n";
             summary += $"Predicted Result: {predictedOptimal.ToString("F1", CI)}%\n";
             summary += $"Speed: {optimalParams.speed.ToString("F1", CI)}\n";
             summary += $"Vertical Speed: {optimalParams.verticalSpeed.ToString("F1", CI)}\n";
@@ -97,21 +113,31 @@ public static class TrialReportGenerator
         report += $"Cross-Val R2: {cvR2.ToString("F3", CI)}\n";
         report += $"Model Quality: {quality}\n\n";
 
-        report += "(Actual vs Predicted Oxygen)\n\n";
+        report += "===========================================\n";
+        report += "PREDICTION ACCURACY: ACTUAL vs PREDICTED\n";
+        report += "===========================================\n\n";
+        report += "Trial | Actual O2  | Predicted | Error  | Status\n";
+        report += "------|------------|-----------|--------|--------\n";
 
         foreach (var trial in trials)
         {
             float actual = trial.finalOxygenRemaining;
             float predicted = predictor.PredictOxygen(trial);
             float error = Mathf.Abs(actual - predicted);
-
-            string paramMode = trial.isRandomParameters ? " (Random Parameters)" : " (Regular Parameters)";
-            report += $"Trial {trial.trialId}{paramMode}:\n";
-            report += $"  Actual: {actual.ToString("F1", CI)}%  Predicted: {predicted.ToString("F1", CI)}%\n";
-            report += $"  Error: {error.ToString("F1", CI)}%\n\n";
+            
+            string status = error < 3f ? " Excellent" :
+                          error < 5f ? " Good" :
+                          error < 10f ? " Fair" :
+                          " Poor";
+            
+            string paramMode = trial.isRandomParameters ? "R" : " ";
+            
+            report += $"  {trial.trialId}{paramMode}  | {actual,9:F1}% | {predicted,8:F1}% | {error,5:F1}% | {status}\n";
         }
-
-        report += $"Average Prediction Error: {avgError.ToString("F2", CI)}%\n\n";
+        
+        report += "------|------------|-----------|--------|--------\n";
+        report += $"Average Prediction Error: {avgError.ToString("F2", CI)}%\n";
+        report += "(R = Random Parameters)\n\n";
 
         report += "Feature importance:\n";
         report += "(Impact on oxygen level)\n\n";

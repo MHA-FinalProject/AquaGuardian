@@ -146,18 +146,7 @@ public class TrialUIController : MonoBehaviour
         if (closeTrialButton != null)
         {
             closeTrialButton.onClick.RemoveAllListeners();
-            closeTrialButton.onClick.AddListener(() => {
-                Debug.Log("Close button clicked - Restarting game...");
-                var scenesManager = FindObjectOfType<ScenesManager>();
-                if (scenesManager != null)
-                {
-                    scenesManager.RestartGame();
-                }
-                else
-                {
-                    Debug.LogError("ScenesManager not found!");
-                }
-            });
+            closeTrialButton.onClick.AddListener(OnCloseButtonClicked);
         }
         
         UpdateTrialButtonsState(false, 0, 5);
@@ -415,8 +404,17 @@ public class TrialUIController : MonoBehaviour
    
     public void UpdateCompletionUI()
     {
+        Debug.Log("[TrialUI] UpdateCompletionUI called - showing completion screen");
+        
         if (mainPanel != null)
             mainPanel.SetActive(true);
+        
+        // Notify GameStateManager that panel is opened (so it can close again later)
+        if (GameStateManager.Instance != null)
+        {
+            Debug.Log("[TrialUI] Notifying GameStateManager that panel is opened");
+            GameStateManager.Instance.NotifyPanelOpened();
+        }
         
         // Show end status text
         if (startStatusText != null) startStatusText.SetActive(false);
@@ -444,6 +442,31 @@ public class TrialUIController : MonoBehaviour
     public bool IsRandomParametersMode()
     {
         return useRandomParametersToggle != null && useRandomParametersToggle.isOn;
+    }
+    
+    /// <summary>
+    /// Close button handler - Restart the entire game scene
+    /// </summary>
+    private void OnCloseButtonClicked()
+    {
+        Debug.Log("[TrialUI] Close button clicked - Restarting game scene...");
+        
+        // Find ScenesManager
+        var scenesManager = FindObjectOfType<ScenesManager>();
+        if (scenesManager != null)
+        {
+            Debug.Log("[TrialUI] ScenesManager found, calling RestartGame()");
+            scenesManager.RestartGame();
+        }
+        else
+        {
+            Debug.LogError("[TrialUI] ScenesManager not found! Creating fallback restart...");
+            
+            // Fallback: Manual restart
+            UnityEngine.SceneManagement.SceneManager.LoadScene(
+                UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
+            );
+        }
     }
 }
 

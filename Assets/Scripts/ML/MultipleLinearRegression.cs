@@ -1,13 +1,12 @@
 using UnityEngine;
 using System;
 using System.Linq;
-
-/// <summary>
-/// Multiple Linear Regression with Ridge regularization + Cholesky solver
-/// Uses double precision internally for numerical stability
-/// Ridge prevents overfitting when N is small (e.g., 5 samples)
-/// Cholesky decomposition is more stable than Gaussian elimination
-/// </summary>
+/**
+ *  Multiple Linear Regression with Ridge regularization + Cholesky solver
+ *  Uses double precision internally for numerical stability
+ *  Ridge prevents overfitting when N is small (e.g., 5 samples)
+ *  Cholesky decomposition is more stable than Gaussian elimination
+*/
 public class MultipleLinearRegression
 {
     // Model parameters (public API in float)
@@ -29,9 +28,7 @@ public class MultipleLinearRegression
     // Ridge regularization strength (0.1-1.0 for small N)
     public float ridgeLambda = 0.5f;
 
-    /// <summary>
-    /// Constructor
-    /// </summary>
+   
     public MultipleLinearRegression(bool normalize = true)
     {
         useNormalization = normalize;
@@ -361,7 +358,7 @@ public class MultipleLinearRegression
 
     private static (float rmse, float mae, float r2) ComputeMetrics(float[] y, float[] yhat)
     {
-        int n = y.Length;
+        int n = y.Length; 
         double mse = 0;
         double mae = 0;
         double mean = y.Average();
