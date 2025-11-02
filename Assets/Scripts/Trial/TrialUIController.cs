@@ -5,7 +5,6 @@ using TMPro;
 /**
  * TrialUIController - Manages all trial-related UI
  * Handles panel display, button states, and text updates
-
  */
 public class TrialUIController : MonoBehaviour
 {
@@ -26,8 +25,6 @@ public class TrialUIController : MonoBehaviour
     [Header("UI Buttons")]
     [SerializeField] private Button startTrialButton;
     [SerializeField] private Button continueTrialButton;
-    [SerializeField] private Button backButton; // Show only after all trials complete
-    
     [SerializeField] private Button analyzeTrialsButton;
     [SerializeField] private Button closeTrialButton;
     
@@ -40,18 +37,12 @@ public class TrialUIController : MonoBehaviour
     
     void Start()
     {
-        Debug.Log("=== TrialUIController Start ===");
-        
         // Check references
         if (regressionUI == null)
             Debug.LogError("regressionUI is NULL! Please assign TrialRegressionUI in Inspector!");
-        else
-            Debug.Log("regressionUI assigned correctly");
             
         if (trialSystemManager == null)
             Debug.LogWarning("trialSystemManager is NULL!");
-        else
-            Debug.Log("trialSystemManager assigned correctly");
         
         InitializeTrialUI();
         SetupTrialButtons();
@@ -74,9 +65,6 @@ public class TrialUIController : MonoBehaviour
         if (trialResultsText != null) trialResultsText.text = ""; // Clean results, no mutual overwriting
     }
     
-    /// <summary>
-    /// Setup all trial button listeners
-    /// </summary>
     private void SetupTrialButtons()
     {
         // Main Trial button
@@ -110,18 +98,6 @@ public class TrialUIController : MonoBehaviour
             });
         }
         
-        // Back button (shown only after all trials complete)
-        if (backButton != null)
-        {
-            backButton.onClick.RemoveAllListeners();
-            backButton.onClick.AddListener(() => {
-                Debug.Log("Back button clicked - Exiting trial mode");
-                if (trialSystemManager != null)
-                    trialSystemManager.CompleteAllTrials();
-            });
-            backButton.gameObject.SetActive(false); // Hide by default
-        }
-        
         // Random Parameters Toggle
         if (useRandomParametersToggle != null)
         {
@@ -135,7 +111,6 @@ public class TrialUIController : MonoBehaviour
         {
             analyzeTrialsButton.onClick.RemoveAllListeners();
             analyzeTrialsButton.onClick.AddListener(AnalyzeTrialResults);
-            Debug.Log("Analyze button listener added successfully");
         }
         else
         {
@@ -270,8 +245,6 @@ public class TrialUIController : MonoBehaviour
  
     public void UpdateTrialResults(float finalOxygen, bool completed, int currentTrial, int totalTrials)
     {
-        Debug.Log($"UpdateTrialResults: Trial {currentTrial}/{totalTrials}, O2={finalOxygen:F1}%, Completed={completed}");
-        
         // Switch status text objects
         if (currentTrial >= totalTrials)
         {
@@ -347,14 +320,6 @@ public class TrialUIController : MonoBehaviour
                     label.text = trialFailed ? "Skip to Next" : "Continue";
             }
         }
-        
-        // Back button - show only after all trials complete
-        if (backButton != null)
-        {
-            bool showBack = trialsMode && currentTrial >= totalTrials;
-            backButton.gameObject.SetActive(showBack);
-            Debug.Log($"Back button: trialsMode={trialsMode}, currentTrial={currentTrial}, totalTrials={totalTrials}, showBack={showBack}");
-        }
       
         if (analyzeTrialsButton != null)
         {
@@ -379,7 +344,7 @@ public class TrialUIController : MonoBehaviour
    
     public void AnalyzeTrialResults()
     {
-        Debug.Log("=== ANALYZE TRIAL RESULTS BUTTON CLICKED ===");
+       
         
         // Close trial panel without showing main (regression panel will appear)
         CloseTrialControlPanel(false);
@@ -391,28 +356,23 @@ public class TrialUIController : MonoBehaviour
         
         if (regressionUI != null)
         {
-            Debug.Log("Calling regressionUI.CalculateAndShowRegression()...");
             regressionUI.CalculateAndShowRegression();
         }
         else
         {
             Debug.LogError("ERROR: regressionUI is NULL! Not assigned in Inspector!");
-            Debug.LogError("Please assign TrialRegressionUI in the Inspector for TrialUIController");
         }
     }
     
    
     public void UpdateCompletionUI()
     {
-        Debug.Log("[TrialUI] UpdateCompletionUI called - showing completion screen");
-        
         if (mainPanel != null)
             mainPanel.SetActive(true);
         
         // Notify GameStateManager that panel is opened (so it can close again later)
         if (GameStateManager.Instance != null)
         {
-            Debug.Log("[TrialUI] Notifying GameStateManager that panel is opened");
             GameStateManager.Instance.NotifyPanelOpened();
         }
         
@@ -431,31 +391,23 @@ public class TrialUIController : MonoBehaviour
     
     
     // Random Parameters Mode - Toggle only (label is static in UI)
+    // Toggle logic: Checked (ON) = Constant/CSV, Unchecked (OFF) = Random
     private void OnRandomModeToggled(bool isOn)
     {
-        Debug.Log($"Random Parameters Mode: {(isOn ? "ON  - Will generate random parameters" : "OFF - Will load from CSV")}");
+        // Mode changed - handled by UI
     }
     
-    /// <summary>
-    /// Returns true if random parameters mode is enabled
-    /// </summary>
     public bool IsRandomParametersMode()
     {
-        return useRandomParametersToggle != null && useRandomParametersToggle.isOn;
+        return useRandomParametersToggle != null && !useRandomParametersToggle.isOn;
     }
     
-    /// <summary>
-    /// Close button handler - Restart the entire game scene
-    /// </summary>
     private void OnCloseButtonClicked()
     {
-        Debug.Log("[TrialUI] Close button clicked - Restarting game scene...");
-        
         // Find ScenesManager
         var scenesManager = FindObjectOfType<ScenesManager>();
         if (scenesManager != null)
         {
-            Debug.Log("[TrialUI] ScenesManager found, calling RestartGame()");
             scenesManager.RestartGame();
         }
         else

@@ -39,7 +39,7 @@ public class PlayerIntro : MonoBehaviour
 
         if (show && panelClosed)
         {
-            Debug.Log($"[PlayerIntro] Starting intro (show={show}, panelClosed={panelClosed})");
+           // Debug.Log($"[PlayerIntro] Starting intro (show={show}, panelClosed={panelClosed})");
             ProcessUserInputsInInitialForm();
             StartCoroutine(ShowInfoTextAndKeys());
             show = false;
@@ -51,7 +51,7 @@ public class PlayerIntro : MonoBehaviour
         // Null checks to prevent errors
         if (playerMovement == null)
         {
-            Debug.LogWarning("[PlayerIntro] playerMovement is null, skipping input processing");
+            //Debug.LogWarning("[PlayerIntro] playerMovement is null, skipping input processing");
             return;
         }
         
@@ -96,7 +96,7 @@ public class PlayerIntro : MonoBehaviour
             playerMovement.afterText = false;
         }
 
-        Debug.Log("PlayerIntro reset - intro text will play again for next trial");
+        //Debug.Log("PlayerIntro reset - intro text will play again for next trial");
     }
 
     private IEnumerator ShowInfoTextAndKeys()
@@ -120,12 +120,12 @@ public class PlayerIntro : MonoBehaviour
             if (playerMovement != null)
             {
                 playerMovement.afterText = true;
-                Debug.Log("[PlayerIntro] Set playerMovement.afterText = true");
+                //Debug.Log("[PlayerIntro] Set playerMovement.afterText = true");
             }
 
             // Notify GameStateManager that intro is complete
             GameStateManager.Instance?.NotifyIntroComplete();
-            Debug.Log("[PlayerIntro] Intro complete, notified GameStateManager");
+           // Debug.Log("[PlayerIntro] Intro complete, notified GameStateManager");
         }
         else
         {
@@ -142,11 +142,11 @@ public class PlayerIntro : MonoBehaviour
             elapsedTime += Time.unscaledDeltaTime;
             if (Input.GetKeyDown(KeyCode.Return))
             {
-                Debug.Log("[PlayerIntro] Skipping intro (Enter pressed)");
+               // Debug.Log("[PlayerIntro] Skipping intro (Enter pressed)");
                 yield break;
             }
             yield return null;
         }
-        Debug.Log($"[PlayerIntro] Wait completed ({seconds}s)");
+       // Debug.Log($"[PlayerIntro] Wait completed ({seconds}s)");
     }
 }

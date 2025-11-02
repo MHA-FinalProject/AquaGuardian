@@ -3,6 +3,7 @@ using System;
 
 /**
  * Game State Manager that manages the game state and triggers events when the game state changes
+ * such as panel closed, intro complete, game start, and game end. 
  */
 public class GameStateManager : MonoBehaviour
 {
@@ -53,15 +54,13 @@ public class GameStateManager : MonoBehaviour
         panelClosed = false;
         //Debug.Log("GameStateManager: Panel opened (reset)");
     }
-
-    
    
     public void NotifyIntroComplete()
     {
         if (introComplete) return; 
         
         introComplete = true;
-        Debug.Log("GameStateManager: Intro complete");
+        //Debug.Log("GameStateManager: Intro complete");
         OnIntroComplete?.Invoke();
         
         CheckGameStart();
@@ -77,7 +76,7 @@ public class GameStateManager : MonoBehaviour
         }
     }
     
-        
+    
     public static void SetTrialsActive(bool active)
     {
         _trialsActive = active;

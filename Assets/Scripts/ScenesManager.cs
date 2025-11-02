@@ -27,28 +27,19 @@ public class ScenesManager : MonoBehaviour
         SceneManager.LoadScene("how_to_play");
     }
     
-  
     public void RestartGame()
     {
-       
-        
-        // Reset game state
         ResetGameState();
-        
-        // Stop time
         Time.timeScale = 1f;
         
-        // Reload current scene
         string currentScene = SceneManager.GetActiveScene().name;
         SceneManager.LoadScene(currentScene);
         
         Debug.Log($"Restarted scene: {currentScene}");
     }
     
-    
     private void ResetGameState()
     {
-        // Reset GameStateManager
         if (GameStateManager.Instance != null)
         {
             GameStateManager.Instance.ResetState();
@@ -56,20 +47,15 @@ public class ScenesManager : MonoBehaviour
             Debug.Log("GameStateManager reset");
         }
         
-        // Clear trial cache if it exists
         if (TrialDataCache.Instance != null)
         {
-            // Don't clear cache - we want to keep history!
             Debug.Log(" TrialDataCache preserved (history intact)");
         }
         
-        // Reset time scale
         Time.timeScale = 1f;
-        
         Debug.Log(" Game state reset complete");
     }
 
-    // Quit the game and close the application
     public void QuitGame()
     {
         Application.Quit();

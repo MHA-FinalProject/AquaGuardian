@@ -726,8 +726,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Well Done \nReady for next level?"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 30810f764b53a1346804565c00d9d4b7, type: 2}
-  m_sharedMaterial: {fileID: 5170099993418124099, guid: 30810f764b53a1346804565c00d9d4b7, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 715ec629432fdf74ea139199a85db78b, type: 2}
+  m_sharedMaterial: {fileID: 8677837578525826937, guid: 715ec629432fdf74ea139199a85db78b, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -860,8 +860,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: ' play again'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: ca3b5f3a3698a8b469aa098ee1689a1e, type: 2}
-  m_sharedMaterial: {fileID: -1601391313722973205, guid: ca3b5f3a3698a8b469aa098ee1689a1e, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 1605c90e15f0f2648a290d7d30378ee7, type: 2}
+  m_sharedMaterial: {fileID: 2830284704922502620, guid: 1605c90e15f0f2648a290d7d30378ee7, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1188,8 +1188,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: menu
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: ca3b5f3a3698a8b469aa098ee1689a1e, type: 2}
-  m_sharedMaterial: {fileID: -1601391313722973205, guid: ca3b5f3a3698a8b469aa098ee1689a1e, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 1605c90e15f0f2648a290d7d30378ee7, type: 2}
+  m_sharedMaterial: {fileID: 2830284704922502620, guid: 1605c90e15f0f2648a290d7d30378ee7, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

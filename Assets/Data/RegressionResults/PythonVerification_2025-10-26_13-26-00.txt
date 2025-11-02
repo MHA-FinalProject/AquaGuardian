@@ -1,0 +1,81 @@
+
+Regression analysis - full report (Python verification):
+Trials analyzed: 5
+
+Trials: [1, 2, 3, 4, 5]
+Total: 5
+Avg O2: 67.3%
+
+Metrics:
+R^2=0.9920 | Adj R^2=N/A
+RMSE=1.728% | MAE=1.491%
+
+Actual vs Predicted:
+T | Actual | Pred | Err | Status
+--|--------|------|-----|-------
+ 1|   67.5% |  66.6%|  0.9%| Exc
+ 2|   69.2% |  69.0%|  0.2%| Exc
+ 3|   94.1% |  91.4%|  2.6%| Exc
+ 4|   72.0% |  73.6%|  1.6%| Exc
+ 5|   33.9% |  36.0%|  2.1%| Exc
+Avg Error: 1.5%
+
+Feature importance (|coefficient|):
+healHealthPoint: 9.30 ########################################
+downHealthPairSec: 8.28 ###################################
+lifeTime: 7.23 ###############################
+speed: 3.49 ##############
+removeHealthWithCollide: 2.94 ############
+
+Raw trial data:
+
+Trial 1:
+  Speed: 11.40
+  VerticalSpeed: 15.84
+  IdleUpwardSpeed: 0.98
+  LifeTime: 2.77
+  O2DropPerSec: 3.45
+  CollisionDamage: 10.57
+  TimeBetweenCollides: 3.76
+  HealPoints: 9.20
+  FinalO2: 67.5%
+Trial 2:
+  Speed: 14.51
+  VerticalSpeed: 27.62
+  IdleUpwardSpeed: 1.87
+  LifeTime: 1.88
+  O2DropPerSec: 2.22
+  CollisionDamage: 6.18
+  TimeBetweenCollides: 2.75
+  HealPoints: 3.84
+  FinalO2: 69.2%
+Trial 3:
+  Speed: 35.46
+  VerticalSpeed: 38.00
+  IdleUpwardSpeed: 1.55
+  LifeTime: 1.33
+  O2DropPerSec: 1.39
+  CollisionDamage: 9.18
+  TimeBetweenCollides: 2.68
+  HealPoints: 14.37
+  FinalO2: 94.1%
+Trial 4:
+  Speed: 33.07
+  VerticalSpeed: 30.93
+  IdleUpwardSpeed: 0.90
+  LifeTime: 1.11
+  O2DropPerSec: 2.51
+  CollisionDamage: 9.06
+  TimeBetweenCollides: 1.46
+  HealPoints: 11.21
+  FinalO2: 72.0%
+Trial 5:
+  Speed: 15.84
+  VerticalSpeed: 37.65
+  IdleUpwardSpeed: 1.71
+  LifeTime: 0.90
+  O2DropPerSec: 3.07
+  CollisionDamage: 10.97
+  TimeBetweenCollides: 4.74
+  HealPoints: 3.25
+  FinalO2: 33.9%

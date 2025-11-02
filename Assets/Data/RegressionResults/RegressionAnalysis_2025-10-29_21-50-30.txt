@@ -1,0 +1,119 @@
+Regression Analysis | 2025-10-29 21:50:30 | 5 trials
+
+Trials: [4,2,3,5,1] (0R+5Rand)
+Avg O2: 82.6% | Perfect: 0 | Failed: 0
+R^2=0.992 AdjR^2=NaN RMSE=0.93% MAE=0.82%
+CV: N/A (too few samples)
+
+Actual vs Predicted:
+T | Actual | Pred | Err | Duration
+--|--------|------|-----|----------
+ 4R|  91.8% | 91.0%| 0.8%|    4.0s
+ 2R|  87.3% | 87.0%| 0.3%|    2.0s
+ 3R|  76.8% | 75.8%| 1.0%|    3.0s
+ 5R|  65.1% | 66.7%| 1.6%|    5.0s
+ 1R|  92.2% | 92.6%| 0.5%|    1.0s
+Avg Error: 0.8% | Avg Duration: 3.0s
+
+
+Feature Importance (Impact on Oxygen):
+  speed                     3.7237
+  timeBetweenCollides       3.3387
+  removeHealthWithCollide   3.0607
+  healHealthPoint           2.3206
+  lifeTime                  1.7208
+  downHealthPairSec         0.7228
+  verticalSpeed             0.6041
+  idleUpwardSpeed           0.4533
+  factorForce               0.0000
+
+Regression Coefficients (β values):
+  Intercept (β₀)              82.6180
+  Speed                         3.7237
+  VerticalSpeed                -0.6041
+  IdleUpwardSpeed               0.4533
+  LifeTime                      1.7208
+  O2DropPerSec                 -0.7228
+  CollisionDamage              -3.0607
+  TimeBetweenCollides           3.3387
+  HealPoints                    2.3206
+  FactorForce                   0.0000
+
+
+OPTIMIZED PARAMETERS FOR TARGET 10% OXYGEN
+
+Predicted: 48.65% | Error: 38.652%
+
+Parameters:
+  Speed               =    10.00
+  VerticalSpeed       =    30.00
+  IdleUpwardSpeed     =     1.51
+  LifeTime            =     0.50s
+  O2DropPerSec        =     3.75
+  CollisionDamage     =    20.00%
+  TimeBetweenCollides =     1.00s
+  HealPoints          =     3.00%
+  FactorForce         =     2.75x
+
+
+=== GRADIENT DESCENT OPTIMIZATION ===
+Target O2: 10.00%
+Optimizing 5 most important features:
+  - speed: coefficient = 3.7237
+  - timeBetweenCollides: coefficient = 3.3387
+  - removeHealthWithCollide: coefficient = -3.0607
+  - healHealthPoint: coefficient = 2.3206
+  - lifeTime: coefficient = 1.7208
+
+INITIAL STATE:
+  speed                     = 25.00
+  timeBetweenCollides       = 3.00
+  removeHealthWithCollide   = 12.50
+  healHealthPoint           = 9.00
+  lifeTime                  = 2.25
+
+Predicted O2: 73.71%
+Error: 63.71%
+
+
+
+Iteration 1:
+  Current O2: 73.71% | Target: 10.00% | Error: 63.711%
+  Learning Rate: 0.200
+    speed                   decreased  25.00 to 10.00 (change: -+F2)
+    timeBetweenCollides     decreased  3.00 to 1.00 (change: -+F2)
+    removeHealthWithCollide increased  12.50 to 20.00 (change: +F2)
+    healHealthPoint         decreased  9.00 to 3.00 (change: -+F2)
+    lifeTime                decreased  2.25 to 0.50 (change: -+F2)
+
+Iteration 2:
+  Current O2: 48.65% | Target: 10.00% | Error: 38.652%
+  Learning Rate: 0.200
+
+Stopped at iteration 2: All parameters at bounds
+
+
+FINAL OPTIMIZED PARAMETERS:
+  speed                     = 10.00
+  verticalSpeed             = 30.00
+  idleUpwardSpeed           = 1.51
+  lifeTime                  = 0.50
+  downHealthPairSec         = 3.75
+  removeHealthWithCollide   = 20.00
+  timeBetweenCollides       = 1.00
+  healHealthPoint           = 3.00
+  factorForce               = 2.75
+
+>>> RESULT:
+    Predicted O2: 48.65%
+    Target O2:    10.00%
+    Error:        38.652%
+    Quality:      FAIR
+
+
+Raw Data:
+T4: Spd=34.12 VSpd=20.93 ISpd=0.93 Life=4.81 O2Drop=1.83 CollDmg=6.44 CD=4.07 Heal=9.91 Force=3.00 FinalO2=91.8% Duration=4.0s
+T2: Spd=21.55 VSpd=29.08 ISpd=1.39 Life=2.48 O2Drop=1.28 CollDmg=10.07 CD=4.36 Heal=14.54 Force=3.00 FinalO2=87.3% Duration=2.0s
+T3: Spd=26.61 VSpd=37.52 ISpd=0.93 Life=2.48 O2Drop=1.53 CollDmg=13.39 CD=2.14 Heal=11.25 Force=3.00 FinalO2=76.8% Duration=3.0s
+T5: Spd=13.21 VSpd=32.55 ISpd=0.66 Life=2.51 O2Drop=1.36 CollDmg=16.48 CD=1.49 Heal=10.27 Force=3.00 FinalO2=65.1% Duration=5.0s
+T1: Spd=39.48 VSpd=25.74 ISpd=1.94 Life=4.09 O2Drop=2.93 CollDmg=4.94 CD=4.26 Heal=10.00 Force=3.00 FinalO2=92.2% Duration=1.0s

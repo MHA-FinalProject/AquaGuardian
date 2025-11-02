@@ -14,7 +14,6 @@ public class PlayerLife : MonoBehaviour
     [Header("Collision Tracking")]
     private int collisionCount = 0;
     private bool canCollide = true;
-    private float waitTime = 2f;
 
     // ----- Health Management -----
     [Header("Health Management")]
@@ -40,8 +39,7 @@ public class PlayerLife : MonoBehaviour
     [SerializeField] private Image bloodSplatterImage;  // Reference to the blood splatter image
 
     // ----- Fade Control -----
-    private float colorAlphaValue = 0.5f;  // Alpha value for visual effects
-    private float timeUntilFadeOut = 1.2f;  // Time until fade out occurs (reduced for trials)
+    // Values are now loaded from GameConfig.Instance
 
     void Start()
     {
@@ -78,9 +76,7 @@ public class PlayerLife : MonoBehaviour
         GameStateManager.OnPanelClosed -= OnPanelClosed;
     }
 
-    /// <summary>
-    /// Called when the panel is closed via GameStateManager
-    /// </summary>
+    // Called when the panel is closed via GameStateManager
     private void OnPanelClosed()
     {
         ProcessUserInputs();
@@ -90,7 +86,7 @@ public class PlayerLife : MonoBehaviour
     {
         if (didntGetInputsYet)
         {
-            ProcessUserInputs(); //
+            ProcessUserInputs(); 
             didntGetInputsYet = false;
         }
     }
@@ -115,7 +111,21 @@ public class PlayerLife : MonoBehaviour
 
         StopAllCoroutines();
         canCollide = true;
-        waitTime = timeBetweenCollides;
+    }
+    
+    private float GetWaitTime()
+    {
+        return GameConfig.Instance != null ? GameConfig.Instance.playerLifeWaitTime : 2f;
+    }
+    
+    private float GetColorAlphaValue()
+    {
+        return GameConfig.Instance != null ? GameConfig.Instance.colorAlphaValue : 0.5f;
+    }
+    
+    private float GetTimeUntilFadeOut()
+    {
+        return GameConfig.Instance != null ? GameConfig.Instance.timeUntilFadeOut : 3f;
     }
 
     void OnCollisionEnter(Collision collision)
@@ -162,22 +172,25 @@ public class PlayerLife : MonoBehaviour
 
     IEnumerator ShowBloodSplatter()
     {
-        if (bloodSplatterImage != null)
+        if (bloodSplatterImage == null) yield break;
+        
+        // Get values from GameConfig.Instance
+        float alphaValue = GetColorAlphaValue();
+        float fadeTime = GetTimeUntilFadeOut();
+        
+        Color color = bloodSplatterImage.color;
+        color.a = alphaValue;
+        bloodSplatterImage.color = color;
+
+        for (float t = 0; t < fadeTime; t += Time.deltaTime)
         {
-            Color color = bloodSplatterImage.color;
-            color.a = colorAlphaValue;
+            color.a = Mathf.Lerp(alphaValue, 0f, t / fadeTime);
             bloodSplatterImage.color = color;
-
-            for (float t = 0; t < timeUntilFadeOut; t += Time.deltaTime)
-            {
-                color.a = Mathf.Lerp(colorAlphaValue, 0f, t / timeUntilFadeOut);
-                bloodSplatterImage.color = color;
-                yield return null;
-            }
-
-            color.a = 0f;
-            bloodSplatterImage.color = color;
+            yield return null;
         }
+
+        color.a = 0f;
+        bloodSplatterImage.color = color;
     }
 
     IEnumerator Wait(float number)

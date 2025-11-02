@@ -5,11 +5,49 @@ public class GameConfig : ScriptableObject
 {
     // Singleton instance for easy access
     //TODO: connect this with health.cs and etc..
-    public static GameConfig Instance { get; private set; }
+    public static GameConfig Instance 
+    { 
+        get 
+        {
+            if (_instance == null)
+            {
+                // Try to load from Resources folder
+                _instance = Resources.Load<GameConfig>("GameConfig");
+                
+                // If not found in Resources, try to find in Assets (Editor only)
+                #if UNITY_EDITOR
+                if (_instance == null)
+                {
+                    string[] guids = UnityEditor.AssetDatabase.FindAssets("t:GameConfig");
+                    if (guids.Length > 0)
+                    {
+                        string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
+                        _instance = UnityEditor.AssetDatabase.LoadAssetAtPath<GameConfig>(path);
+                    }
+                }
+                #endif
+                
+                if (_instance == null)
+                {
+                    Debug.LogWarning("GameConfig asset not found! Please create one via Assets > Create > AquaGuardian > Game Config and place it in a Resources folder.");
+                }
+            }
+            return _instance;
+        }
+        private set
+        {
+            _instance = value;
+        }
+    }
+    
+    private static GameConfig _instance;
     
     private void OnEnable()
     {
-        Instance = this;
+        if (_instance == null)
+        {
+            _instance = this;
+        }
     }
     [Header("Defaults")]
     public float oxygenPerBalloon = 5f;
@@ -38,11 +76,14 @@ public class GameConfig : ScriptableObject
     [Tooltip("Number of trials to run in trial mode")] public int totalTrials = 5;
     [Tooltip("If true, use random parameters instead of CSV")] public bool useRandomParameters = false;
     [Tooltip("Relative path under Assets/ to Trial parameters CSV")] public string trialParametersPath = "Data/Trials/Trial_5_runs_.csv";
+    
+    [Header("Cave Files for Trials")]
+    [Tooltip("Array of cave CSV files for each trial (index 0 = trial 1, etc.)")] public TextAsset[] caveFiles = new TextAsset[5];
     [Tooltip("Load caves per trial via path pattern (e.g. Data/Cave_{n}.csv)")] public bool useCaveFilePathPattern = true;
-    [Tooltip("Relative path pattern under Assets/ for caves per trial")] public string caveFilePathPattern = "Data/caves{n}.csv";
+    [Tooltip("Relative path pattern under Assets/ for caves per trial")] public string caveFilePathPattern = "Data/Cave{n}.csv";
 
     [Header("Trial Fish Defaults")]
-    public bool animateTrialFish = false;
+   
     public Vector3 trialFishScale = new Vector3(2f, 0.8f, 1f);
     public bool debugFishPosition = true;
     public bool addGoToEndGameToFish = true;

@@ -116,8 +116,6 @@ public class TrialSystemManager : MonoBehaviour
 
     public void CompleteAllTrials()
     {
-        Debug.Log("[TrialSystem] Completing all trials");
-        
         ExitTrialsMode();
         
         if (systemResetter != null)
@@ -165,15 +163,13 @@ public class TrialSystemManager : MonoBehaviour
         DisableAllFinishers();
 
         if (systemResetter != null)
+        {
             systemResetter.CleanupSpawned();
+            systemResetter.ResetPlayerToStartPosition();
+            systemResetter.ResetGameSystemsForTrial();
+        }
         if (panelOpenUp != null)
             panelOpenUp.caveInfos.Clear();
-
-        if (systemResetter != null)
-            systemResetter.ResetPlayerToStartPosition();
-
-        if (systemResetter != null)
-            systemResetter.ResetGameSystemsForTrial();
         
         if (!GameStateManager.AreTrialsActive)
         {
@@ -221,6 +217,11 @@ public class TrialSystemManager : MonoBehaviour
             uiController.UpdateTrialUI(currentTrialNumber, totalTrials);
 
         GameStateManager.Instance?.NotifyPanelClosed();
+        
+        // Start timing the trial
+        trialStartTime = Time.time;
+        Debug.Log($"[TrialSystem] Trial {currentTrialNumber} started");
+        
         _startingNext = false;
     }
     
@@ -242,19 +243,16 @@ public class TrialSystemManager : MonoBehaviour
         DisableAllFinishers();
 
         if (systemResetter != null)
+        {
             systemResetter.CleanupSpawned();
+            systemResetter.ResetPlayerToStartPosition();
+            systemResetter.ResetGameSystemsForTrial();
+        }
         if (panelOpenUp != null)
             panelOpenUp.caveInfos.Clear();
 
-        // Increment trial number only if previous completed or first trial
         if (currentTrialNumber == 0 || (currentTrialData != null && currentTrialData.completed))
             currentTrialNumber++;
-
-        if (systemResetter != null)
-            systemResetter.ResetPlayerToStartPosition();
-
-        if (systemResetter != null)
-            systemResetter.ResetGameSystemsForTrial();
 
         try
         {
@@ -296,14 +294,74 @@ public class TrialSystemManager : MonoBehaviour
             uiController.UpdateTrialUI(currentTrialNumber, totalTrials);
 
         GameStateManager.Instance?.NotifyPanelClosed();
+        
+        // Start timing the trial
+        trialStartTime = Time.time;
+        Debug.Log($"[TrialSystem] Trial {currentTrialNumber} started");
+        
         _startingNext = false;
     }
     
  
     private void EndTrialAndShowPanel(float finalOxygen, bool completed)
     {
+        // Calculate trial duration
+        float trialEndTime = Time.time;
+        float duration = trialEndTime - trialStartTime;
+        
+        // Determine if Amadeo/Emulation was ACTUALLY used during this trial
+        // Check both: 1) Configuration (InputType), AND 2) Actual input source during trial
+        AmadeoClient amadeoClient = FindObjectOfType<AmadeoClient>();
+        PlayerMovement playerMovement = FindObjectOfType<PlayerMovement>();
+        float isAmadeoMode = 0f;
+        
+        if (amadeoClient != null && playerMovement != null)
+        {
+            // Check configuration
+            InputType inputType = amadeoClient.CurrentInputType;
+            bool isConfiguredForAmadeo = (inputType == InputType.Amadeo || inputType == InputType.EmulationMode);
+            
+            // Check actual input usage during trial
+            bool actuallyUsedAmadeo = playerMovement.ActuallyUsedAmadeoInput;
+            
+            // Set IsAmadeoMode only if BOTH conditions are met:
+            // 1. Configured for Amadeo/Emulation mode
+            // 2. Movement actually came from Amadeo (not keyboard fallback)
+            if (isConfiguredForAmadeo && actuallyUsedAmadeo)
+            {
+                isAmadeoMode = 1f;
+                Debug.Log($"[TrialSystemManager] Trial {currentTrialData.trialId}: Amadeo mode - Configured={isConfiguredForAmadeo}, ActuallyUsed={actuallyUsedAmadeo}, AmadeoCount={playerMovement.amadeoInputCount}, KeyboardCount={playerMovement.keyboardInputCount}");
+            }
+            else
+            {
+                isAmadeoMode = 0f;
+                if (isConfiguredForAmadeo && !actuallyUsedAmadeo)
+                {
+                    Debug.Log($"[TrialSystemManager] Trial {currentTrialData.trialId}: Configured for Amadeo but used keyboard (fallback) - AmadeoCount={playerMovement.amadeoInputCount}, KeyboardCount={playerMovement.keyboardInputCount}");
+                }
+                else
+                {
+                    Debug.Log($"[TrialSystemManager] Trial {currentTrialData.trialId}: Keyboard mode - AmadeoCount={playerMovement.amadeoInputCount}, KeyboardCount={playerMovement.keyboardInputCount}");
+                }
+            }
+        }
+        else if (amadeoClient != null)
+        {
+            // Fallback: check configuration only if PlayerMovement not found
+            InputType inputType = amadeoClient.CurrentInputType;
+            if (inputType == InputType.Amadeo || inputType == InputType.EmulationMode)
+            {
+                isAmadeoMode = 1f;
+                Debug.LogWarning($"[TrialSystemManager] Trial {currentTrialData.trialId}: PlayerMovement not found, using configuration only (InputType={inputType})");
+            }
+        }
+        
         currentTrialData.finalOxygenRemaining = finalOxygen;
         currentTrialData.completed = completed;
+        currentTrialData.trialDuration = duration;
+        currentTrialData.IsAmadeoMode = isAmadeoMode;
+        
+        Debug.Log($" Trial {currentTrialData.trialId} ended - O2: {finalOxygen:F1}%, Duration: {duration:F1}s, Completed: {completed}, IsAmadeoMode: {isAmadeoMode}");
         
         if (completed)
             PlayTrialCompletionSound();
@@ -312,7 +370,9 @@ public class TrialSystemManager : MonoBehaviour
         {
             bool csvSaved = parameterManager.SaveTrialResultToCSV(currentTrialData);
             if (!csvSaved)
-                Debug.LogError($"Failed to save trial {currentTrialData.trialId} results to CSV!");
+            {
+                Debug.LogError($"[TrialSystem] Failed to save trial {currentTrialData.trialId} results to CSV!");
+            }
         }
 
         PrepareForNextTrial();
@@ -347,7 +407,6 @@ public class TrialSystemManager : MonoBehaviour
         trialsMode = false;
         GameStateManager.SetTrialsActive(false);
         
-        // Close trial panel without showing main (UpdateCompletionUI will show it)
         if (uiController != null)
             uiController.CloseTrialControlPanel(false);
         
@@ -355,47 +414,6 @@ public class TrialSystemManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
-    
-    private void RestoreOriginalGameState()
-    {
-        Debug.Log("[TrialSystem] Restoring original game state after trials complete");
-        
-        // Ensure time is running (critical for intro animations)
-        Time.timeScale = 1f;
-        Debug.Log($"[TrialSystem] Set Time.timeScale = {Time.timeScale}");
-        
-        ReenableFinishers();
-        
-        if (panelOpenUp != null)
-            panelOpenUp.RestoreOriginalCaveFile();
-        
-        // Reset PlayerIntro so it can run again in normal mode
-        var playerIntro = FindObjectOfType<PlayerIntro>();
-        if (playerIntro != null)
-        {
-            Debug.Log("[TrialSystem] Resetting PlayerIntro");
-            playerIntro.ResetIntro();
-        }
-        else
-        {
-            Debug.LogWarning("[TrialSystem] PlayerIntro not found!");
-        }
-        
-        // Reset GameStateManager so intro and panel states are cleared
-        if (GameStateManager.Instance != null)
-        {
-            Debug.Log("[TrialSystem] Resetting GameStateManager");
-            GameStateManager.Instance.ResetState();
-        }
-        else
-        {
-            Debug.LogWarning("[TrialSystem] GameStateManager.Instance is null!");
-        }
-        
-        currentTrialNumber = 0;
-        Debug.Log("[TrialSystem] Original game state restored");
-    }
-    
     
     private void DisableAllFinishers()
     {

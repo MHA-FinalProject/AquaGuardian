@@ -1,0 +1,30 @@
+Regression Analysis | 2025-10-29 18:19:05 | 5 trials
+
+Trials: [1,2,3,4,5] (5R+0Rand)
+Avg O2: 46.5% | Perfect: 1 | Failed: 0
+R^2=0.995 AdjR^2=NaN RMSE=1.62% MAE=1.57%
+CV: N/A (too few samples)
+
+Actual vs Predicted:
+T | Actual | Pred | Err | Status
+--|--------|------|-----|-------
+ 1 |  80.0% | 78.2%| 1.8%| Exc
+ 2 |  36.5% | 37.5%| 1.0%| Exc
+ 3 |  44.0% | 45.2%| 1.2%| Exc
+ 4 |  62.0% | 59.8%| 2.2%| Exc
+ 5 |  10.0% | 11.7%| 1.7%| Exc
+Avg Error: 1.6%
+
+Top Features: downHealthPairSec(13.75), removeHealthWithCollide(6.86), timeBetweenCollides(5.14), idleUpwardSpeed(4.36)
+
+Optimized Params (Target 10%):
+Result: 10.26% | Error: 0.257%
+Spd=25.00 VSpd=30.00 ISpd=0.40 Life=2.25s O2Drop=5.07/s CollDmg=18.30% CD=1.81s Heal=3.00% Force=2.75x
+
+
+Raw Data:
+T1: Spd=16.00 VSpd=30.00 ISpd=0.01 Life=2.00 O2Drop=2.00 CollDmg=5.00 CD=2.00 Heal=10.00 Force=3.00 FinalO2=80.0%
+T2: Spd=12.00 VSpd=35.00 ISpd=0.50 Life=1.50 O2Drop=3.50 CollDmg=8.00 CD=1.00 Heal=5.00 Force=2.50 FinalO2=36.5%
+T3: Spd=22.00 VSpd=28.00 ISpd=0.30 Life=1.00 O2Drop=3.00 CollDmg=9.00 CD=1.50 Heal=4.00 Force=3.50 FinalO2=44.0%
+T4: Spd=18.00 VSpd=38.00 ISpd=0.80 Life=0.80 O2Drop=1.00 CollDmg=10.00 CD=1.10 Heal=3.00 Force=4.00 FinalO2=62.0%
+T5: Spd=14.00 VSpd=40.00 ISpd=0.10 Life=1.20 O2Drop=4.00 CollDmg=12.00 CD=1.20 Heal=6.00 Force=5.00 FinalO2=10.0%

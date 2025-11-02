@@ -16,11 +16,9 @@ public class GoToEndGame : MonoBehaviour
     {
         if (!other.CompareTag("Player")) return;
 
-    
         if (oneShot && _consumed) return;
         _consumed = true;
 
-        // Disable collider to prevent multiple triggers
         var col = GetComponent<Collider>();
         if (col) col.enabled = false;
 
@@ -29,22 +27,15 @@ public class GoToEndGame : MonoBehaviour
 
     private IEnumerator ExportAndLoad()
     {
-        // Export session CSV upon reaching the end
-        var tracker = Object.FindObjectOfType<CaveTracker>();
         var panel = Object.FindObjectOfType<PanelOpenUp>();
         var health = Object.FindObjectOfType<Health>();
         var player = Object.FindObjectOfType<PlayerMovement>();
 
-
-        ReportExporter.SaveSessionCsv(tracker, panel, health, player);
-
         float finalOxygen = health != null ? health.GetOxygen() : 0f;
 
-        // During trials (or when attached to the temporary TrialFish), do NOT load a scene
         bool trials = GameStateManager.AreTrialsActive;
         if (!trials && GameStateManager.Instance == null)
         {
-            // Try to recover instance and re-check
             trials = GameStateManager.AreTrialsActive;
         }
         if (trials || gameObject.CompareTag("TrialFish"))
@@ -57,10 +48,8 @@ public class GoToEndGame : MonoBehaviour
             yield break;
         }
 
-
         GameStateManager.NotifyGameEnded(finalOxygen, true);
         yield return new WaitForEndOfFrame();
         SceneManager.LoadScene(sceneName);
-        
     }
 }

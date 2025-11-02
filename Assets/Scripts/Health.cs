@@ -18,15 +18,13 @@ public class Health : MonoBehaviour
 
     [Header("Health Settings")]
     private float health = 100f;
-    private float maxHealth = 100f;
     private float lerpSpeed;
-    private float factorLerpSpeed = 3f;
 
     [Header("Lifetime & Damage Settings")]
     private float lifeTime;
     public TMP_InputField lifeTime_inputField;
-    private float downHealthPairSec;
-    public TMP_InputField downHealthPairSec_inputField;
+    private float RemoveHealthEveryLifeTime;  // Health removed every lifeTime cycle
+    public TMP_InputField RemoveHealthEveryLifeTime_inputField;
 
     [Header("Internal States")]
     private bool moveOxygen = false;
@@ -34,13 +32,29 @@ public class Health : MonoBehaviour
 
     void Start()
     {
-        health = maxHealth;
+        health = GetMaxHealth();
 
         if (Panel != null && !Panel.activeSelf)
         {
             moveOxygen = true;
             StartCoroutine(DisappearHealthPoints());
         }
+    }
+    
+    // Get max health from GameConfig.Instance (fallback to 100f if not available)
+    private float GetMaxHealth()
+    {
+        if (GameConfig.Instance != null)
+            return GameConfig.Instance.maxHealth;
+        return 100f;
+    }
+    
+    // Get factor lerp speed from GameConfig.Instance (fallback to 3f if not available)
+    private float GetFactorLerpSpeed()
+    {
+        if (GameConfig.Instance != null)
+            return GameConfig.Instance.factorLerpSpeed;
+        return 3f;
     }
 
     void Update()
@@ -51,7 +65,9 @@ public class Health : MonoBehaviour
             didntGetInputsYet = false;
         }
 
-        healthText.text = "Oxygen: " + health + "%";
+        // Smart formatting: shows up to 3 decimals, removes trailing zeros
+        // 100.000 → "100", 97.8 → "97.8", 97.8975666 → "97.898"
+        healthText.text = "Oxygen: " + health.ToString("0.###") + "%";
 
         healthBarFiller();
         colorChanger();
@@ -67,26 +83,27 @@ public class Health : MonoBehaviour
             StartCoroutine(DisappearHealthPoints());
         }
 
+        float maxHealth = GetMaxHealth();
         if (health > maxHealth)
         {
             health = maxHealth;
         }
 
-        lerpSpeed = factorLerpSpeed * Time.deltaTime;
+        lerpSpeed = GetFactorLerpSpeed() * Time.deltaTime;
     }
 
     public void ProcessUserInputs()
     {
         bool isLifeTimeValid = float.TryParse(lifeTime_inputField.text, out lifeTime);
-        bool isDownHealthPairSecValid = float.TryParse(downHealthPairSec_inputField.text, out downHealthPairSec);
-        if (isLifeTimeValid && isDownHealthPairSecValid)
+        bool isRemoveHealthValid = float.TryParse(RemoveHealthEveryLifeTime_inputField.text, out RemoveHealthEveryLifeTime);
+        if (isLifeTimeValid && isRemoveHealthValid)
         {
             lifeTime = float.Parse(lifeTime_inputField.text);
-            downHealthPairSec = float.Parse(downHealthPairSec_inputField.text);
+            RemoveHealthEveryLifeTime = float.Parse(RemoveHealthEveryLifeTime_inputField.text);
         }
         else
         {
-            Debug.LogError($"Input parsing failed: lifeTime={lifeTime_inputField.text}, downHealthPairSec={downHealthPairSec_inputField.text}");
+            Debug.LogError($"Input parsing failed: lifeTime={lifeTime_inputField.text}, RemoveHealthEveryLifeTime={RemoveHealthEveryLifeTime_inputField.text}");
         }
 
         StopAllCoroutines();
@@ -95,12 +112,14 @@ public class Health : MonoBehaviour
 
     void healthBarFiller()
     {
+        float maxHealth = GetMaxHealth();
         healthBar.fillAmount = Mathf.Lerp(healthBar.fillAmount, health / maxHealth, lerpSpeed);
     }
 
     // Changes the color of the health bar based on the current health percentage
     void colorChanger()
     {
+        float maxHealth = GetMaxHealth();
         Color healthColor = Color.Lerp(Color.red, Color.green, (health / maxHealth));
         healthBar.color = healthColor;
     }
@@ -120,10 +139,8 @@ public class Health : MonoBehaviour
 
     public void heal(float healingPoint)
     {
-        if (health < maxHealth)
-        {
-            health += healingPoint;
-        }
+        float maxHealth = GetMaxHealth();
+        health = Mathf.Clamp(health + healingPoint, 0, maxHealth);
     }
 
     IEnumerator DisappearHealthPoints()
@@ -132,7 +149,7 @@ public class Health : MonoBehaviour
         {
             yield return new WaitForSeconds(lifeTime);
 
-            damage(downHealthPairSec);
+            damage(RemoveHealthEveryLifeTime);
 
             if (i <= 0)
             {
@@ -150,7 +167,7 @@ public class Health : MonoBehaviour
         if (trialsActive)
         {
             // In trials: Open trial panel and notify
-            Debug.Log("[Health] Trial failed - Opening trial panel");
+            //Debug.Log("[Health] Trial failed - Opening trial panel");
             
             // Stop game time
             Time.timeScale = 0f;

@@ -1,0 +1,94 @@
+Regression analysis - full report:
+Generated: 2025-10-26 14:06:18
+Trials analyzed: 5
+
+Trials: [1,2,3,4,5]
+Total: 5 (Reg:0, Rand:5)
+Avg O2: 68.3% Perfect: 0 Failed: 0
+Model Metrics (Training):
+  R^2=0.9970 | Adj R^2=NaN
+  RMSE=1.152% | MAE=0.890%
+CV: N/A (too few samples)
+
+Actual vs Predicted:
+T | Actual | Pred | Err | Status
+--|--------|------|-----|-------
+ 1R|  82.1% | 82.1%| 0.1%| Exc
+ 2R|  64.7% | 64.3%| 0.4%| Exc
+ 3R|  70.5% | 71.0%| 0.5%| Exc
+ 4R|  31.3% | 33.0%| 1.7%| Exc
+ 5R|  93.1% | 91.3%| 1.8%| Exc
+Avg Error: 0.9%
+
+Feature importance:
+speed: 9.23 ########################################
+healHealthPoint: 6.44 ########################################
+idleUpwardSpeed: 5.12 ########################################
+removeHealthWithCollide: 5.03 ########################################
+
+Target: 10% O2
+Result: 20.8%
+Speed:10.0 VerticalSpeed:30.0 IdleUpwardSpeed:0.01 LifeTime:1.9 O2DropPerSec:2.0 CollisionDamage:10.0 TimeBetweenCollides:3.0 HealPoints:15.0
+
+
+Raw trial data:
+
+Trial 1:
+  Speed: 14.94
+  VerticalSpeed: 26.07
+  IdleUpwardSpeed: 1.85
+  LifeTime: 1.56
+  O2DropPerSec: 0.72
+  CollisionDamage: 8.10
+  TimeBetweenCollides: 4.38
+  HealPoints: 7.67
+  FactorForce: 3.00
+  FinalO2: 82.1%
+
+Trial 2:
+  Speed: 16.63
+  VerticalSpeed: 22.53
+  IdleUpwardSpeed: 1.57
+  LifeTime: 1.09
+  O2DropPerSec: 2.32
+  CollisionDamage: 10.33
+  TimeBetweenCollides: 4.21
+  HealPoints: 9.77
+  FactorForce: 3.00
+  FinalO2: 64.7%
+
+Trial 3:
+  Speed: 17.75
+  VerticalSpeed: 38.45
+  IdleUpwardSpeed: 1.58
+  LifeTime: 2.32
+  O2DropPerSec: 0.72
+  CollisionDamage: 16.77
+  TimeBetweenCollides: 2.68
+  HealPoints: 9.10
+  FactorForce: 3.00
+  FinalO2: 70.5%
+
+Trial 4:
+  Speed: 11.07
+  VerticalSpeed: 21.07
+  IdleUpwardSpeed: 1.00
+  LifeTime: 0.80
+  O2DropPerSec: 2.65
+  CollisionDamage: 11.61
+  TimeBetweenCollides: 4.63
+  HealPoints: 13.44
+  FactorForce: 3.00
+  FinalO2: 31.3%
+
+Trial 5:
+  Speed: 31.46
+  VerticalSpeed: 28.01
+  IdleUpwardSpeed: 1.46
+  LifeTime: 0.95
+  O2DropPerSec: 1.35
+  CollisionDamage: 8.55
+  TimeBetweenCollides: 3.62
+  HealPoints: 9.32
+  FactorForce: 3.00
+  FinalO2: 93.1%

@@ -18,36 +18,38 @@ public class TrialRegressionUI : MonoBehaviour
     [SerializeField] private TMP_Text regressionResultsText;
     [SerializeField] private Button calculateRegressionButton;
     [SerializeField] private Button closeRegressionButton;
-    [SerializeField] private Button saveResultsButton;
 
     [Header("Save Settings")]
     [SerializeField] private bool autoSaveResults = true;
     [SerializeField] private string saveFolder = "RegressionResults";
 
     private TrialRegressionAlgorithm.RegressionResult lastResult;
+    private TrialUIController trialUIController;
 
     void Start()
     {
-        // Setup button click listeners
+        trialUIController = FindObjectOfType<TrialUIController>();
+        
         if (calculateRegressionButton != null)
             calculateRegressionButton.onClick.AddListener(CalculateRegression);
 
         if (closeRegressionButton != null)
             closeRegressionButton.onClick.AddListener(CloseRegressionPanel);
 
-        if (saveResultsButton != null)
-            saveResultsButton.onClick.AddListener(SaveRegressionResults);
-
-        // Hide panel on start
         if (regressionPanel != null)
             regressionPanel.SetActive(false);
     }
 
     public void CalculateRegression()
     {
-        // ALWAYS load from CSV to get access to ALL trials (not just latest 5 from cache)
-        // This enables random selection from all 10 trials in the CSV file
-        var trialData = TrialRegressionAlgorithm.LoadTrialDataFromCSV();
+        if (trialUIController == null)
+            trialUIController = FindObjectOfType<TrialUIController>();
+            
+        bool useRandomParameters = trialUIController != null && trialUIController.IsRandomParametersMode();
+        var trialData = TrialDataLoader.LoadTrialDataFromCSV(useRandomParameters);
+        
+        int trialCount = trialData != null ? trialData.Count : 0;
+        Debug.Log($"[TrialRegressionUI] Starting regression analysis - Mode: {(useRandomParameters ? "RANDOM" : "CONSTANT (CSV)")}, Trials: {trialCount}");
 
         if (trialData == null || trialData.Count < 2)
         {
@@ -55,13 +57,9 @@ public class TrialRegressionUI : MonoBehaviour
             return;
         }
 
-        // Run regression analysis
         lastResult = TrialRegressionAlgorithm.PerformRegressionAnalysis(trialData);
-
-        // Display output in panel
         ShowRegressionResults(lastResult.summaryText);
 
-        // Automatically save file if enabled
         if (autoSaveResults)
             SaveRegressionResults();
     }
@@ -78,8 +76,6 @@ public class TrialRegressionUI : MonoBehaviour
 
         if (regressionResultsText != null)
             regressionResultsText.text = results;
-
-        Debug.Log("Results displayed");
     }
 
     private void ShowError(string errorMessage)
@@ -98,16 +94,15 @@ public class TrialRegressionUI : MonoBehaviour
         if (regressionPanel != null)
             regressionPanel.SetActive(false);
 
-        // Return to the trial control UI
-        var trialUIController = FindObjectOfType<TrialUIController>();
+        if (trialUIController == null)
+            trialUIController = FindObjectOfType<TrialUIController>();
+            
         if (trialUIController != null)
             trialUIController.OpenTrialControlPanel();
 
-        Time.timeScale = 0f;
+        Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-
-        
     }
 
     public void ForceCloseRegressionPanel()
@@ -115,13 +110,19 @@ public class TrialRegressionUI : MonoBehaviour
         if (regressionPanel != null && regressionPanel.activeSelf)
         {
             regressionPanel.SetActive(false);
-            Debug.Log("Regression panel force closed");
+            Time.timeScale = 1f;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         }
     }
 
     public bool CanCalculateRegression()
     {
-        var trialData = TrialRegressionAlgorithm.LoadTrialDataFromCSV();
+        if (trialUIController == null)
+            trialUIController = FindObjectOfType<TrialUIController>();
+            
+        bool useRandomParameters = trialUIController != null && trialUIController.IsRandomParametersMode();
+        var trialData = TrialDataLoader.LoadTrialDataFromCSV(useRandomParameters);
         return trialData != null && trialData.Count >= 2;
     }
 
@@ -133,12 +134,6 @@ public class TrialRegressionUI : MonoBehaviour
             return;
         }
 
-        bool success = TrialRegressionAlgorithm.SaveRegressionResultsToFile(lastResult, saveFolder);
-
-        if (success && regressionResultsText != null)
-        {
-            string timestamp = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-            regressionResultsText.text += $"\nSaved:RegressionAnalysis_{timestamp}.txt";
-        }
+        TrialRegressionAlgorithm.SaveRegressionResultsToFile(lastResult, saveFolder);
     }
 }

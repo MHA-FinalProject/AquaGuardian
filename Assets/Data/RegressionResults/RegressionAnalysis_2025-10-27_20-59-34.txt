@@ -1,0 +1,543 @@
+Regression analysis - full report:
+Generated: 2025-10-27 20:59:34
+Trials analyzed: 5
+
+Trials: [1,2,3,4,5]
+Total: 5 (Reg:5, Rand:0)
+Avg O2: 47.3% Perfect: 1 Failed: 0
+Model Metrics (Training):
+  R^2=0.9971 | Adj R^2=NaN
+  RMSE=1.341% | MAE=1.099%
+CV: N/A (too few samples)
+
+Actual vs Predicted:
+T | Actual | Pred | Err | Status
+--|--------|------|-----|-------
+ 1 |  80.0% | 79.0%| 1.0%| Exc
+ 2 |  36.5% | 36.8%| 0.3%| Exc
+ 3 |  62.0% | 61.5%| 0.5%| Exc
+ 4 |  52.0% | 50.8%| 1.2%| Exc
+ 5 |   6.0% |  8.5%| 2.5%| Exc
+Avg Error: 1.1%
+
+Feature importance:
+downHealthPairSec: 10.06 ########################################
+removeHealthWithCollide: 7.55 ########################################
+verticalSpeed: 6.76 ########################################
+speed: 5.56 ########################################
+
+======================================================================
+OPTIMIZED PARAMETERS FOR TARGET 10% O2 (Gradient Descent)
+======================================================================
+
+>>> RESULT: 10.37% (Error: 0.372%)
+
+Quality: VERY GOOD ✓✓
+
+Parameters to set for this patient:
+----------------------------------------------------------------------
+  Speed              = 19.78
+  VerticalSpeed      = 34.27
+  IdleUpwardSpeed    = 1.51
+  LifeTime           = 2.25
+  O2DropPerSec       = 6.61
+  CollisionDamage    = 16.32
+  TimeBetweenCollide = 3.00
+  HealPoints         = 9.00
+======================================================================
+
+======================================================================
+HOW WE GOT HERE: Optimization Process Details
+======================================================================
+
+=== GRADIENT DESCENT OPTIMIZATION ===
+Target O2: 10.00%
+Optimizing 5 most important features:
+  - downHealthPairSec: coefficient = -10.0604
+  - removeHealthWithCollide: coefficient = -7.5474
+  - verticalSpeed: coefficient = -6.7617
+  - speed: coefficient = 5.5605
+  - Feature_8: coefficient = 47.3000
+
+INITIAL STATE:
+----------------------------------------------------------------------
+  downHealthPairSec         = 3.75
+  removeHealthWithCollide   = 12.50
+  verticalSpeed             = 30.00
+  speed                     = 25.00
+  Feature_8                 = 0.00
+
+Predicted O2: 58.47%
+Error: 48.47%
+
+OPTIMIZATION PROCESS:
+----------------------------------------------------------------------
+
+Iteration 1:
+  Current O2: 58.47% | Target: 10.00% | Error: 48.467%
+  Learning Rate: 0.200
+    downHealthPairSec       ↑ 3.75 → 4.71 (Δ +F2)
+    removeHealthWithCollide ↑ 12.50 → 13.78 (Δ +F2)
+    verticalSpeed           ↑ 30.00 → 31.43 (Δ +F2)
+    speed                   ↓ 25.00 → 23.26 (Δ -+F2)
+
+Iteration 2:
+  Current O2: 42.29% | Target: 10.00% | Error: 32.292%
+  Learning Rate: 0.200
+    downHealthPairSec       ↑ 4.71 → 5.36 (Δ +F2)
+    removeHealthWithCollide ↑ 13.78 → 14.64 (Δ +F2)
+    verticalSpeed           ↑ 31.43 → 32.39 (Δ +F2)
+    speed                   ↓ 23.26 → 22.10 (Δ -+F2)
+
+Iteration 3:
+  Current O2: 31.52% | Target: 10.00% | Error: 21.515%
+  Learning Rate: 0.200
+    downHealthPairSec       ↑ 5.36 → 5.78 (Δ +F2)
+    removeHealthWithCollide ↑ 14.64 → 15.21 (Δ +F2)
+    verticalSpeed           ↑ 32.39 → 33.03 (Δ +F2)
+    speed                   ↓ 22.10 → 21.32 (Δ -+F2)
+
+Iteration 4:
+  Current O2: 24.33% | Target: 10.00% | Error: 14.335%
+  Learning Rate: 0.200
+    downHealthPairSec       ↑ 5.78 → 6.07 (Δ +F2)
+    removeHealthWithCollide ↑ 15.21 → 15.59 (Δ +F2)
+    verticalSpeed           ↑ 33.03 → 33.45 (Δ +F2)
+    speed                   ↓ 21.32 → 20.81 (Δ -+F2)
+
+Iteration 5:
+  Current O2: 19.55% | Target: 10.00% | Error: 9.551%
+  Learning Rate: 0.200
+    downHealthPairSec       ↑ 6.07 → 6.26 (Δ +F2)
+    removeHealthWithCollide ↑ 15.59 → 15.84 (Δ +F2)
+    verticalSpeed           ↑ 33.45 → 33.73 (Δ +F2)
+    speed                   ↓ 20.81 → 20.46 (Δ +F2)
+
+Iteration 10:
+  Current O2: 12.03% | Target: 10.00% | Error: 2.031%
+  Learning Rate: 0.081
+    downHealthPairSec       ↑ 6.52 → 6.53 (Δ +F2)
+    removeHealthWithCollide ↑ 16.19 → 16.21 (Δ +F2)
+    verticalSpeed           ↑ 34.12 → 34.14 (Δ +F2)
+    speed                   ↓ 20.00 → 19.97 (Δ +F2)
+
+Iteration 17:
+  Current O2: 10.99% | Target: 10.00% | Error: 0.990%
+  Learning Rate: 0.040
+    downHealthPairSec       ↑ 6.58 → 6.58 (Δ +F2)
+    removeHealthWithCollide ↑ 16.27 → 16.28 (Δ +F2)
+    verticalSpeed           ↑ 34.21 → 34.21 (Δ +F2)
+    speed                   ↓ 19.88 → 19.88 (Δ +F2)
+
+Iteration 18:
+  Current O2: 10.92% | Target: 10.00% | Error: 0.924%
+  Learning Rate: 0.037
+    downHealthPairSec       ↑ 6.58 → 6.59 (Δ +F2)
+    removeHealthWithCollide ↑ 16.28 → 16.28 (Δ +F2)
+    verticalSpeed           ↑ 34.21 → 34.22 (Δ +F2)
+    speed                   ↓ 19.88 → 19.87 (Δ +F2)
+
+Iteration 19:
+  Current O2: 10.87% | Target: 10.00% | Error: 0.867%
+  Learning Rate: 0.035
+    downHealthPairSec       ↑ 6.59 → 6.59 (Δ +F2)
+    removeHealthWithCollide ↑ 16.28 → 16.28 (Δ +F2)
+    verticalSpeed           ↑ 34.22 → 34.22 (Δ +F2)
+    speed                   ↓ 19.87 → 19.86 (Δ +F2)
+
+Iteration 20:
+  Current O2: 10.82% | Target: 10.00% | Error: 0.817%
+  Learning Rate: 0.033
+    downHealthPairSec       ↑ 6.59 → 6.59 (Δ +F2)
+    removeHealthWithCollide ↑ 16.28 → 16.29 (Δ +F2)
+    verticalSpeed           ↑ 34.22 → 34.23 (Δ +F2)
+    speed                   ↓ 19.86 → 19.86 (Δ +F2)
+
+Iteration 21:
+  Current O2: 10.77% | Target: 10.00% | Error: 0.773%
+  Learning Rate: 0.031
+    downHealthPairSec       ↑ 6.59 → 6.59 (Δ +F2)
+    removeHealthWithCollide ↑ 16.29 → 16.29 (Δ +F2)
+    verticalSpeed           ↑ 34.23 → 34.23 (Δ +F2)
+    speed                   ↓ 19.86 → 19.86 (Δ +F2)
+
+Iteration 22:
+  Current O2: 10.73% | Target: 10.00% | Error: 0.733%
+  Learning Rate: 0.029
+    downHealthPairSec       ↑ 6.59 → 6.60 (Δ +F2)
+    removeHealthWithCollide ↑ 16.29 → 16.29 (Δ +F2)
+    verticalSpeed           ↑ 34.23 → 34.23 (Δ +F2)
+    speed                   ↓ 19.86 → 19.85 (Δ +F2)
+
+Iteration 23:
+  Current O2: 10.70% | Target: 10.00% | Error: 0.697%
+  Learning Rate: 0.028
+    downHealthPairSec       ↑ 6.60 → 6.60 (Δ +F2)
+    removeHealthWithCollide ↑ 16.29 → 16.30 (Δ +F2)
+    verticalSpeed           ↑ 34.23 → 34.24 (Δ +F2)
+    speed                   ↓ 19.85 → 19.85 (Δ +F2)
+
+Iteration 24:
+  Current O2: 10.66% | Target: 10.00% | Error: 0.665%
+  Learning Rate: 0.027
+    downHealthPairSec       ↑ 6.60 → 6.60 (Δ +F2)
+    removeHealthWithCollide ↑ 16.30 → 16.30 (Δ +F2)
+    verticalSpeed           ↑ 34.24 → 34.24 (Δ +F2)
+    speed                   ↓ 19.85 → 19.84 (Δ +F2)
+
+Iteration 25:
+  Current O2: 10.64% | Target: 10.00% | Error: 0.635%
+  Learning Rate: 0.025
+    downHealthPairSec       ↑ 6.60 → 6.60 (Δ +F2)
+    removeHealthWithCollide ↑ 16.30 → 16.30 (Δ +F2)
+    verticalSpeed           ↑ 34.24 → 34.24 (Δ +F2)
+    speed                   ↓ 19.84 → 19.84 (Δ +F2)
+
+Iteration 26:
+  Current O2: 10.61% | Target: 10.00% | Error: 0.608%
+  Learning Rate: 0.024
+    downHealthPairSec       ↑ 6.60 → 6.60 (Δ +F2)
+    removeHealthWithCollide ↑ 16.30 → 16.30 (Δ +F2)
+    verticalSpeed           ↑ 34.24 → 34.24 (Δ +F2)
+    speed                   ↓ 19.84 → 19.84 (Δ +F2)
+
+Iteration 27:
+  Current O2: 10.58% | Target: 10.00% | Error: 0.583%
+  Learning Rate: 0.023
+    downHealthPairSec       ↑ 6.60 → 6.60 (Δ +F2)
+    removeHealthWithCollide ↑ 16.30 → 16.30 (Δ +F2)
+    verticalSpeed           ↑ 34.24 → 34.25 (Δ +F2)
+    speed                   ↓ 19.84 → 19.84 (Δ +F2)
+
+Iteration 28:
+  Current O2: 10.56% | Target: 10.00% | Error: 0.561%
+  Learning Rate: 0.022
+    downHealthPairSec       ↑ 6.60 → 6.60 (Δ +F2)
+    removeHealthWithCollide ↑ 16.30 → 16.31 (Δ +F2)
+    verticalSpeed           ↑ 34.25 → 34.25 (Δ +F2)
+    speed                   ↓ 19.84 → 19.83 (Δ +F2)
+
+Iteration 29:
+  Current O2: 10.54% | Target: 10.00% | Error: 0.540%
+  Learning Rate: 0.022
+    downHealthPairSec       ↑ 6.60 → 6.61 (Δ +F2)
+    removeHealthWithCollide ↑ 16.31 → 16.31 (Δ +F2)
+    verticalSpeed           ↑ 34.25 → 34.25 (Δ +F2)
+    speed                   ↓ 19.83 → 19.83 (Δ +F2)
+
+Iteration 30:
+  Current O2: 10.52% | Target: 10.00% | Error: 0.520%
+  Learning Rate: 0.021
+    downHealthPairSec       ↑ 6.61 → 6.61 (Δ +F2)
+    removeHealthWithCollide ↑ 16.31 → 16.31 (Δ +F2)
+    verticalSpeed           ↑ 34.25 → 34.25 (Δ +F2)
+    speed                   ↓ 19.83 → 19.83 (Δ +F2)
+
+Iteration 31:
+  Current O2: 10.50% | Target: 10.00% | Error: 0.502%
+  Learning Rate: 0.020
+    downHealthPairSec       ↑ 6.61 → 6.61 (Δ +F2)
+    removeHealthWithCollide ↑ 16.31 → 16.31 (Δ +F2)
+    verticalSpeed           ↑ 34.25 → 34.25 (Δ +F2)
+    speed                   ↓ 19.83 → 19.83 (Δ +F2)
+
+Iteration 32:
+  Current O2: 10.49% | Target: 10.00% | Error: 0.485%
+  Learning Rate: 0.019
+    removeHealthWithCollide ↑ 16.31 → 16.31 (Δ +F2)
+    verticalSpeed           ↑ 34.25 → 34.25 (Δ +F2)
+    speed                   ↓ 19.83 → 19.83 (Δ +F2)
+
+Iteration 33:
+  Current O2: 10.48% | Target: 10.00% | Error: 0.477%
+  Learning Rate: 0.019
+    removeHealthWithCollide ↑ 16.31 → 16.31 (Δ +F2)
+    verticalSpeed           ↑ 34.25 → 34.26 (Δ +F2)
+    speed                   ↓ 19.83 → 19.83 (Δ +F2)
+
+Iteration 34:
+  Current O2: 10.47% | Target: 10.00% | Error: 0.470%
+  Learning Rate: 0.019
+    removeHealthWithCollide ↑ 16.31 → 16.31 (Δ +F2)
+    verticalSpeed           ↑ 34.26 → 34.26 (Δ +F2)
+    speed                   ↓ 19.83 → 19.82 (Δ +F2)
+
+Iteration 35:
+  Current O2: 10.46% | Target: 10.00% | Error: 0.462%
+  Learning Rate: 0.018
+    removeHealthWithCollide ↑ 16.31 → 16.31 (Δ +F2)
+    verticalSpeed           ↑ 34.26 → 34.26 (Δ +F2)
+    speed                   ↓ 19.82 → 19.82 (Δ +F2)
+
+Iteration 36:
+  Current O2: 10.46% | Target: 10.00% | Error: 0.455%
+  Learning Rate: 0.018
+    removeHealthWithCollide ↑ 16.31 → 16.32 (Δ +F2)
+    verticalSpeed           ↑ 34.26 → 34.26 (Δ +F2)
+    speed                   ↓ 19.82 → 19.82 (Δ +F2)
+
+Iteration 37:
+  Current O2: 10.45% | Target: 10.00% | Error: 0.448%
+  Learning Rate: 0.018
+    removeHealthWithCollide ↑ 16.32 → 16.32 (Δ +F2)
+    verticalSpeed           ↑ 34.26 → 34.26 (Δ +F2)
+    speed                   ↓ 19.82 → 19.82 (Δ +F2)
+
+Iteration 38:
+  Current O2: 10.44% | Target: 10.00% | Error: 0.442%
+  Learning Rate: 0.018
+    removeHealthWithCollide ↑ 16.32 → 16.32 (Δ +F2)
+    verticalSpeed           ↑ 34.26 → 34.26 (Δ +F2)
+    speed                   ↓ 19.82 → 19.82 (Δ +F2)
+
+Iteration 39:
+  Current O2: 10.44% | Target: 10.00% | Error: 0.435%
+  Learning Rate: 0.017
+    removeHealthWithCollide ↑ 16.32 → 16.32 (Δ +F2)
+    verticalSpeed           ↑ 34.26 → 34.26 (Δ +F2)
+    speed                   ↓ 19.82 → 19.82 (Δ +F2)
+
+Iteration 40:
+  Current O2: 10.43% | Target: 10.00% | Error: 0.429%
+  Learning Rate: 0.017
+    verticalSpeed           ↑ 34.26 → 34.26 (Δ +F2)
+    speed                   ↓ 19.82 → 19.82 (Δ +F2)
+
+Iteration 41:
+  Current O2: 10.43% | Target: 10.00% | Error: 0.425%
+  Learning Rate: 0.017
+    verticalSpeed           ↑ 34.26 → 34.26 (Δ +F2)
+    speed                   ↓ 19.82 → 19.81 (Δ +F2)
+
+Iteration 42:
+  Current O2: 10.42% | Target: 10.00% | Error: 0.422%
+  Learning Rate: 0.017
+    verticalSpeed           ↑ 34.26 → 34.27 (Δ +F2)
+    speed                   ↓ 19.81 → 19.81 (Δ +F2)
+
+Iteration 43:
+  Current O2: 10.42% | Target: 10.00% | Error: 0.419%
+  Learning Rate: 0.017
+    verticalSpeed           ↑ 34.27 → 34.27 (Δ +F2)
+    speed                   ↓ 19.81 → 19.81 (Δ +F2)
+
+Iteration 44:
+  Current O2: 10.42% | Target: 10.00% | Error: 0.416%
+  Learning Rate: 0.017
+    verticalSpeed           ↑ 34.27 → 34.27 (Δ +F2)
+    speed                   ↓ 19.81 → 19.81 (Δ +F2)
+
+Iteration 45:
+  Current O2: 10.41% | Target: 10.00% | Error: 0.413%
+  Learning Rate: 0.017
+    verticalSpeed           ↑ 34.27 → 34.27 (Δ +F2)
+    speed                   ↓ 19.81 → 19.81 (Δ +F2)
+
+Iteration 46:
+  Current O2: 10.41% | Target: 10.00% | Error: 0.410%
+  Learning Rate: 0.016
+    speed                   ↓ 19.81 → 19.81 (Δ +F2)
+
+Iteration 47:
+  Current O2: 10.41% | Target: 10.00% | Error: 0.408%
+  Learning Rate: 0.016
+    speed                   ↓ 19.81 → 19.81 (Δ +F2)
+
+Iteration 48:
+  Current O2: 10.41% | Target: 10.00% | Error: 0.406%
+  Learning Rate: 0.016
+    speed                   ↓ 19.81 → 19.81 (Δ +F2)
+
+Iteration 49:
+  Current O2: 10.40% | Target: 10.00% | Error: 0.404%
+  Learning Rate: 0.016
+    speed                   ↓ 19.81 → 19.80 (Δ +F2)
+
+Iteration 50:
+  Current O2: 10.40% | Target: 10.00% | Error: 0.403%
+  Learning Rate: 0.016
+    speed                   ↓ 19.80 → 19.80 (Δ +F2)
+
+Iteration 51:
+  Current O2: 10.40% | Target: 10.00% | Error: 0.401%
+  Learning Rate: 0.016
+    speed                   ↓ 19.80 → 19.80 (Δ +F2)
+
+Iteration 52:
+  Current O2: 10.40% | Target: 10.00% | Error: 0.399%
+  Learning Rate: 0.016
+    speed                   ↓ 19.80 → 19.80 (Δ +F2)
+
+Iteration 53:
+  Current O2: 10.40% | Target: 10.00% | Error: 0.398%
+  Learning Rate: 0.016
+    speed                   ↓ 19.80 → 19.80 (Δ +F2)
+
+Iteration 54:
+  Current O2: 10.40% | Target: 10.00% | Error: 0.396%
+  Learning Rate: 0.016
+    speed                   ↓ 19.80 → 19.80 (Δ +F2)
+
+Iteration 55:
+  Current O2: 10.39% | Target: 10.00% | Error: 0.395%
+  Learning Rate: 0.016
+    speed                   ↓ 19.80 → 19.80 (Δ +F2)
+
+Iteration 56:
+  Current O2: 10.39% | Target: 10.00% | Error: 0.393%
+  Learning Rate: 0.016
+    speed                   ↓ 19.80 → 19.80 (Δ +F2)
+
+Iteration 57:
+  Current O2: 10.39% | Target: 10.00% | Error: 0.391%
+  Learning Rate: 0.016
+    speed                   ↓ 19.80 → 19.80 (Δ +F2)
+
+Iteration 58:
+  Current O2: 10.39% | Target: 10.00% | Error: 0.390%
+  Learning Rate: 0.016
+    speed                   ↓ 19.80 → 19.79 (Δ +F2)
+
+Iteration 59:
+  Current O2: 10.39% | Target: 10.00% | Error: 0.388%
+  Learning Rate: 0.016
+    speed                   ↓ 19.79 → 19.79 (Δ +F2)
+
+Iteration 60:
+  Current O2: 10.39% | Target: 10.00% | Error: 0.387%
+  Learning Rate: 0.015
+    speed                   ↓ 19.79 → 19.79 (Δ +F2)
+
+Iteration 61:
+  Current O2: 10.39% | Target: 10.00% | Error: 0.385%
+  Learning Rate: 0.015
+    speed                   ↓ 19.79 → 19.79 (Δ +F2)
+
+Iteration 62:
+  Current O2: 10.38% | Target: 10.00% | Error: 0.384%
+  Learning Rate: 0.015
+    speed                   ↓ 19.79 → 19.79 (Δ +F2)
+
+Iteration 63:
+  Current O2: 10.38% | Target: 10.00% | Error: 0.382%
+  Learning Rate: 0.015
+    speed                   ↓ 19.79 → 19.79 (Δ +F2)
+
+Iteration 64:
+  Current O2: 10.38% | Target: 10.00% | Error: 0.381%
+  Learning Rate: 0.015
+    speed                   ↓ 19.79 → 19.79 (Δ +F2)
+
+Iteration 65:
+  Current O2: 10.38% | Target: 10.00% | Error: 0.379%
+  Learning Rate: 0.015
+    speed                   ↓ 19.79 → 19.79 (Δ +F2)
+
+Iteration 66:
+  Current O2: 10.38% | Target: 10.00% | Error: 0.378%
+  Learning Rate: 0.015
+    speed                   ↓ 19.79 → 19.79 (Δ +F2)
+
+Iteration 67:
+  Current O2: 10.38% | Target: 10.00% | Error: 0.376%
+  Learning Rate: 0.015
+    speed                   ↓ 19.79 → 19.78 (Δ +F2)
+
+Iteration 68:
+  Current O2: 10.37% | Target: 10.00% | Error: 0.375%
+  Learning Rate: 0.015
+    speed                   ↓ 19.78 → 19.78 (Δ +F2)
+
+Iteration 69:
+  Current O2: 10.37% | Target: 10.00% | Error: 0.373%
+  Learning Rate: 0.015
+    speed                   ↓ 19.78 → 19.78 (Δ +F2)
+
+Iteration 70:
+  Current O2: 10.37% | Target: 10.00% | Error: 0.372%
+  Learning Rate: 0.015
+
+Stopped at iteration 70: All parameters at bounds
+
+======================================================================
+FINAL OPTIMIZED PARAMETERS:
+======================================================================
+  speed                     = 19.78
+  verticalSpeed             = 34.27
+  idleUpwardSpeed           = 1.51
+  lifeTime                  = 2.25
+  downHealthPairSec         = 6.61
+  removeHealthWithCollide   = 16.32
+  timeBetweenCollides       = 3.00
+  healHealthPoint           = 9.00
+  factorForce               = 2.75
+
+>>> RESULT:
+    Predicted O2: 10.37%
+    Target O2:    10.00%
+    Error:        0.372%
+    Quality:      VERY GOOD ✓✓
+======================================================================
+
+
+Raw trial data:
+
+Trial 1:
+  Speed: 15.00
+  VerticalSpeed: 30.00
+  IdleUpwardSpeed: 0.01
+  LifeTime: 2.00
+  O2DropPerSec: 2.00
+  CollisionDamage: 5.00
+  TimeBetweenCollides: 2.00
+  HealPoints: 10.00
+  FactorForce: 3.00
+  FinalO2: 80.0%
+
+Trial 2:
+  Speed: 12.00
+  VerticalSpeed: 35.00
+  IdleUpwardSpeed: 0.50
+  LifeTime: 1.50
+  O2DropPerSec: 3.50
+  CollisionDamage: 8.00
+  TimeBetweenCollides: 1.00
+  HealPoints: 5.00
+  FactorForce: 2.50
+  FinalO2: 36.5%
+
+Trial 3:
+  Speed: 22.00
+  VerticalSpeed: 28.00
+  IdleUpwardSpeed: 0.30
+  LifeTime: 1.00
+  O2DropPerSec: 3.00
+  CollisionDamage: 9.00
+  TimeBetweenCollides: 1.50
+  HealPoints: 4.00
+  FactorForce: 3.50
+  FinalO2: 62.0%
+
+Trial 4:
+  Speed: 18.00
+  VerticalSpeed: 38.00
+  IdleUpwardSpeed: 0.04
+  LifeTime: 0.80
+  O2DropPerSec: 1.00
+  CollisionDamage: 10.00
+  TimeBetweenCollides: 1.10
+  HealPoints: 3.00
+  FactorForce: 4.00
+  FinalO2: 52.0%
+
+Trial 5:
+  Speed: 14.00
+  VerticalSpeed: 40.00
+  IdleUpwardSpeed: 0.10
+  LifeTime: 1.20
+  O2DropPerSec: 4.00
+  CollisionDamage: 12.00
+  TimeBetweenCollides: 1.20
+  HealPoints: 6.00
+  FactorForce: 4.50
+  FinalO2: 6.0%

@@ -7,6 +7,10 @@ using System.Linq;
  */
 public class CaveBuilder : MonoBehaviour
 {
+    [Header("Game Config")]
+    [Tooltip("GameConfig reference. If not set, will try to load automatically.")]
+    [SerializeField] private GameConfig gameConfigOverride;
+    
     [Header("Prefab References")]
     [SerializeField] private GameObject cavePrefab;
     [SerializeField] private GameObject oxygenPrefab;
@@ -17,9 +21,6 @@ public class CaveBuilder : MonoBehaviour
     [SerializeField] private TextAsset csvFile;
     private string[] csvLines = null;
     private int numOfLines = 0;
-
-    [Header("Configuration")]
-    [SerializeField] private GameConfig gameConfig;
 
     [Header("Tracking")]
     private List<TrialDataModels.CaveInfo> caveInfos = new List<TrialDataModels.CaveInfo>();
@@ -93,9 +94,14 @@ public class CaveBuilder : MonoBehaviour
             return Vector3.zero;
         }
 
+        // Use override if set, otherwise use singleton instance
+        GameConfig gameConfig = gameConfigOverride != null ? gameConfigOverride : GameConfig.Instance;
+        
         if (gameConfig == null)
         {
-            Debug.LogError("GameConfig not assigned - cannot build caves!");
+            Debug.LogError("GameConfig is null - cannot build caves! Please either:\n" +
+                         "1. Assign GameConfig to the 'Game Config Override' field in CaveBuilder inspector, OR\n" +
+                         "2. Ensure GameConfig.asset exists in a Resources folder.");
             return Vector3.zero;
         }
 
@@ -180,6 +186,15 @@ public class CaveBuilder : MonoBehaviour
 
     public Vector3 GetEndObjectPosition(Vector3 lastCavePosition)
     {
+        // Use override if set, otherwise use singleton instance
+        GameConfig gameConfig = gameConfigOverride != null ? gameConfigOverride : GameConfig.Instance;
+        
+        if (gameConfig == null)
+        {
+            Debug.LogError("GameConfig is null - cannot get end object position!");
+            return lastCavePosition;
+        }
+        
         if (caveInfos.Count > 0)
         {
             var lastCave = caveInfos[caveInfos.Count - 1];
@@ -304,7 +319,7 @@ public class CaveBuilder : MonoBehaviour
             }
 
             TrackSpawned(oxy);
-            Debug.Log($" Created tank_{index + 1} at {position} with tag: {oxy.tag}, active: {oxy.activeSelf}");
+         
         }
         else
         {

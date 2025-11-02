@@ -1,10 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// 1. Split UI updates and progress calculations
-// 2. Add input validation
-// 3. Consider using events for progress updates
-// 4. Add more documentation
 public class LevelProgressUI : MonoBehaviour
 {
     [Header("UI References:")]
@@ -22,16 +18,13 @@ public class LevelProgressUI : MonoBehaviour
     private float maxDistance; 
     private float currentSliderValue;
     private Vector2 currentPlayerModelPosition;
-
-    // Start is called before the first frame update
     void Start()
     {
-        slider.value = 0; // Initialize the slider to 0
-        currentSliderValue = slider.value; // Initialize the current slider value
-        currentPlayerModelPosition = playerModelImage.rectTransform.anchoredPosition; // Initialize the current player model position
+        slider.value = 0;
+        currentSliderValue = slider.value; 
+        currentPlayerModelPosition = playerModelImage.rectTransform.anchoredPosition;
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (finishLine != null && player != null)

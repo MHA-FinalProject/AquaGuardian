@@ -1,6 +1,6 @@
-trial_id,speed,verticalSpeed,idleUpwardSpeed,lifeTime,downHealthPairSec,removeHealthWithCollide,timeBetweenCollides,healHealthPoint,factor_force,o2_result
-1,12.13,29.02,1.59,1.67,1.17,13.40,1.27,8.06,3.00,64.92
-2,38.19,40.18,0.71,2.83,2.11,12.17,4.85,5.64,3.00,99.27
-3,29.15,37.02,1.68,1.35,0.87,16.03,3.30,10.67,3.00,87.74
-4,15.68,34.00,0.98,1.84,3.31,5.29,4.53,5.15,3.00,72.10
-5,35.36,24.95,0.87,2.67,3.09,10.69,4.16,7.82,3.00,95.44
+trial_id,speed,verticalSpeed,idleUpwardSpeed,lifeTime,RemoveHealthEveryLifeTime,removeHealthWithCollide,timeBetweenCollides,healHealthPoint,factorForce,IsAmadeoMode,o2_result,duration
+1,39.95,28.96,1.54,1.28,5.36,15.33,2.12,7.84,0.90,0.00,44.26,13.0
+2,11.99,49.42,1.85,0.91,3.67,5.61,2.76,10.99,5.49,0.00,22.92,23.0
+3,31.62,43.80,0.60,1.77,4.71,9.07,2.71,14.21,0.69,0.00,85.94,12.5
+4,25.86,19.04,1.57,1.15,4.82,15.34,2.03,9.49,3.98,0.00,46.84,16.7
+5,21.76,38.12,1.14,1.55,1.45,6.38,2.85,10.33,3.89,0.00,94.20,16.9

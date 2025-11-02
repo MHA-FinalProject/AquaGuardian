@@ -21,9 +21,6 @@ public class DisplayManager : MonoBehaviour
         get { if (instance == null) { Debug.Log("DisplayManager instance is null"); } return instance; }
     }
    
-
-
-
     private void Awake()
     {
         if (instance != null && instance != this)

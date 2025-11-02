@@ -4,6 +4,7 @@ using TMPro;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+
 /**
    * PanelOpenUp
    * This class manages the opening and closing of the main panel,
@@ -21,7 +22,6 @@ public partial class PanelOpenUp : MonoBehaviour
     [Header("Game Objects")]
     public GameObject caveObject = null;
     public GameObject oxygenObject = null;
-    [SerializeField] private Transform oxygenSpawnRef;
     public GameObject wall = null;
     public GameObject arrows = null;
     public GameObject chest = null;
@@ -34,10 +34,6 @@ public partial class PanelOpenUp : MonoBehaviour
     [SerializeField] private PlayerLife playerLife;
     [SerializeField] private Health health;
     [SerializeField] private PlayerMovement playerMovement;
-
-    [Header("Configuration")]
-    [SerializeField] private GameConfig gameConfig;
-
 
     [Header("Trial System Managers")]
     [SerializeField] private TrialSystemManager trialSystemManager;
@@ -52,12 +48,7 @@ public partial class PanelOpenUp : MonoBehaviour
     // Cave info is now managed by CaveBuilder
     public List<TrialDataModels.CaveInfo> caveInfos => caveBuilder != null ? caveBuilder.CaveInfos : new List<TrialDataModels.CaveInfo>();
 
-
-    [Header("Cave Files for Trials")]
-    [SerializeField] private TextAsset[] caveFiles = new TextAsset[5];
     private TextAsset originalCaveFile;
-    [SerializeField] private bool useCaveFilePathPattern = true;
-    [SerializeField] private string caveFilePathPattern = "Data/Cave{n}.csv";
 
 
 
@@ -86,7 +77,7 @@ public partial class PanelOpenUp : MonoBehaviour
         // If panel is closed, notify GameStateManager immediately
         if (Panel != null && !Panel.activeSelf)
         {
-            Debug.Log("[PanelOpenUp] Panel is already closed at Start - notifying GameStateManager");
+            // Panel already closed at Start
             if (GameStateManager.Instance != null)
             {
                 GameStateManager.Instance.NotifyPanelClosed();
@@ -173,35 +164,27 @@ public partial class PanelOpenUp : MonoBehaviour
 
     public void ClosePanel()
     {
-        bool isTrialMode = (trialSystemManager != null && trialSystemManager.TrialsMode);
-
-        // Hide main panel
         if (Panel != null)
         {
             Panel.SetActive(false);
         }
 
-        // Close any open regression panel (without opening trial panel)
         var regressionUI = FindObjectOfType<TrialRegressionUI>();
         if (regressionUI != null)
         {
             regressionUI.ForceCloseRegressionPanel();
         }
 
-        // Build caves using CaveBuilder
         if (caveBuilder == null)
         {
             Debug.LogError("CaveBuilder not assigned - cannot build caves!");
             return;
         }
 
-        // Set CSV file to CaveBuilder
         caveBuilder.SetCSVFile(csvFile);
 
-        // Build all caves and get the last cave position
         Vector3 lastCavePosition = caveBuilder.BuildAllCaves(caveObject, oxygenObject, wall, arrows);
 
-        // Track spawned objects from CaveBuilder
         foreach (var obj in caveBuilder.GetSpawnedObjects())
         {
             if (systemResetter != null)
@@ -210,35 +193,28 @@ public partial class PanelOpenUp : MonoBehaviour
             }
         }
 
-        // Start Amadeo client
         if (_client != null)
         {
             _client.StartReceiveData();
         }
 
-        // Get end position for chest/fish
         Vector3 endPosition = caveBuilder.GetEndObjectPosition(lastCavePosition);
 
-        // Setup fish spawner
         if (fishSpawner != null && chest != null)
         {
             fishSpawner.SetChestPrefab(chest);
         }
 
-        // Create end object (chest or trial fish)
         GameObject endObject = CreateEndObject(endPosition);
 
-        // Set finish line in progress bar
         if (levelProgressUI != null && endObject != null)
         {
             levelProgressUI.SetFinishLine(endObject.transform);
         }
 
-        // Initialize component flags
         playerLife.didntGetInputsYet = true;
         health.didntGetInputsYet = true;
 
-        // Notify GameStateManager (only in normal mode, not trials)
         bool inTrialsMode = (trialSystemManager != null && trialSystemManager.TrialsMode);
         if (!inTrialsMode)
         {
@@ -248,13 +224,7 @@ public partial class PanelOpenUp : MonoBehaviour
 
     private GameObject CreateEndObject(Vector3 position)
     {
-        if (trialSystemManager != null)
-        {
-            // Debug.Log($"trialSystemManager.TrialsMode: {trialSystemManager.TrialsMode}");
-        }
-
         bool inTrialsMode = (trialSystemManager != null && trialSystemManager.TrialsMode);
-        Debug.Log($"Final inTrialsMode decision: {inTrialsMode}");
 
         if (inTrialsMode)
         {
@@ -310,7 +280,6 @@ public partial class PanelOpenUp : MonoBehaviour
 
     private void OnGameEnded(float finalOxygen, bool completed)
     {
-
         if (trialSystemManager == null || !trialSystemManager.TrialsMode)
         {
             //Debug.Log($"Game ended (normal mode): oxygen={finalOxygen:F1}%, completed={completed}");
@@ -321,10 +290,19 @@ public partial class PanelOpenUp : MonoBehaviour
     {
         int caveIndex = trialNumber - 1;
 
-        // Try TextAsset array first
-        if (caveFiles != null && caveIndex >= 0 && caveIndex < caveFiles.Length && caveFiles[caveIndex] != null)
+        // Get config from GameConfig.Instance
+        if (GameConfig.Instance == null)
         {
-            csvFile = caveFiles[caveIndex];
+            Debug.LogError("GameConfig.Instance is null! Cannot load cave file for trial.");
+            return;
+        }
+
+        var config = GameConfig.Instance;
+
+        // Try TextAsset array first
+        if (config.caveFiles != null && caveIndex >= 0 && caveIndex < config.caveFiles.Length && config.caveFiles[caveIndex] != null)
+        {
+            csvFile = config.caveFiles[caveIndex];
             if (caveBuilder != null)
             {
                 caveBuilder.SetCSVFile(csvFile);
@@ -335,9 +313,9 @@ public partial class PanelOpenUp : MonoBehaviour
         Debug.LogWarning($"Cave file {caveIndex} not in array, trying path pattern...");
 
         // Try path pattern fallback
-        if (useCaveFilePathPattern && !string.IsNullOrEmpty(caveFilePathPattern))
+        if (config.useCaveFilePathPattern && !string.IsNullOrEmpty(config.caveFilePathPattern))
         {
-            string relative = caveFilePathPattern.Replace("{n}", trialNumber.ToString());
+            string relative = config.caveFilePathPattern.Replace("{n}", trialNumber.ToString());
             string absolute = System.IO.Path.Combine(Application.dataPath, relative.Replace("\\", "/"));
 
             if (System.IO.File.Exists(absolute))

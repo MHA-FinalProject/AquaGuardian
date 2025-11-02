@@ -1,0 +1,382 @@
+Regression Analysis | 2025-11-01 20:54:55 | 5 trials
+
+Data Source: Constant Parameters CSV
+Trials: [1,2,3,4,5] (5R+0Rand)
+Avg O2: 51.4% | Perfect: 1 | Failed: 0
+R^2=0.999 AdjR^2=NaN RMSE=0.85% MAE=0.63%
+CV: N/A (too few samples)
+
+Actual vs Predicted:
+T | Actual | Pred | Err | Duration | Source
+--|--------|------|-----|----------|--------
+ 1 |  87.0% | 86.1%| 0.9%|     1.0s | Const
+ 2 |  48.0% | 48.0%| 0.0%|     2.0s | Const
+ 3 |  47.0% | 47.0%| 0.0%|     3.0s | Const
+ 4 |  61.0% | 60.3%| 0.7%|     4.0s | Const
+ 5 |  14.0% | 15.5%| 1.5%|     5.0s | Const
+Avg Error: 0.6% | Avg Duration: 3.0s
+Trial Duration Details:
+  Trial 1: 1.0s
+  Trial 2: 2.0s
+  Trial 3: 3.0s
+  Trial 4: 4.0s
+  Trial 5: 5.0s
+
+
+Feature Importance (Impact on Oxygen):
+  EffectiveDrainRate             6.6693
+  RemoveHealthEveryLifeTime      6.1886
+  removeHealthWithCollide        5.8185
+  idleUpwardSpeed                4.4252
+  verticalSpeed                  3.8913
+  factorForce                    3.5887
+  timeBetweenCollides            3.1121
+  speed                          2.1417
+  lifeTime                       1.9554
+  healHealthPoint                1.1818
+
+Regression Coefficients:
+  Intercept                              51.4000
+  Horizontal speed               2.1417
+  Vertical speed                 -3.8913
+  Idle upward speed              4.4252
+  Life span                      1.9554
+  Health removed per life cycle  -6.1886
+  Collision damage               -5.8185
+  Time between collisions        3.1121
+  Heal health points             1.1818
+  Force multiplier               3.5887
+  Effective drain rate           -6.6693
+
+Regression Equation:
+Oxygen = 51.4000 + 2.1417 * Horizontal speed - 3.8913 * Vertical speed + 4.4252 * Idle upward speed + 1.9554 * Life span - 6.1886 * Health removed per life cycle - 5.8185 * Collision damage + 3.1121 * Time between collisions + 1.1818 * Heal health points + 3.5887 * Force multiplier - 6.6693 * Effective drain rate
+
+OPTIMIZED PARAMETERS FOR TARGET 10% OXYGEN
+
+Predicted: 126.97% | Error: 116.968%
+
+Parameters:
+  Speed               =    40.00
+  VerticalSpeed       =    16.78
+  IdleUpwardSpeed     =     1.32
+  LifeTime            =     4.00s
+  HealthPerLifeCycle  =     2.83
+  CollisionDamage     =    10.46%
+  TimeBetweenCollides =     3.78s
+  HealPoints          =     9.00%
+  FactorForce         =     9.57x
+
+GRADIENT DESCENT OPTIMIZATION
+Target O2: 10.00%
+Optimizing 9 most important features:
+  - EffectiveDrainRate: coefficient = -6.6693
+  - RemoveHealthEveryLifeTime: coefficient = -6.1886
+  - removeHealthWithCollide: coefficient = -5.8185
+  - idleUpwardSpeed: coefficient = 4.4252
+  - verticalSpeed: coefficient = -3.8913
+  - factorForce: coefficient = 3.5887
+  - timeBetweenCollides: coefficient = 3.1121
+  - speed: coefficient = 2.1417
+  - lifeTime: coefficient = 1.9554
+
+INITIAL STATE:
+  EffectiveDrainRate        = 1.67
+  RemoveHealthEveryLifeTime = 3.75
+  removeHealthWithCollide   = 12.50
+  idleUpwardSpeed           = 1.51
+  verticalSpeed             = 30.00
+  factorForce               = 5.25
+  timeBetweenCollides       = 3.00
+  speed                     = 25.00
+  lifeTime                  = 2.25
+
+Predicted O2: 82.75%
+Error: 72.75%
+
+
+
+Iteration 1:
+  Current O2: 82.75% | Target: 10.00% | Error: 72.746%
+  Learning Rate: 0.200
+    EffectiveDrainRate      increased  1.67 to 3.92 (change: +F2)
+    RemoveHealthEveryLifeTime increased  3.75 to 6.58 (change: +F2)
+    removeHealthWithCollide increased  12.50 to 18.97 (change: +F2)
+    idleUpwardSpeed         decreased  1.51 to 0.62 (change: -+F2)
+    verticalSpeed           increased  30.00 to 45.00 (change: +F2)
+    factorForce             decreased  5.25 to 0.50 (change: -+F2)
+    timeBetweenCollides     decreased  3.00 to 1.11 (change: -+F2)
+    speed                   decreased  25.00 to 10.00 (change: -+F2)
+    lifeTime                decreased  2.25 to 0.50 (change: -+F2)
+
+Iteration 2:
+  Current O2: -76.59% | Target: 10.00% | Error: -86.586%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  13.16 to 10.47 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  6.58 to 3.21 (change: -+F2)
+    removeHealthWithCollide decreased  18.97 to 11.27 (change: -+F2)
+    idleUpwardSpeed         increased  0.62 to 1.67 (change: +F2)
+    verticalSpeed           decreased  45.00 to 22.22 (change: -+F2)
+    factorForce             increased  0.50 to 7.82 (change: +F2)
+    timeBetweenCollides     increased  1.11 to 3.36 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 3:
+  Current O2: 120.95% | Target: 10.00% | Error: 110.945%
+  Learning Rate: 0.200
+    EffectiveDrainRate      increased  0.80 to 4.25 (change: +F2)
+    RemoveHealthEveryLifeTime increased  3.21 to 7.00 (change: +F2)
+    removeHealthWithCollide increased  11.27 to 20.00 (change: +F2)
+    idleUpwardSpeed         decreased  1.67 to 0.32 (change: -+F2)
+    verticalSpeed           increased  22.22 to 45.00 (change: +F2)
+    factorForce             decreased  7.82 to 0.50 (change: -+F2)
+    timeBetweenCollides     decreased  3.36 to 1.00 (change: -+F2)
+    speed                   decreased  40.00 to 10.00 (change: -+F2)
+    lifeTime                decreased  4.00 to 0.50 (change: -+F2)
+
+Iteration 4:
+  Current O2: -92.19% | Target: 10.00% | Error: -102.191%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.83 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 3.02 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.91 (change: -+F2)
+    idleUpwardSpeed         increased  0.32 to 1.57 (change: +F2)
+    verticalSpeed           decreased  45.00 to 18.12 (change: -+F2)
+    factorForce             increased  0.50 to 9.14 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.65 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 5:
+  Current O2: 126.65% | Target: 10.00% | Error: 116.650%
+  Learning Rate: 0.200
+    EffectiveDrainRate      increased  0.76 to 4.38 (change: +F2)
+    RemoveHealthEveryLifeTime increased  3.02 to 7.00 (change: +F2)
+    removeHealthWithCollide increased  10.91 to 20.00 (change: +F2)
+    idleUpwardSpeed         decreased  1.57 to 0.14 (change: -+F2)
+    verticalSpeed           increased  18.12 to 45.00 (change: +F2)
+    factorForce             decreased  9.14 to 0.50 (change: -+F2)
+    timeBetweenCollides     decreased  3.65 to 1.00 (change: -+F2)
+    speed                   decreased  40.00 to 10.00 (change: -+F2)
+    lifeTime                decreased  4.00 to 0.50 (change: -+F2)
+
+Iteration 10:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 20:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 30:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 40:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 50:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 60:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 70:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 80:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 90:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 100:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 110:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 120:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 130:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 140:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+Iteration 150:
+  Current O2: -97.26% | Target: 10.00% | Error: -107.256%
+  Learning Rate: 0.200
+    EffectiveDrainRate      decreased  14.00 to 10.67 (change: -+F2)
+    RemoveHealthEveryLifeTime decreased  7.00 to 2.83 (change: -+F2)
+    removeHealthWithCollide decreased  20.00 to 10.46 (change: -+F2)
+    idleUpwardSpeed         increased  0.01 to 1.32 (change: +F2)
+    verticalSpeed           decreased  45.00 to 16.78 (change: -+F2)
+    factorForce             increased  0.50 to 9.57 (change: +F2)
+    timeBetweenCollides     increased  1.00 to 3.78 (change: +F2)
+    speed                   increased  10.00 to 40.00 (change: +F2)
+    lifeTime                increased  0.50 to 4.00 (change: +F2)
+
+
+FINAL OPTIMIZED PARAMETERS:
+  speed                     = 40.00
+  verticalSpeed             = 16.78
+  idleUpwardSpeed           = 1.32
+  lifeTime                  = 4.00
+  RemoveHealthEveryLifeTime = 2.83
+  removeHealthWithCollide   = 10.46
+  timeBetweenCollides       = 3.78
+  healHealthPoint           = 9.00
+  factorForce               = 9.57
+  EffectiveDrainRate        = 0.71
+
+RESULT:
+    Predicted O2: 126.97%
+    Target O2:    10.00%
+    Error:        116.968%
+
+
+Raw Data:
+T1: Spd=16.00 VSpd=30.00 ISpd=0.25 Life=2.00 HealthPerCycle=2.00 CollDmg=5.00 CD=2.00 Heal=10.00 Force=3.00 FinalO2=87.0% Duration=1.0s
+T2: Spd=12.00 VSpd=35.00 ISpd=0.50 Life=1.50 HealthPerCycle=3.50 CollDmg=8.00 CD=1.00 Heal=5.00 Force=2.50 FinalO2=48.0% Duration=2.0s
+T3: Spd=22.00 VSpd=28.00 ISpd=0.30 Life=1.00 HealthPerCycle=3.00 CollDmg=9.00 CD=1.50 Heal=4.00 Force=3.50 FinalO2=47.0% Duration=3.0s
+T4: Spd=18.00 VSpd=38.00 ISpd=0.80 Life=0.80 HealthPerCycle=1.00 CollDmg=10.00 CD=1.10 Heal=3.00 Force=4.00 FinalO2=61.0% Duration=4.0s
+T5: Spd=14.00 VSpd=40.00 ISpd=0.10 Life=1.20 HealthPerCycle=4.00 CollDmg=12.00 CD=1.20 Heal=6.00 Force=5.00 FinalO2=14.0% Duration=5.0s

@@ -1,10 +1,10 @@
 using UnityEngine;
 using TMPro;
 
-// 3. Split ProcessUserInputsInInitialForm into smaller methods
-// 4. Consider using events for state changes
-
-
+/**
+ * Keeps track of the player's movement.
+ * See also: getEventFromAmadeoClientDiver for movement from Amadeo device.
+ */
 public class PlayerMovement : MonoBehaviour
 {
 
@@ -16,7 +16,6 @@ public class PlayerMovement : MonoBehaviour
     public TMP_InputField vertical_speed_inputField;  // Input field for vertical speed
     public float idleUpwardSpeed;  // Speed for upward movement when no input is detected
     public TMP_InputField idle_upward_speed_inputField;  // Input field for idle upward speed
-    private float idleUpwardFactor = 0.5f;  // Factor for idle upward movement
 
     private Rigidbody rb;  // Reference to the Rigidbody component
 
@@ -29,9 +28,18 @@ public class PlayerMovement : MonoBehaviour
     // ----- Game State -----
     [Header("Game State")]
     public bool canMove = true;  // Flag to control if the player can move
-    public float collisionDelay = 2f;  // Delay between collisions
     public bool afterText = false;  // Flag to check if the intro text has been shown
     private bool _debugLoggedOnce = false;  // Flag to log state once after intro
+
+    private float GetIdleUpwardFactor()
+    {
+        return GameConfig.Instance != null ? GameConfig.Instance.idleUpwardFactor : 0.5f;
+    }
+
+    public float GetCollisionDelay()
+    {
+        return GameConfig.Instance != null ? GameConfig.Instance.playerCollisionDelay : 2f;
+    }
 
 
     // ----- Scene References -----
@@ -45,8 +53,14 @@ public class PlayerMovement : MonoBehaviour
     [Header("Amadeo Device Connection")]
     public bool notGetForcesFromAmadeo = true;  // Flag to check if Amadeo device is connected or using keyboard
 
+    // Track actual input source during trial (for regression analysis)
+    public int amadeoInputCount = 0;  // Count of frames with Amadeo input
+    public int keyboardInputCount = 0;  // Count of frames with keyboard input
+    public bool ActuallyUsedAmadeoInput => amadeoInputCount > keyboardInputCount;  // True if Amadeo was used more than keyboard
 
-    private GameObject caveTracker;
+
+    // DISABLED: CaveTracker is commented out
+    // private GameObject caveTracker;
 
 
     void Start()
@@ -62,18 +76,6 @@ public class PlayerMovement : MonoBehaviour
             gameObject.tag = "Player";
         }
 
-
-
-        // Find cave tracker without direct type reference
-        var behaviours = FindObjectsOfType<MonoBehaviour>();
-        foreach (var mb in behaviours)
-        {
-            if (mb != null && mb.GetType().Name == "CaveTracker")
-            {
-                caveTracker = mb.gameObject;
-                break;
-            }
-        }
     }
 
     void Update()
@@ -112,24 +114,70 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    private void HandleMovement()
+    // Unified movement handler that works for both keyboard and Amadeo device input
+    // For keyboard: applies idle upward speed when moving down or not moving up
+    // For Amadeo: only applies idle speed when within tolerance (no input), otherwise uses exact sign direction
+    public void ApplyMovement(float verticalInput, float verticalTolerance = 0.1f, bool isAmadeoInput = false)
     {
-        // TODO: Merge both functions to a single, easy-to-read function.
+        // Track input source for regression analysis
+        if (isAmadeoInput)
+        {
+            amadeoInputCount++;
+        }
+        else
+        {
+            keyboardInputCount++;
+        }
+
         Vector3 horizontalVelocity = speed * transform.TransformDirection(Vector3.forward); // move along the z-axis (forward direction)
 
-        float upDownInput = Input.GetAxis("UpDown");   // Change in Edit -> Project Settings -> Input Manager -> Axes - UpDown
-        // TODO: move to the new input system - use InputAction.
+        // Calculate vertical movement speed based on input
+        float verticalMovementSpeed;
 
-        float verticalMovementSpeed = upDownInput * verticalSpeed;
-        // Apply idle upward speed if no input is given
-        if (upDownInput <= 0)
+        if (Mathf.Abs(verticalInput) < verticalTolerance)
         {
-            verticalMovementSpeed += idleUpwardSpeed;
+            // Within tolerance: apply idle upward speed
+            verticalMovementSpeed = idleUpwardSpeed;
+        }
+        else
+        {
+            // Outside tolerance: apply movement based on input
+            if (isAmadeoInput)
+            {
+                // Amadeo: use exact sign direction (sign = -1, 0, or +1)
+                // This matches original behavior: Mathf.Sign(...) * verticalSpeed
+                verticalMovementSpeed = Mathf.Sign(verticalInput) * verticalSpeed;
+            }
+            else
+            {
+                // Keyboard: multiply input by speed and add idle speed when moving down
+                verticalMovementSpeed = verticalInput * verticalSpeed;
+                if (verticalInput <= 0)
+                {
+                    verticalMovementSpeed += idleUpwardSpeed;
+                }
+            }
         }
 
         Vector3 verticalVelocity = verticalMovementSpeed * transform.TransformDirection(Vector3.up);
         // Apply target velocity to the Rigidbody
         rb.velocity = horizontalVelocity + verticalVelocity;
+    }
+
+    // Reset input tracking counters (call at start of each trial)
+    public void ResetInputTracking()
+    {
+        amadeoInputCount = 0;
+        keyboardInputCount = 0;
+    }
+
+    private void HandleMovement()
+    {
+        // Get keyboard input for vertical movement
+        float upDownInput = Input.GetAxis("UpDown");   // Change in Edit -> Project Settings -> Input Manager -> Axes - UpDown
+
+        // Use unified movement function
+        ApplyMovement(upDownInput);
     }
 
 
@@ -140,7 +188,7 @@ public class PlayerMovement : MonoBehaviour
         if (collision.gameObject.CompareTag("Wall") || collision.gameObject.CompareTag("Cave"))
         {
             // Move the player upward
-            rb.velocity = new Vector3(rb.velocity.x, verticalSpeed * idleUpwardFactor, rb.velocity.z);
+            rb.velocity = new Vector3(rb.velocity.x, verticalSpeed * GetIdleUpwardFactor(), rb.velocity.z);
         }
     }
 
@@ -151,11 +199,7 @@ public class PlayerMovement : MonoBehaviour
         {
             Debug.Log("collision " + gameObject.name + " " + collision.gameObject.name);
 
-            // Record all collisions (cave, wall, ground) in CaveTracker
-            if (caveTracker != null)
-            {
-                caveTracker.SendMessage("RegisterCollision", SendMessageOptions.DontRequireReceiver);
-            }
+
         }
     }
 
@@ -185,20 +229,4 @@ public class PlayerMovement : MonoBehaviour
         canMove = move;
     }
 
-
-
-    #region Public API
-
-    /// <summary>
-    /// Trigger performance summary
-    /// </summary>
-    public void LogPerformanceSummary()
-    {
-        if (caveTracker != null)
-        {
-            caveTracker.SendMessage("PrintResults", SendMessageOptions.DontRequireReceiver);
-        }
-    }
-
-    #endregion
 }

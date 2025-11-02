@@ -1,0 +1,2 @@
+ERROR: Failed to train ML model
+Not enough variance in data

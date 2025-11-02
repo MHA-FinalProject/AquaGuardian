@@ -1,0 +1,170 @@
+Regression analysis - full report:
+Generated: 2025-10-27 20:25:14
+Trials analyzed: 5
+
+Trials: [1,2,3,4,5]
+Total: 5 (Reg:0, Rand:5)
+Avg O2: 79.2% Perfect: 0 Failed: 0
+Model Metrics (Training):
+  R^2=0.9970 | Adj R^2=NaN
+  RMSE=0.288% | MAE=0.251%
+CV: N/A (too few samples)
+
+Actual vs Predicted:
+T | Actual | Pred | Err | Status
+--|--------|------|-----|-------
+ 1R|  81.9% | 81.7%| 0.2%| Exc
+ 2R|  86.7% | 86.3%| 0.4%| Exc
+ 3R|  75.9% | 76.2%| 0.3%| Exc
+ 4R|  80.3% | 80.2%| 0.0%| Exc
+ 5R|  71.3% | 71.6%| 0.4%| Exc
+Avg Error: 0.3%
+
+Feature importance:
+removeHealthWithCollide: 2.48 #####################################
+verticalSpeed: 2.28 ##################################
+speed: 1.05 ################
+downHealthPairSec: 0.82 ############
+
+======================================================================
+OPTIMIZED PARAMETERS FOR TARGET 10% O2 (Gradient Descent)
+======================================================================
+
+>>> RESULT: 68.38% (Error: 58.379%)
+
+Quality: FAIR
+
+Parameters to set for this patient:
+----------------------------------------------------------------------
+  Speed              = 40.00
+  VerticalSpeed      = 15.00
+  IdleUpwardSpeed    = 1.01
+  LifeTime           = 2.15
+  O2DropPerSec       = 4.25
+  CollisionDamage    = 20.00
+  TimeBetweenCollide = 2.65
+  HealPoints         = 8.00
+======================================================================
+
+======================================================================
+HOW WE GOT HERE: Optimization Process Details
+======================================================================
+
+=== GRADIENT DESCENT OPTIMIZATION ===
+Target O2: 10.00%
+Optimizing 3 most important features:
+  - removeHealthWithCollide: coefficient = -2.4817
+  - verticalSpeed: coefficient = 2.2835
+  - speed: coefficient = -1.0494
+
+INITIAL STATE:
+----------------------------------------------------------------------
+  removeHealthWithCollide   = 12.50
+  verticalSpeed             = 37.50
+  speed                     = 25.00
+
+Predicted O2: 83.27%
+Error: 73.27%
+
+OPTIMIZATION PROCESS:
+----------------------------------------------------------------------
+
+Iteration 1:
+  Current O2: 83.27% | Target: 10.00% | Error: 73.266%
+  Learning Rate: 0.500
+    removeHealthWithCollide ↑ 12.50 → 20.00 (Δ +F2)
+    verticalSpeed           ↓ 37.50 → 21.46 (Δ -+F2)
+    speed                   ↑ 25.00 → 40.00 (Δ +F2)
+
+Iteration 2:
+  Current O2: 69.77% | Target: 10.00% | Error: 59.773%
+  Learning Rate: 0.500
+    verticalSpeed           ↓ 21.46 → 15.00 (Δ -+F2)
+
+Iteration 3:
+  Current O2: 68.38% | Target: 10.00% | Error: 58.379%
+  Learning Rate: 0.500
+
+Stopped at iteration 3: All parameters at bounds
+
+======================================================================
+FINAL OPTIMIZED PARAMETERS:
+======================================================================
+  speed                     = 40.00
+  verticalSpeed             = 15.00
+  idleUpwardSpeed           = 1.01
+  lifeTime                  = 2.15
+  downHealthPairSec         = 4.25
+  removeHealthWithCollide   = 20.00
+  timeBetweenCollides       = 2.65
+  healHealthPoint           = 8.00
+
+>>> RESULT:
+    Predicted O2: 68.38%
+    Target O2:    10.00%
+    Error:        58.379%
+    Quality:      FAIR
+======================================================================
+
+
+Raw trial data:
+
+Trial 1:
+  Speed: 29.78
+  VerticalSpeed: 33.00
+  IdleUpwardSpeed: 0.78
+  LifeTime: 1.00
+  O2DropPerSec: 2.47
+  CollisionDamage: 7.91
+  TimeBetweenCollides: 2.58
+  HealPoints: 13.96
+  FactorForce: 3.00
+  FinalO2: 81.9%
+
+Trial 2:
+  Speed: 23.87
+  VerticalSpeed: 48.34
+  IdleUpwardSpeed: 1.91
+  LifeTime: 4.54
+  O2DropPerSec: 2.42
+  CollisionDamage: 7.02
+  TimeBetweenCollides: 4.69
+  HealPoints: 8.05
+  FactorForce: 3.00
+  FinalO2: 86.7%
+
+Trial 3:
+  Speed: 26.57
+  VerticalSpeed: 32.78
+  IdleUpwardSpeed: 1.98
+  LifeTime: 3.42
+  O2DropPerSec: 0.65
+  CollisionDamage: 16.86
+  TimeBetweenCollides: 3.69
+  HealPoints: 12.27
+  FactorForce: 3.00
+  FinalO2: 75.9%
+
+Trial 4:
+  Speed: 29.26
+  VerticalSpeed: 38.05
+  IdleUpwardSpeed: 1.44
+  LifeTime: 2.63
+  O2DropPerSec: 2.99
+  CollisionDamage: 12.97
+  TimeBetweenCollides: 1.32
+  HealPoints: 8.24
+  FactorForce: 3.00
+  FinalO2: 80.3%
+
+Trial 5:
+  Speed: 28.49
+  VerticalSpeed: 19.05
+  IdleUpwardSpeed: 1.68
+  LifeTime: 2.96
+  O2DropPerSec: 2.71
+  CollisionDamage: 19.04
+  TimeBetweenCollides: 4.76
+  HealPoints: 3.79
+  FactorForce: 3.00
+  FinalO2: 71.3%

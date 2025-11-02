@@ -1,0 +1,93 @@
+Regression Analysis | 2025-10-30 15:25:47 | 5 trials
+
+Data Source: Constant Parameters CSV
+Trials: [1,2,3,4,5] (5R+0Rand)
+Avg O2: 48.8% | Perfect: 0 | Failed: 0
+R^2=0.993 AdjR^2=NaN RMSE=1.43% MAE=1.39%
+CV: N/A (too few samples)
+
+Actual vs Predicted:
+T | Actual | Pred | Err | Duration | Source
+--|--------|------|-----|----------|--------
+ 1 |  75.0% | 73.4%| 1.6%|    1.0s | Const 
+ 2 |  40.0% | 41.0%| 1.0%|    2.0s | Const 
+ 3 |  41.0% | 42.5%| 1.5%|    3.0s | Const 
+ 4 |  62.0% | 60.1%| 1.9%|    4.0s | Const 
+ 5 |  26.0% | 27.0%| 1.0%|    5.0s | Const 
+Avg Error: 1.4% | Avg Duration: 3.0s
+
+Trial Duration Details:
+  Trial 1: 1.0s
+  Trial 2: 2.0s
+  Trial 3: 3.0s
+  Trial 4: 4.0s
+  Trial 5: 5.0s
+
+
+Feature Importance (Impact on Oxygen):
+  downHealthPairSec         11.4162
+  removeHealthWithCollide   4.8328
+  timeBetweenCollides       4.0664
+  healHealthPoint           3.3392
+  idleUpwardSpeed           3.0952
+  lifeTime                  2.0381
+  verticalSpeed             1.3296
+  factorForce               0.5593
+  speed                     0.5020
+
+Regression Coefficients (β values):
+  Intercept (β₀)              48.8000
+  Speed                         0.5020
+  VerticalSpeed                 1.3296
+  IdleUpwardSpeed               3.0952
+  LifeTime                      2.0381
+  O2DropPerSec                -11.4162
+  CollisionDamage              -4.8328
+  TimeBetweenCollides           4.0664
+  HealPoints                    3.3392
+  FactorForce                  -0.5593
+
+
+OPTIMIZED PARAMETERS FOR TARGET 10% OXYGEN
+
+Predicted: 10.07% | Error: 0.068%
+
+Parameters:
+  Speed               =    25.00
+  VerticalSpeed       =    30.00
+  IdleUpwardSpeed     =     1.51
+  LifeTime            =     2.25s
+  O2DropPerSec        =     7.00
+  CollisionDamage     =    20.00%
+  TimeBetweenCollides =     1.64s
+  HealPoints          =     9.00%
+  FactorForce         =     2.75x
+
+
+ADVANCED MINIMAL-CHANGE SOLVER
+Target O2: 10.00%
+Top features optimized: downHealthPairSec, removeHealthWithCollide, timeBetweenCollides
+
+OPTIMIZED PARAMETERS:
+  speed                     = 25.00
+  verticalSpeed             = 30.00
+  idleUpwardSpeed           = 1.51
+  lifeTime                  = 2.25
+  downHealthPairSec         = 7.00
+  removeHealthWithCollide   = 20.00
+  timeBetweenCollides       = 1.64
+  healHealthPoint           = 9.00
+  factorForce               = 2.75
+
+RESULT:
+    Predicted O2: 10.07%
+    Target O2:    10.00%
+    Error:        0.068%
+
+
+Raw Data:
+T1: Spd=16.00 VSpd=30.00 ISpd=0.01 Life=2.00 O2Drop=2.00 CollDmg=5.00 CD=2.00 Heal=10.00 Force=3.00 FinalO2=75.0% Duration=1.0s
+T2: Spd=12.00 VSpd=35.00 ISpd=0.50 Life=1.50 O2Drop=3.50 CollDmg=8.00 CD=1.00 Heal=5.00 Force=2.50 FinalO2=40.0% Duration=2.0s
+T3: Spd=22.00 VSpd=28.00 ISpd=0.30 Life=1.00 O2Drop=3.00 CollDmg=9.00 CD=1.50 Heal=4.00 Force=3.50 FinalO2=41.0% Duration=3.0s
+T4: Spd=18.00 VSpd=38.00 ISpd=0.80 Life=0.80 O2Drop=1.00 CollDmg=10.00 CD=1.10 Heal=3.00 Force=4.00 FinalO2=62.0% Duration=4.0s
+T5: Spd=14.00 VSpd=40.00 ISpd=0.10 Life=1.20 O2Drop=4.00 CollDmg=12.00 CD=1.20 Heal=6.00 Force=5.00 FinalO2=26.0% Duration=5.0s

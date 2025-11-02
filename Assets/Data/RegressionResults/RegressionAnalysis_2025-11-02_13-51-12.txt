@@ -1,0 +1,75 @@
+Regression Analysis | 2025-11-02 13:51:12 | 5 trials
+
+Data Source: Constant Parameters CSV
+Trials: [1,2,3,4,5] (5R+0Rand)
+Avg O2: 52.0% | Perfect: 1 | Failed: 0
+R^2=0.998 AdjR^2=NaN RMSE=1.26% MAE=1.12%
+CV: N/A (too few samples)
+
+Actual vs Predicted:
+T | Actual | Pred | Err | Duration | Source
+--|--------|------|-----|----------|--------
+ 1 |  80.0% | 78.9%| 1.1%|     1.0s | Const
+ 2 |  32.0% | 33.2%| 1.2%|     2.0s | Const
+ 3 |  56.0% | 55.9%| 0.1%|     3.0s | Const
+ 4 |  82.0% | 80.3%| 1.7%|     4.0s | Const
+ 5 |  10.0% | 11.6%| 1.6%|     5.0s | Const
+Avg Error: 1.1% | Avg Duration: 3.0s
+Trial Duration Details:
+  Trial 1: 1.0s
+  Trial 2: 2.0s
+  Trial 3: 3.0s
+  Trial 4: 4.0s
+  Trial 5: 5.0s
+
+
+Feature Importance (Impact on Oxygen):
+  RemoveHealthEveryLifeTime      10.9424
+  EffectiveDrainRate             9.2218
+  idleUpwardSpeed                5.7722
+  speed                          5.4928
+  removeHealthWithCollide        4.7815
+  timeBetweenCollides            4.7659
+  verticalSpeed                  3.4499
+  lifeTime                       0.7697
+  healHealthPoint                0.3131
+  factorForce                    0.2407
+
+Regression Coefficients:
+  Intercept                              52.0000
+  Horizontal speed               5.4928
+  Vertical speed                 -3.4499
+  Idle upward speed              5.7722
+  Life span                      -0.7697
+  Health removed per life cycle  -10.9424
+  Collision damage               -4.7815
+  Time between collisions        4.7659
+  Heal health points             0.3131
+  Force multiplier               0.2407
+  Effective drain rate           -9.2218
+
+Regression Equation:
+Oxygen = 52.0000 + 5.4928 * Horizontal speed - 3.4499 * Vertical speed + 5.7722 * Idle upward speed - 0.7697 * Life span - 10.9424 * Health removed per life cycle - 4.7815 * Collision damage + 4.7659 * Time between collisions + 0.3131 * Heal health points + 0.2407 * Force multiplier - 9.2218 * Effective drain rate
+
+OPTIMIZED PARAMETERS FOR TARGET 10% OXYGEN
+
+Predicted: 10.09% | Error: 0.094%
+
+Parameters:
+  Speed               =    13.71
+  VerticalSpeed       =    43.06
+  IdleUpwardSpeed     =     0.67
+  LifeTime            =     3.18s
+  HealthPerLifeCycle  =     5.49
+  CollisionDamage     =    19.27%
+  TimeBetweenCollides =     1.67s
+  HealPoints          =    12.14%
+  FactorForce         =     0.00x
+
+
+Raw Data:
+T1: Spd=15.00 VSpd=30.00 ISpd=0.01 Life=2.00 HealthPerCycle=2.00 CollDmg=5.00 CD=2.00 Heal=10.00 Force=3.00 FinalO2=80.0% Duration=1.0s
+T2: Spd=12.00 VSpd=35.00 ISpd=0.50 Life=1.50 HealthPerCycle=3.50 CollDmg=8.00 CD=1.00 Heal=5.00 Force=2.50 FinalO2=32.0% Duration=2.0s
+T3: Spd=22.00 VSpd=28.00 ISpd=0.30 Life=1.00 HealthPerCycle=3.00 CollDmg=9.00 CD=1.50 Heal=4.00 Force=3.50 FinalO2=56.0% Duration=3.0s
+T4: Spd=18.00 VSpd=38.00 ISpd=0.80 Life=0.80 HealthPerCycle=1.00 CollDmg=10.00 CD=1.10 Heal=3.00 Force=4.00 FinalO2=82.0% Duration=4.0s
+T5: Spd=14.00 VSpd=40.00 ISpd=0.10 Life=1.20 HealthPerCycle=4.00 CollDmg=12.00 CD=1.20 Heal=6.00 Force=5.00 FinalO2=10.0% Duration=5.0s

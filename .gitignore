@@ -38,6 +38,7 @@ DIFFICULTY_SETUP_GUIDE.md
 # Additional ignore patterns for Unity
 # Generated reports
 Assets/Subject/
+PROJECT_OVERVIEW.md
 
 
 # Temp screenshots and test images

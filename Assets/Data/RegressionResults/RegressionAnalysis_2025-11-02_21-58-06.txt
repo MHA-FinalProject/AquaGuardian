@@ -1,0 +1,155 @@
+Regression | 2025-11-02 21:58:06 | 5 trials
+Avg : 51.4%  | Data Source: Constant Parameters CSV | Trials: [1,2,3,4,5] (5R+0Rand)
+R^2=0.996 AdjR^2=NaN RMSE=1.53% MAE=1.19%
+input type : keyboard
+
+Raw Data:
+T1: Speed=15.00 VerticalSpeed=30.00 IdleUpwardSpeed=0.01 LifeTime=2.00 HealthPerCycle=2.00 CollisionDamage=5.00 TimeBetweenCollides=2.00 HealPoints=10.00 FactorForce=0.00 FinalOxygen=85.0% Duration=1.0s
+T2: Speed=12.00 VerticalSpeed=35.00 IdleUpwardSpeed=0.50 LifeTime=1.50 HealthPerCycle=3.50 CollisionDamage=8.00 TimeBetweenCollides=1.00 HealPoints=5.00 FactorForce=0.00 FinalOxygen=56.0% Duration=2.0s
+T3: Speed=22.00 VerticalSpeed=28.00 IdleUpwardSpeed=0.30 LifeTime=1.00 HealthPerCycle=3.00 CollisionDamage=9.00 TimeBetweenCollides=1.50 HealPoints=4.00 FactorForce=0.00 FinalOxygen=44.0% Duration=3.0s
+T4: Speed=18.00 VerticalSpeed=38.00 IdleUpwardSpeed=0.80 LifeTime=0.80 HealthPerCycle=1.00 CollisionDamage=10.00 TimeBetweenCollides=1.10 HealPoints=3.00 FactorForce=0.00 FinalOxygen=62.0% Duration=4.0s
+T5: Speed=14.00 VerticalSpeed=40.00 IdleUpwardSpeed=0.10 LifeTime=1.20 HealthPerCycle=4.00 CollisionDamage=12.00 TimeBetweenCollides=1.20 HealPoints=6.00 FactorForce=0.00 FinalOxygen=10.0% Duration=5.0s
+
+Trial 1 Analysis:
+  Actual Oxygen: 85.00%
+  Predicted Oxygen: 84.30%
+  Error: 0.70% (0.8%)
+  Duration: 1.0s
+  Feature Contributions:
+    Intercept: 51.4000
+    Horizontal speed: -1.3846 * 15.00 = -20.7688
+    Vertical speed: -5.6944 * 30.00 = -170.8310
+    Idle upward speed: 5.8993 * 0.01 = 0.0590
+    Life span: 4.1037 * 2.00 = 8.2073
+    Health removed per life cycle: -5.7670 * 2.00 = -11.5340
+    Collision damage: -9.6269 * 5.00 = -48.1347
+    Time between collisions: 0.4657 * 2.00 = 0.9314
+    Heal health points: 0.0249 * 10.00 = 0.2488
+    Force multiplier: 0.0000 * 0.00 = 0.0000
+    Effective drain rate: -8.3637 * 1.00 = -8.3637
+
+Trial 2 Analysis:
+  Actual Oxygen: 56.00%
+  Predicted Oxygen: 54.19%
+  Error: 1.81% (3.2%)
+  Duration: 2.0s
+  Feature Contributions:
+    Intercept: 51.4000
+    Horizontal speed: -1.3846 * 12.00 = -16.6150
+    Vertical speed: -5.6944 * 35.00 = -199.3028
+    Idle upward speed: 5.8993 * 0.50 = 2.9496
+    Life span: 4.1037 * 1.50 = 6.1555
+    Health removed per life cycle: -5.7670 * 3.50 = -20.1844
+    Collision damage: -9.6269 * 8.00 = -77.0156
+    Time between collisions: 0.4657 * 1.00 = 0.4657
+    Heal health points: 0.0249 * 5.00 = 0.1244
+    Force multiplier: 0.0000 * 0.00 = 0.0000
+    Effective drain rate: -8.3637 * 2.33 = -19.5154
+
+Trial 3 Analysis:
+  Actual Oxygen: 44.00%
+  Predicted Oxygen: 44.20%
+  Error: 0.20% (0.5%)
+  Duration: 3.0s
+  Feature Contributions:
+    Intercept: 51.4000
+    Horizontal speed: -1.3846 * 22.00 = -30.4609
+    Vertical speed: -5.6944 * 28.00 = -159.4423
+    Idle upward speed: 5.8993 * 0.30 = 1.7698
+    Life span: 4.1037 * 1.00 = 4.1037
+    Health removed per life cycle: -5.7670 * 3.00 = -17.3009
+    Collision damage: -9.6269 * 9.00 = -86.6425
+    Time between collisions: 0.4657 * 1.50 = 0.6986
+    Heal health points: 0.0249 * 4.00 = 0.0995
+    Force multiplier: 0.0000 * 0.00 = 0.0000
+    Effective drain rate: -8.3637 * 3.00 = -25.0912
+
+Trial 4 Analysis:
+  Actual Oxygen: 62.00%
+  Predicted Oxygen: 61.55%
+  Error: 0.45% (0.7%)
+  Duration: 4.0s
+  Feature Contributions:
+    Intercept: 51.4000
+    Horizontal speed: -1.3846 * 18.00 = -24.9226
+    Vertical speed: -5.6944 * 38.00 = -216.3859
+    Idle upward speed: 5.8993 * 0.80 = 4.7194
+    Life span: 4.1037 * 0.80 = 3.2829
+    Health removed per life cycle: -5.7670 * 1.00 = -5.7670
+    Collision damage: -9.6269 * 10.00 = -96.2695
+    Time between collisions: 0.4657 * 1.10 = 0.5123
+    Heal health points: 0.0249 * 3.00 = 0.0746
+    Force multiplier: 0.0000 * 0.00 = 0.0000
+    Effective drain rate: -8.3637 * 1.25 = -10.4547
+
+Trial 5 Analysis:
+  Actual Oxygen: 10.00%
+  Predicted Oxygen: 12.77%
+  Error: 2.77% (27.7%)
+  Duration: 5.0s
+  Feature Contributions:
+    Intercept: 51.4000
+    Horizontal speed: -1.3846 * 14.00 = -19.3842
+    Vertical speed: -5.6944 * 40.00 = -227.7747
+    Idle upward speed: 5.8993 * 0.10 = 0.5899
+    Life span: 4.1037 * 1.20 = 4.9244
+    Health removed per life cycle: -5.7670 * 4.00 = -23.0679
+    Collision damage: -9.6269 * 12.00 = -115.5234
+    Time between collisions: 0.4657 * 1.20 = 0.5589
+    Heal health points: 0.0249 * 6.00 = 0.1493
+    Force multiplier: 0.0000 * 0.00 = 0.0000
+    Effective drain rate: -8.3637 * 3.33 = -27.8791
+
+Feature Importance (Impact on Oxygen):
+  removeHealthWithCollide        9.6269
+  EffectiveDrainRate             8.3637
+  idleUpwardSpeed                5.8993
+  RemoveHealthEveryLifeTime      5.7670
+  verticalSpeed                  5.6944
+  lifeTime                       4.1037
+  speed                          1.3846
+  timeBetweenCollides            0.4657
+  healHealthPoint                0.0249
+  factorForce                    0.0000
+
+Regression Coefficients:
+  Intercept                              51.4000
+  Horizontal speed         -1.3846
+  Vertical speed           -5.6944
+  Idle upward speed        5.8993
+  Life span                4.1037
+  Health removed per life cycle -5.7670
+  Collision damage         -9.6269
+  Time between collisions  0.4657
+  Heal health points       0.0249
+  Force multiplier         0.0000
+  Effective drain rate     -8.3637
+
+Regression Equation:
+Oxygen = 51.4000
+          - 1.3846 * Horizontal speed
+          - 5.6944 * Vertical speed
+          + 5.8993 * Idle upward speed
+          + 4.1037 * Life span
+          - 5.7670 * Health removed per life cycle
+          - 9.6269 * Collision damage
+          + 0.4657 * Time between collisions
+          + 0.0249 * Heal health points
+          + 0.0000 * Force multiplier
+          - 8.3637 * Effective drain rate
+
+OPTIMIZED PARAMETERS FOR TARGET 10% OXYGEN
+
+Predicted: 9.74% | Error: 0.260%
+
+Parameters:
+  Speed               =    16.67
+  VerticalSpeed       =    36.74
+  IdleUpwardSpeed     =     0.18
+  LifeTime            =     0.93s
+  HealthPerLifeCycle  =     4.06
+  CollisionDamage     =    10.97%
+  TimeBetweenCollides =     1.36s
+  HealPoints          =     5.59%
+  FactorForce         =     0.00x
+
