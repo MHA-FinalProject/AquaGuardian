@@ -3,36 +3,51 @@ using System;
 using System.Linq;
 
 /**
- * Multiple Linear Regression with Ridge regularization + Cholesky solver
- * Uses double precision internally for numerical stability
- * Ridge prevents overfitting when N is small (e.g., 5 samples)
- * Cholesky decomposition is more stable than Gaussian elimination
+ * Multiple Linear Regression Model for Oxygen Prediction
+ * Uses regularization, normalization, and cross-validation
  */
 public class MultipleLinearRegression
 {
-    // Model parameters (public API in float)
+    #region Constants
+    
+    private const float MIN_LAMBDA = 1e-9f;
+    
+    #endregion
+    
+    #region Public API - Model Parameters and Metrics
+    
     public float[] coefficients;
     public float rSquared;
     public float adjustedRSquared;
     public float meanSquaredError;
     public float rootMeanSquaredError;
 
-    // Feature info
+    #endregion
+
+    #region Feature Information
+    
     public int numFeatures;
     public int numSamples;
     public string[] featureNames;
 
-    // Normalizer (public access for DifficultyParameterSolver)
-    public FeatureNormalizer normalizer;  // FIXED: Made public for normalized-space optimization
+    #endregion
+
+    #region Normalization
+    
+    public FeatureNormalizer normalizer;  // Public for optimizer access
     private bool useNormalization;
     
-    // ADDED: Helper properties for cleaner access to normalization parameters
+    // Helper properties for cleaner access to normalization parameters
     public float[] Means => normalizer?.means;
     public float[] Stds => normalizer?.stdDevs;
 
-    // Ridge regularization strength (0.1-1.0 for small N)
-    public float ridgeLambda = 0.5f;
+    #endregion
 
+    #region Regularization
+
+    public float ridgeLambda = 0.5f;      // Ridge regularization strength (0.1-1.0 for small n)
+    
+    #endregion
 
     public MultipleLinearRegression(bool normalize = true)
     {
@@ -43,37 +58,20 @@ public class MultipleLinearRegression
         }
     }
 
-    // ========== NaN/Inf Protection Helpers ==========
     
-    private static bool IsBad(float v) => float.IsNaN(v) || float.IsInfinity(v);
-    
-    private static void CleanVector(float[] v, float replacement = 0f)
-    {
-        if (v == null) return;
-        for (int i = 0; i < v.Length; i++)
-            if (IsBad(v[i])) v[i] = replacement;
-    }
-    
-    private static void CleanMatrix(float[][] X, float replacement = 0f)
-    {
-        if (X == null) return;
-        for (int i = 0; i < X.Length; i++)
-            CleanVector(X[i], replacement);
-    }
-    
-    // ==================================================
+    #region Model Training
 
     public void Fit(float[][] X, float[] Y, string[] featureNames = null)
     {
-        if (X == null || Y == null || X.Length == 0 || X.Length != Y.Length)
+        if (!RegressionMath.ValidateInputs(X, Y, out string error))
         {
-            Debug.LogError("Invalid input data for regression");
+            Debug.LogError($"[MultipleLinearRegression] Invalid input: {error}");
             return;
         }
 
         // Clean NaN/Inf values before processing
-        CleanMatrix(X);
-        CleanVector(Y);
+        RegressionMath.CleanMatrix(X);
+        RegressionMath.CleanVector(Y);
 
         numSamples = X.Length;
         numFeatures = X[0].Length;
@@ -121,14 +119,14 @@ public class MultipleLinearRegression
         }
 
         // 4) Add Ridge regularization (do NOT penalize intercept at index 0)
-        double lambdaEff = Math.Max(1e-9, ridgeLambda); // Ensure lambda is never zero
+        double lambdaEff = Math.Max(MIN_LAMBDA, ridgeLambda);
         for (int a = 1; a < d; a++)  // Start from 1 to skip intercept
         {
             A[a, a] += lambdaEff;
         }
 
         // 5) Solve using Cholesky decomposition (A is SPD due to Ridge)
-        double[] beta = SolveSPDByCholesky(A, b);
+        double[] beta = RegressionMath.SolveSPDByCholesky(A, b);
 
         if (beta == null)
         {
@@ -141,10 +139,11 @@ public class MultipleLinearRegression
 
         // 7) Calculate metrics on original X, Y
         CalculateMetrics(X, Y);
-
-        PrintModelSummary();
     }
 
+    #endregion
+
+    #region Prediction
     
     public float Predict(float[] features)
     {
@@ -161,7 +160,7 @@ public class MultipleLinearRegression
         }
 
         // Clean NaN/Inf values in input features
-        CleanVector(features);
+        RegressionMath.CleanVector(features);
 
         // Normalize if needed
         float[] x = useNormalization ? normalizer.TransformSample(features) : features;
@@ -197,24 +196,24 @@ public class MultipleLinearRegression
         return predictions;
     }
 
-    /*
-    K-Fold Cross Validation - improved to cover ALL samples
-    Returns average RMSE, MAE, R2 across folds
-    Trains a fresh model on each fold
-    */
-    public (float rmse, float mae, float r2) KFoldCV(float[][] X, float[] Y, int kFolds = 5, int? seed = null)
+    #endregion
+
+    #region Cross-Validation
+    
+    public RegressionMetrics KFoldCV(float[][] X, float[] Y, int kFolds = 5, int? seed = null)
     {
-        if (X == null || Y == null || X.Length == 0 || X.Length != Y.Length)
-            return (float.NaN, float.NaN, float.NaN);
+        if (!RegressionMath.ValidateInputs(X, Y, out string error))
+        {
+            Debug.LogError($"[MultipleLinearRegression] K-Fold CV failed: {error}");
+            return new RegressionMetrics(float.NaN, float.NaN, float.NaN);
+        }
 
         // Clean NaN/Inf values before CV
-        CleanMatrix(X);
-        CleanVector(Y);
+        RegressionMath.CleanMatrix(X);
+        RegressionMath.CleanVector(Y);
 
         int n = X.Length;
         int k = Mathf.Clamp(kFolds, 2, Mathf.Min(10, n));
-
-       // Debug.Log($"\n=== K-FOLD CROSS VALIDATION ({k} folds) ===");
 
         // Shuffle indices
         var idx = Enumerable.Range(0, n).ToArray();
@@ -252,7 +251,6 @@ public class MultipleLinearRegression
             var testIdx = idx.Skip(s).Take(len).ToArray();
             var trainIdx = idx.Where(ii => ii < s || ii >= s + len).ToArray();
 
-            // FIXED: Use fold-specific feature count from X, not object's numFeatures
             int foldNumFeatures = (X != null && X.Length > 0) ? X[0].Length : numFeatures;
             
             // Need enough training samples: at least (features + 1)
@@ -263,10 +261,10 @@ public class MultipleLinearRegression
             }
 
             // Build train/test sets
-            var Xtr = SubsetX(X, trainIdx);
-            var Ytr = SubsetY(Y, trainIdx);
-            var Xte = SubsetX(X, testIdx);
-            var Yte = SubsetY(Y, testIdx);
+            var Xtr = RegressionMath.SubsetX(X, trainIdx);
+            var Ytr = RegressionMath.SubsetY(Y, trainIdx);
+            var Xte = RegressionMath.SubsetX(X, testIdx);
+            var Yte = RegressionMath.SubsetY(Y, testIdx);
 
             // Train model on this fold
             var model = new MultipleLinearRegression(normalize: useNormalization)
@@ -279,36 +277,37 @@ public class MultipleLinearRegression
             var preds = model.PredictBatch(Xte);
 
             // Calculate metrics for this fold
-            var (rmse, mae, r2) = ComputeMetrics(Yte, preds);
+            var metrics = RegressionMath.ComputeMetrics(Yte, preds);
             
             // Check for NaN/Inf before adding to sum
-            if (float.IsNaN(rmse) || float.IsNaN(r2) || float.IsInfinity(rmse) || float.IsInfinity(r2))
+            if (float.IsNaN(metrics.RMSE) || float.IsNaN(metrics.R2) || float.IsInfinity(metrics.RMSE) || float.IsInfinity(metrics.R2))
             {
                 Debug.LogWarning($"Fold {f + 1}: NaN/Inf metrics detected, skipping");
                 continue;
             }
 
-            rmseSum += rmse;
-            maeSum += mae;
-            r2Sum += r2;
+            rmseSum += metrics.RMSE;
+            maeSum += metrics.MAE;
+            r2Sum += metrics.R2;
             foldsCounted++;
         }
 
         if (foldsCounted == 0)
         {
             Debug.LogWarning("K-Fold CV: No valid folds");
-            return (float.NaN, float.NaN, float.NaN);
+            return new RegressionMetrics(float.NaN, float.NaN, float.NaN);
         }
 
         float avgRMSE = (float)(rmseSum / foldsCounted);
         float avgMAE = (float)(maeSum / foldsCounted);
         float avgR2 = (float)(r2Sum / foldsCounted);
 
-      //  Debug.Log($"\n=== CV AVERAGE ({foldsCounted} folds) ===");
-      //  Debug.Log($"RMSE: {avgRMSE:F3}, MAE: {avgMAE:F3}, R2: {avgR2:F3}");
-
-        return (avgRMSE, avgMAE, avgR2);
+        return new RegressionMetrics(avgRMSE, avgMAE, avgR2);
     }
+    
+    #endregion
+
+    #region Feature Importance
 
     public (string feature, float importance)[] GetFeatureImportance()
     {
@@ -330,13 +329,16 @@ public class MultipleLinearRegression
         return importance.OrderByDescending(x => x.Item2).ToArray();
     }
 
+    #endregion
+
+    #region Metrics Calculation
 
     private void CalculateMetrics(float[][] X, float[] Y)
     {
         var predictions = PredictBatch(X);
-        var (rmse, mae, r2) = ComputeMetrics(Y, predictions);
+        var metrics = RegressionMath.ComputeMetrics(Y, predictions);
 
-        rSquared = r2;
+        rSquared = metrics.R2;
 
         int n = Y.Length;
         int k = numFeatures;
@@ -346,159 +348,9 @@ public class MultipleLinearRegression
             ? (1f - ((1f - rSquared) * (n - 1) / (n - k - 1)))
             : float.NaN;
 
-        meanSquaredError = rmse * rmse;
-        rootMeanSquaredError = rmse;
-    }
-
-    // Print model summary (disabled - only critical errors are logged)
-    public void PrintModelSummary()
-    {
-        // Logging disabled to reduce console clutter
-        // Only errors and warnings are logged
-    }
-
-    // ========== MATRIX OPERATIONS ==========
-
-    private static float[][] SubsetX(float[][] X, int[] idx)
-    {
-        var result = new float[idx.Length][];
-        for (int r = 0; r < idx.Length; r++)
-        {
-            int i = idx[r];
-            result[r] = new float[X[i].Length];
-            Array.Copy(X[i], result[r], X[i].Length);
-        }
-        return result;
-    }
-
-    private static float[] SubsetY(float[] y, int[] idx)
-    {
-        var result = new float[idx.Length];
-        for (int r = 0; r < idx.Length; r++)
-        {
-            result[r] = y[idx[r]];
-        }
-        return result;
-    }
-
-    private static (float rmse, float mae, float r2) ComputeMetrics(float[] y, float[] yhat)
-    {
-        int n = y.Length;
-        
-        // Handle empty arrays
-        if (n == 0)
-        {
-            return (float.NaN, float.NaN, float.NaN);
-        }
-        
-        double mse = 0;
-        double mae = 0;
-        double mean = y.Average();
-        double ssTot = 0;
-        double ssRes = 0;
-
-        for (int i = 0; i < n; i++)
-        {
-            double error = yhat[i] - y[i];
-            mse += error * error;
-            mae += Math.Abs(error);
-            ssRes += error * error;
-
-            double deviation = y[i] - mean;
-            ssTot += deviation * deviation;
-        }
-
-        double rmse = Math.Sqrt(mse / n);
-        double r2 = (ssTot <= 1e-12)
-            ? ((ssRes <= 1e-12) ? 1.0 : 0.0)
-            : (1.0 - ssRes / ssTot);
-
-        return ((float)rmse, (float)(mae / n), (float)r2);
-    }
-
-    /*
-    Solve SPD system using Cholesky decomposition
-    More stable than Gaussian elimination with partial pivoting
-    */
-    private static double[] SolveSPDByCholesky(double[,] A, double[] b)
-    {
-        int n = A.GetLength(0);
-        var L = new double[n, n];
-
-        // Cholesky decomposition: A = L L^T
-        for (int i = 0; i < n; i++)
-        {
-            for (int j = 0; j <= i; j++)
-            {
-                double s = A[i, j];
-                for (int k = 0; k < j; k++)
-                {
-                    s -= L[i, k] * L[j, k];
-                }
-
-                if (i == j)
-                {
-                    if (s <= 1e-12)
-                    {
-                        Debug.LogWarning($"Diagonal element {i} too small ({s:E3}), using fallback");
-                        s = 1e-12;
-                    }
-                    L[i, j] = Math.Sqrt(s);
-                }
-                else
-                {
-                    L[i, j] = s / L[j, j];
-                }
-            }
-        }
-
-        // Forward substitution: L y = b
-        var y = new double[n];
-        for (int i = 0; i < n; i++)
-        {
-            double s = b[i];
-            for (int k = 0; k < i; k++)
-            {
-                s -= L[i, k] * y[k];
-            }
-            y[i] = s / L[i, i];
-        }
-
-        // Backward substitution: L^T x = y
-        var x = new double[n];
-        for (int i = n - 1; i >= 0; i--)
-        {
-            double s = y[i];
-            for (int k = i + 1; k < n; k++)
-            {
-                s -= L[k, i] * x[k];
-            }
-            x[i] = s / L[i, i];
-        }
-
-        return x;
-    }
-}
-
-public static class RegressionNormalizationExtensions
-{
-    public static float ToNormalized(this MultipleLinearRegression model, int featureIndex, float rawValue)
-    {
-        if (model?.Means == null || model.Stds == null || featureIndex >= model.Means.Length)
-            return rawValue;
-        
-        float mean = model.Means[featureIndex];
-        float std = Mathf.Max(1e-6f, model.Stds[featureIndex]);
-        return (rawValue - mean) / std;
+        meanSquaredError = metrics.RMSE * metrics.RMSE;
+        rootMeanSquaredError = metrics.RMSE;
     }
     
-    public static float FromNormalized(this MultipleLinearRegression model, int featureIndex, float normalizedValue)
-    {
-        if (model?.Means == null || model.Stds == null || featureIndex >= model.Means.Length)
-            return normalizedValue;
-        
-        float mean = model.Means[featureIndex];
-        float std = model.Stds[featureIndex];
-        return normalizedValue * std + mean;
-    }
+    #endregion
 }

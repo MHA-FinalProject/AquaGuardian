@@ -101,18 +101,18 @@ public class PlayerIntro : MonoBehaviour
 
     private IEnumerator ShowInfoTextAndKeys()
     {
-        Debug.Log("[PlayerIntro] ShowInfoTextAndKeys started");
+        //Debug.Log("[PlayerIntro] ShowInfoTextAndKeys started");
         
         if (infoText6 != null && infoText7 != null)
         {
-            Debug.Log("[PlayerIntro] Showing READY text");
+         //   Debug.Log("[PlayerIntro] Showing READY text");
             infoText6.gameObject.SetActive(true);
             yield return WaitForSecondsOrSkip(1f);
             infoText6.gameObject.SetActive(false);
 
             yield return WaitForSecondsOrSkip(1f);
 
-            Debug.Log("[PlayerIntro] Showing GO text");
+            //Debug.Log("[PlayerIntro] Showing GO text");
             infoText7.gameObject.SetActive(true);
             yield return WaitForSecondsOrSkip(1f);
             infoText7.gameObject.SetActive(false);

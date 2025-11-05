@@ -6,15 +6,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-/// <summary>
-/// Generates regression analysis reports
-/// </summary>
+// Generates regression analysis reports
 public static class TrialReportGenerator
 {
     private static readonly CultureInfo CI = CultureInfo.InvariantCulture;
     private static readonly Dictionary<string, string> FeatureDisplayNames = new Dictionary<string, string>
     {
-        {"speed", "Horizontal speed"},
+        {"speed", "Forward speed"},
         {"verticalSpeed", "Vertical speed"},
         {"idleUpwardSpeed", "Idle upward speed"},
         {"lifeTime", "Life span"},
@@ -24,6 +22,8 @@ public static class TrialReportGenerator
         {"healHealthPoint", "Heal health points"},
         {"factorForce", "Force multiplier"},
         {"EffectiveDrainRate", "Effective drain rate"}
+        // {"EffectiveCollisionDamageRate", "Effective collision damage rate"}  // REMOVED: redundant
+        // To restore: uncomment above and update FeatureExtractor
     };
 
     private static string FormatDisplayName(string rawName)
@@ -59,7 +59,6 @@ public static class TrialReportGenerator
         List<TrialDataModels.TrialData> trials,
         float avgError,
         OxygenPredictor predictor,
-        TrialDataModels.TrialData optimalParams,
         TrialDataModels.TrialData optimizedSolution,
         float optimizedSolutionError,
         float targetOxygen)
@@ -68,7 +67,7 @@ public static class TrialReportGenerator
         int regularCount = trials.Count - randomCount;
 
         // Short summary (5-8 lines max)
-        string summary = "=== REGRESSION ANALYSIS SUMMARY ===\n\n";
+        string summary = "Summary of the regression analysis:\n\n";
         
         // Line 1: Basic info
         summary += $"Trials: {trials.Count} ({regularCount}R+{randomCount}Rand) | Target: {targetOxygen.ToString("F1", CI)}% | Avg Error: {avgError.ToString("F2", CI)}%\n\n";
@@ -83,33 +82,20 @@ public static class TrialReportGenerator
             float factorForceEff = isAmadeo ? optimizedSolution.factorForce : 0f;
             float idleUpwardEffective = isAmadeo ? (optimizedSolution.idleUpwardSpeed * 0.5f) : optimizedSolution.idleUpwardSpeed;
             
-            summary += "Optimized Parameters:\n";
+            summary += "Based on your trial performance, the following parameters have been determined:\n";
             summary += $"speed: {optimizedSolution.speed.ToString("F2", CI)}, verticalSpeed: {optimizedSolution.verticalSpeed.ToString("F2", CI)}, idleUpwardSpeed: {idleUpwardEffective.ToString("F2", CI)}, lifeTime: {optimizedSolution.lifeTime.ToString("F2", CI)}, RemoveHealthEveryLifeTime: {optimizedSolution.RemoveHealthEveryLifeTime.ToString("F2", CI)}, removeHealthWithCollide: {optimizedSolution.removeHealthWithCollide.ToString("F2", CI)}, timeBetweenCollides: {optimizedSolution.timeBetweenCollides.ToString("F2", CI)}, healHealthPoint: {optimizedSolution.healHealthPoint.ToString("F2", CI)}, factorForce: {factorForceEff.ToString("F2", CI)}\n\n";
             
             // Line 4: Prediction results
             summary += $"Prediction: {predictedOptimal.ToString("F2", CI)}% | Error: {optimizedSolutionError.ToString("F3", CI)}%\n\n";
         }
-        else if (optimalParams != null)
-        {
-            float predictedOptimal = predictor.PredictOxygen(optimalParams);
-            
-            // Calculate effective values for display
-            bool isAmadeo = optimalParams.IsAmadeoMode > 0.5f;
-            float factorForceEff = isAmadeo ? optimalParams.factorForce : 0f;
-            float idleUpwardEffective = isAmadeo ? (optimalParams.idleUpwardSpeed * 0.5f) : optimalParams.idleUpwardSpeed;
-            
-            summary += "Recommended Parameters:\n";
-            summary += $"speed: {optimalParams.speed.ToString("F2", CI)}, verticalSpeed: {optimalParams.verticalSpeed.ToString("F2", CI)}, idleUpwardSpeed: {idleUpwardEffective.ToString("F2", CI)}, lifeTime: {optimalParams.lifeTime.ToString("F2", CI)}, RemoveHealthEveryLifeTime: {optimalParams.RemoveHealthEveryLifeTime.ToString("F2", CI)}, removeHealthWithCollide: {optimalParams.removeHealthWithCollide.ToString("F2", CI)}, timeBetweenCollides: {optimalParams.timeBetweenCollides.ToString("F2", CI)}, healHealthPoint: {optimalParams.healHealthPoint.ToString("F2", CI)}, factorForce: {factorForceEff.ToString("F2", CI)}\n\n";
-            summary += $"Prediction: {predictedOptimal.ToString("F2", CI)}%\n\n";
-        }
-        
+
         // Line 5-6: Model coefficients (compact)
         var model = predictor?.GetModel();
         if (model != null && model.coefficients != null && model.coefficients.Length > 0)
         {
-            summary += "Coefficients:\n";
+            summary += "The coefficients of the regression model are as follows:\n";
             summary += $"Intercept: {model.coefficients[0].ToString("F4", CI)}, ";
-            
+
             var featureNames = model.featureNames;
             List<string> coeffStrings = new List<string>();
             for (int i = 1; i < model.coefficients.Length; i++)
@@ -121,25 +107,17 @@ public static class TrialReportGenerator
             }
             summary += string.Join(", ", coeffStrings) + "\n";
         }
-        
+
         return summary;
     }
 
     public static string GenerateFullReport(
         List<TrialDataModels.TrialData> trials,
         float avgError,
-        int perfectTrials,
-        int failedTrials,
         float avgOxygen,
         OxygenPredictor predictor,
-        TrialDataModels.TrialData optimalParams,
-        float cvRmse,
-        float cvMae,
-        float cvR2,
-        int kFolds,
         TrialDataModels.TrialData optimizedSolution,
         float optimizedSolutionError,
-        string optimizationReport,
         float targetOxygen)
     {
         int randomCount = trials.Count(t => t.isRandomParameters);
@@ -187,14 +165,14 @@ public static class TrialReportGenerator
         if (model != null && model.coefficients != null && model.coefficients.Length > 0)
         {
             var featureNames = model.featureNames;
-            
-            foreach (var trial in trials)
-            {
+        
+        foreach (var trial in trials)
+        {
                 float predicted = predictor.PredictOxygen(trial);
-                float actual = trial.finalOxygenRemaining;
-                float error = Mathf.Abs(actual - predicted);
+            float actual = trial.finalOxygenRemaining;
+            float error = Mathf.Abs(actual - predicted);
                 float errorPercent = (error / Mathf.Max(0.1f, actual)) * 100f;
-                
+            
                 report += $"Trial {trial.trialId} Analysis:\n";
                 report += $"  Actual Oxygen: {actual.ToString("F2", CI)}%\n";
                 report += $"  Predicted Oxygen: {predicted.ToString("F2", CI)}%\n";
@@ -210,44 +188,65 @@ public static class TrialReportGenerator
                 report += $"  Feature Contributions:\n";
                 report += $"    Intercept: {model.coefficients[0].ToString("F4", CI)}\n";
                 
-                float[] featureValues = new float[]
-                {
-                    trial.speed,
-                    trial.verticalSpeed,
-                    idleUpwardEffective,
-                    trial.lifeTime,
-                    trial.RemoveHealthEveryLifeTime,
-                    trial.removeHealthWithCollide,
-                    trial.timeBetweenCollides,
-                    trial.healHealthPoint,
-                    factorForceEff,
-                    trial.EffectiveDrainRate
-                };
+                // FIXED: Map model features to correct raw values using FeatureExtractor
+                string[] fullFeatureNames = FeatureExtractor.FeatureNames;
                 
-                for (int i = 0; i < featureValues.Length && i + 1 < model.coefficients.Length; i++)
+                for (int i = 0; i < featureNames.Length && i + 1 < model.coefficients.Length; i++)
                 {
-                    string featureName = (featureNames != null && i < featureNames.Length)
-                        ? featureNames[i]
-                        : $"Feature_{i + 1}";
+                    string featureName = featureNames[i];
                     string fullName = FormatDisplayName(featureName);
+        
+                    // Find this feature's index in the full feature array
+                    int fullIdx = System.Array.IndexOf(fullFeatureNames, featureName);
+                    if (fullIdx < 0) continue;
+                    
+                    // Get raw value using ParameterHelper
+                    float xRaw = ParameterHelper.Get(trial, fullIdx);
+                    
+                    // Apply effective transformations if needed
+                    if (featureName == "idleUpwardSpeed")
+                        xRaw = idleUpwardEffective;
+                    else if (featureName == "factorForce")
+                        xRaw = factorForceEff;
+                    
+                    // Get normalized value (what the model actually sees)
+                    float xHat = model.ToNormalized(i, xRaw);
                     float coeff = model.coefficients[i + 1];
-                    float contribution = coeff * featureValues[i];
-                    // Compact format without extra spacing: "Feature name: coefficient * value = contribution"
-                    report += $"    {fullName}: {coeff.ToString("F4", CI)} * {featureValues[i].ToString("F2", CI)} = {contribution.ToString("F4", CI)}\n";
-                }
+                    float contribution = coeff * xHat;
+                    
+                    // Display: show raw value but contribution is based on normalized
+                    report += $"    {fullName}: {coeff.ToString("F4", CI)} * {xRaw.ToString("F2", CI)} = {contribution.ToString("F4", CI)}\n";
+        }
                 
                 report += "\n";
             }
         }
         
-        // Feature Importance
+        // Feature Importance (show all features the model trained on)
         var importance = predictor.GetFeatureImportance();
         if (importance != null && importance.Length > 0)
         {
             report += "Feature Importance (Impact on Oxygen):\n";
+            
+            // Hide only inactive features (factorForce in keyboard mode)
+            var bannedForDisplay = new HashSet<string>();
+            if (amadeoCount == 0)
+            {
+                bannedForDisplay.Add("factorForce");
+            }
+            
             foreach (var (feature, value) in importance)
             {
-                report += $"  {feature,-30} {value.ToString("F4", CI)}\n";
+                if (bannedForDisplay.Contains(feature)) continue;
+                
+                // Add note for derived features
+                string note = "";
+                if (feature == "EffectiveDrainRate")
+                {
+                    note = " (derived: RemoveHealthEveryLifeTime / lifeTime)";
+                }
+                
+                report += $"  {feature + note,-50} {value.ToString("F4", CI)}\n";
             }
             report += "\n";
         }
@@ -319,7 +318,7 @@ public static class TrialReportGenerator
         return report;
     }
 
-    public static bool SaveToFile(string fullReport, List<TrialDataModels.TrialData> trials, int totalTrials, string saveFolder = "RegressionResults")
+    public static bool SaveToFile(string fullReport, string saveFolder = "RegressionResults")
     {
         try
         {
@@ -333,10 +332,7 @@ public static class TrialReportGenerator
             string fileName = $"RegressionAnalysis_{timestamp}.txt";
             string fullPath = Path.Combine(savePath, fileName);
 
-            // fullReport already contains all the information including raw data
-            string fileContent = fullReport;
-
-            File.WriteAllText(fullPath, fileContent);
+            File.WriteAllText(fullPath, fullReport);
             return true;
         }
         catch (Exception e)

@@ -4,6 +4,7 @@ using System;
 /**
  * Game State Manager that manages the game state and triggers events when the game state changes
  * such as panel closed, intro complete, game start, and game end. 
+ *
  */
 public class GameStateManager : MonoBehaviour
 {
@@ -93,7 +94,7 @@ public class GameStateManager : MonoBehaviour
  
     public void ResetState()
     {
-        Debug.Log($"[GameStateManager] Resetting state (panelClosed: {panelClosed} → false, introComplete: {introComplete} → false)");
+        //Debug.Log($"[GameStateManager] Resetting state (panelClosed: {panelClosed} → false, introComplete: {introComplete} → false)");
         panelClosed = false;
         introComplete = false;
     }

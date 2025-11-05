@@ -2,12 +2,12 @@ using UnityEngine;
 using TMPro;
 
 /**
- * Keeps track of the player's movement.
- * See also: getEventFromAmadeoClientDiver for movement from Amadeo device.
+ * Manages player movement (horizontal/vertical) and handles keyboard/Amadeo device input
+ * Tracks input source for regression analysis. Supports unified movement system for both input modes
+ * See also: getEventFromAmadeoClientDiver, GameStateManager, GameConfig
  */
 public class PlayerMovement : MonoBehaviour
 {
-
     // ----- Movement Settings -----
     [Header("Movement Settings")]
     public float speed;  // Speed of the player
@@ -19,35 +19,31 @@ public class PlayerMovement : MonoBehaviour
 
     private Rigidbody rb;  // Reference to the Rigidbody component
 
-
     // ----- UI References -----
     [Header("UI References")]
     public GameObject Panel;  // Reference to the UI panel
-
 
     // ----- Game State -----
     [Header("Game State")]
     public bool canMove = true;  // Flag to control if the player can move
     public bool afterText = false;  // Flag to check if the intro text has been shown
     private bool _debugLoggedOnce = false;  // Flag to log state once after intro
-
+    
     private float GetIdleUpwardFactor()
     {
         return GameConfig.Instance != null ? GameConfig.Instance.idleUpwardFactor : 0.5f;
     }
-
+    
     public float GetCollisionDelay()
     {
         return GameConfig.Instance != null ? GameConfig.Instance.playerCollisionDelay : 2f;
     }
-
 
     // ----- Scene References -----
     [Header("Scene References")]
     [SerializeField] string sceneName;  // Name of the scene
     [SerializeField] GameObject surface;  // Reference to the surface object
     [SerializeField] GameObject ground;  // Reference to the ground object
-
 
     // ----- Amadeo Device Connection -----
     [Header("Amadeo Device Connection")]
@@ -58,11 +54,6 @@ public class PlayerMovement : MonoBehaviour
     public int keyboardInputCount = 0;  // Count of frames with keyboard input
     public bool ActuallyUsedAmadeoInput => amadeoInputCount > keyboardInputCount;  // True if Amadeo was used more than keyboard
 
-
-    // DISABLED: CaveTracker is commented out
-    // private GameObject caveTracker;
-
-
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -70,12 +61,10 @@ public class PlayerMovement : MonoBehaviour
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
         // Ensure the player has the correct tag for cave trigger detection
-        if (gameObject.tag != "Player")
+        if (!gameObject.CompareTag("Player"))
         {
-            Debug.LogWarning("PlayerMovement: Setting gameObject tag to 'Player' for trigger detection");
             gameObject.tag = "Player";
         }
-
     }
 
     void Update()
@@ -133,7 +122,7 @@ public class PlayerMovement : MonoBehaviour
 
         // Calculate vertical movement speed based on input
         float verticalMovementSpeed;
-
+        
         if (Mathf.Abs(verticalInput) < verticalTolerance)
         {
             // Within tolerance: apply idle upward speed
@@ -153,8 +142,8 @@ public class PlayerMovement : MonoBehaviour
                 // Keyboard: multiply input by speed and add idle speed when moving down
                 verticalMovementSpeed = verticalInput * verticalSpeed;
                 if (verticalInput <= 0)
-                {
-                    verticalMovementSpeed += idleUpwardSpeed;
+        {
+            verticalMovementSpeed += idleUpwardSpeed;
                 }
             }
         }
@@ -175,12 +164,10 @@ public class PlayerMovement : MonoBehaviour
     {
         // Get keyboard input for vertical movement
         float upDownInput = Input.GetAxis("UpDown");   // Change in Edit -> Project Settings -> Input Manager -> Axes - UpDown
-
+        
         // Use unified movement function
         ApplyMovement(upDownInput);
     }
-
-
 
     void OnCollisionStay(Collision collision)
     {
@@ -199,7 +186,7 @@ public class PlayerMovement : MonoBehaviour
         {
             Debug.Log("collision " + gameObject.name + " " + collision.gameObject.name);
 
-
+          
         }
     }
 
@@ -208,8 +195,6 @@ public class PlayerMovement : MonoBehaviour
     {
         if (other.gameObject.CompareTag("TrialFish"))
         {
-            // Debug.Log("Player reached trial fish!");
-
             // Find PanelOpenUp and notify it
             var panelOpenUp = FindObjectOfType<PanelOpenUp>();
             if (panelOpenUp != null)
@@ -228,5 +213,4 @@ public class PlayerMovement : MonoBehaviour
     {
         canMove = move;
     }
-
 }

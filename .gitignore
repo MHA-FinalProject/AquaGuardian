@@ -26,9 +26,7 @@
 # Visual Studio cache directory
 .vs/
 # orel use this 
-Code.md
-CodeArchitecture.md
-DIFFICULTY_SETUP_GUIDE.md
+
 /Assets/Scripts/DifficultySystem_Future/
 /Assets/Sci-Fi UI/
 /Assets/tokens.json
@@ -38,13 +36,13 @@ DIFFICULTY_SETUP_GUIDE.md
 # Additional ignore patterns for Unity
 # Generated reports
 Assets/Subject/
-PROJECT_OVERVIEW.md
+README_REGRESSION_SYSTEM.md
 
 
 # Temp screenshots and test images
 Assets/**/צילום*
 Assets/**/ל*.png
-
+Assets/Data/RegressionResults/
 
 
 

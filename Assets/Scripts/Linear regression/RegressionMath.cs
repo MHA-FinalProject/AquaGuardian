@@ -1,37 +1,68 @@
 using UnityEngine;
+using System;
 using System.Linq;
 
-/// <summary>
-/// Mathematical calculations for regression coefficients (beta)
-/// Handles chain rule derivatives for derived features (EffectiveDrainRate)
-/// </summary>
+/**
+ * Utilities for regression optimization and matrix operations
+ * Handles chain rule derivatives, linear algebra, metrics calculation, and data cleaning
+ */
 public static class RegressionMath
 {
-    /// <summary>
-    /// Calculate effective beta including chain rule for derived features
-    /// Used when optimizing lifeTime or RemoveHealthEveryLifeTime (affects EffectiveDrainRate)
-    /// </summary>
+    #region Constants
+    
+    private const float MIN_CHOLESKY_DIAGONAL = 1e-12f;
+    private const float MIN_VARIANCE_THRESHOLD = 1e-12f;
+    private const float NAN_REPLACEMENT = 0f;
+    
+    #endregion
+    
+    #region Gradient Descent Optimization
+    
+    /**
+     * Calculate effective coefficient including chain rule for derived features
+     */
     public static float EffectiveBeta(
         MultipleLinearRegression model,
         int featureIndex,
         TrialDataModels.TrialData currentParams,
-        bool optimizingLifeTimeOrDrop)
+        bool optimizingDerivedDependencies)
     {
-        float beta = model.coefficients[featureIndex + 1];
+        string[] fullFeatureNames = FeatureExtractor.FeatureNames;
+        string[] modelFeatureNames = model.featureNames ?? fullFeatureNames;
         
-        if (!optimizingLifeTimeOrDrop)
+        if (featureIndex < 0 || featureIndex >= fullFeatureNames.Length)
+        {
+            Debug.LogWarning($"[RegressionMath] Invalid feature index: {featureIndex}");
+            return 0f;
+        }
+        
+        string featureName = fullFeatureNames[featureIndex];
+        int modelIdx = System.Array.IndexOf(modelFeatureNames, featureName);
+        
+        if (modelIdx < 0 || modelIdx + 1 >= model.coefficients.Length)
+        {
+            return 0f;  // Feature not in model
+        }
+        
+        // Get direct coefficient
+        float beta = model.coefficients[modelIdx + 1];
+        
+        // If not optimizing derived dependencies, return direct beta only
+        if (!optimizingDerivedDependencies)
             return beta;
         
-        float effectiveDrainRateBeta = model.coefficients[10]; // coefficient for EffectiveDrainRate (index 9)
-        
         // Add EffectiveDrainRate contribution via chain rule
+        int drainRateModelIdx = System.Array.IndexOf(modelFeatureNames, "EffectiveDrainRate");
+        float effectiveDrainRateBeta = (drainRateModelIdx >= 0 && drainRateModelIdx + 1 < model.coefficients.Length) 
+            ? model.coefficients[drainRateModelIdx + 1] : 0f;
+        
+        // Chain rule for lifeTime: ∂EDR/∂lifeTime = -RemoveHealthEveryLifeTime / lifeTime²
         if (featureIndex == 3) // lifeTime
         {
             float currentDrop = ParameterHelper.Get(currentParams, 4);
             float currentLife = ParameterHelper.Get(currentParams, 3);
             if (currentLife > 0.1f)
             {
-                // d(EDR)/d(lifeTime) = -drop / life²
                 float dEDR_dLife = -currentDrop / (currentLife * currentLife);
                 float stdDevLife = model.Stds?.ElementAtOrDefault(3) ?? 1.0f;
                 float stdDevEDR = model.Stds?.ElementAtOrDefault(9) ?? 1.0f;
@@ -39,12 +70,12 @@ public static class RegressionMath
                 beta += effectiveDrainRateBeta * normalizedDerivative;
             }
         }
+        // Chain rule for RemoveHealthEveryLifeTime: ∂EDR/∂drop = 1 / lifeTime
         else if (featureIndex == 4) // RemoveHealthEveryLifeTime
         {
             float currentLife = ParameterHelper.Get(currentParams, 3);
             if (currentLife > 0.1f)
             {
-                // d(EDR)/d(drop) = 1 / life
                 float dEDR_dDrop = 1.0f / currentLife;
                 float stdDevDrop = model.Stds?.ElementAtOrDefault(4) ?? 1.0f;
                 float stdDevEDR = model.Stds?.ElementAtOrDefault(9) ?? 1.0f;
@@ -56,25 +87,269 @@ public static class RegressionMath
         return beta;
     }
 
-    /// <summary>
-    /// Calculate sum of squared betas for global normalization in gradient descent
-    /// Prevents instability from dividing by individual beta²
-    /// </summary>
+    /**
+     * Calculate sum of squared betas for global normalization in gradient descent
+     */
     public static float SumBetaSq(
         MultipleLinearRegression model,
         int[] freeFeatures,
         TrialDataModels.TrialData currentParams)
     {
-        bool optimizingLifeTimeOrDrop = freeFeatures.Contains(3) || freeFeatures.Contains(4);
+        bool optimizingDerivedDependencies = freeFeatures.Contains(3) || freeFeatures.Contains(4);
         
         float sumBetaSq = 0f;
         foreach (int j in freeFeatures)
         {
-            float beta = EffectiveBeta(model, j, currentParams, optimizingLifeTimeOrDrop);
+            float beta = EffectiveBeta(model, j, currentParams, optimizingDerivedDependencies);
             sumBetaSq += beta * beta;
         }
         
-        return Mathf.Max(sumBetaSq, 1e-6f); // Prevent division by zero
+        return Mathf.Max(sumBetaSq, 1e-6f);
     }
+    
+    #endregion
+    
+    #region NaN/Inf Protection
+    
+    /**
+     * Check if a value is NaN or Infinity
+     */
+    public static bool IsBad(float v) => float.IsNaN(v) || float.IsInfinity(v);
+    
+    /**
+     * Clean NaN/Inf values in a vector
+     */
+    public static void CleanVector(float[] v, float replacement = NAN_REPLACEMENT)
+    {
+        if (v == null) return;
+        int badCount = 0;
+        for (int i = 0; i < v.Length; i++)
+        {
+            if (IsBad(v[i]))
+            {
+                v[i] = replacement;
+                badCount++;
+            }
+        }
+        if (badCount > 0)
+        {
+            Debug.LogWarning($"[RegressionMath] Replaced {badCount} NaN/Inf value(s) with {replacement}");
+        }
+    }
+    
+    /**
+     * Clean NaN/Inf values in a matrix
+     */
+    public static void CleanMatrix(float[][] X, float replacement = NAN_REPLACEMENT)
+    {
+        if (X == null) return;
+        int totalBad = 0;
+        for (int i = 0; i < X.Length; i++)
+        {
+            if (X[i] == null) continue;
+            int rowBad = 0;
+            for (int j = 0; j < X[i].Length; j++)
+            {
+                if (IsBad(X[i][j]))
+                {
+                    X[i][j] = replacement;
+                    rowBad++;
+                    totalBad++;
+                }
+            }
+        }
+        if (totalBad > 0)
+        {
+            Debug.LogWarning($"[RegressionMath] Replaced {totalBad} NaN/Inf value(s) in matrix with {replacement}");
+        }
+    }
+    
+    #endregion
+    
+    #region Input Validation
+    
+    /**
+     * Validate regression inputs
+     */
+    public static bool ValidateInputs(float[][] X, float[] Y, out string errorMessage)
+    {
+        if (X == null)
+        {
+            errorMessage = "Feature matrix X is null";
+            return false;
+        }
+        if (Y == null)
+        {
+            errorMessage = "Target vector Y is null";
+            return false;
+        }
+        if (X.Length == 0)
+        {
+            errorMessage = "Feature matrix X is empty";
+            return false;
+        }
+        if (X.Length != Y.Length)
+        {
+            errorMessage = $"Size mismatch: X has {X.Length} samples, Y has {Y.Length}";
+            return false;
+        }
+        if (X[0] == null || X[0].Length == 0)
+        {
+            errorMessage = "First row of X is null or empty";
+            return false;
+        }
+        
+        errorMessage = null;
+        return true;
+    }
+    
+    #endregion
+    
+    #region Metrics Calculation
+    
+    /**
+     * Calculate RMSE, MAE, and R2 metrics
+     */
+    public static RegressionMetrics ComputeMetrics(float[] y, float[] yhat)
+    {
+        int n = y.Length;
+        
+        if (n == 0)
+        {
+            return new RegressionMetrics(float.NaN, float.NaN, float.NaN);
+        }
+        
+        double mse = 0;
+        double mae = 0;
+        double mean = y.Average();
+        double ssTot = 0;
+        double ssRes = 0;
+
+        for (int i = 0; i < n; i++)
+        {
+            double error = yhat[i] - y[i];
+            mse += error * error;
+            mae += Math.Abs(error);
+            ssRes += error * error;
+
+            double deviation = y[i] - mean;
+            ssTot += deviation * deviation;
+        }
+
+        double rmse = Math.Sqrt(mse / n);
+        double r2 = (ssTot <= MIN_VARIANCE_THRESHOLD)
+            ? ((ssRes <= MIN_VARIANCE_THRESHOLD) ? 1.0 : 0.0)
+            : (1.0 - ssRes / ssTot);
+
+        return new RegressionMetrics((float)rmse, (float)(mae / n), (float)r2);
+    }
+    
+    #endregion
+    
+    #region Matrix Operations
+    
+    /**
+     * Extract subset of feature matrix rows
+     */
+    public static float[][] SubsetX(float[][] X, int[] idx)
+    {
+        var result = new float[idx.Length][];
+        for (int r = 0; r < idx.Length; r++)
+        {
+            int i = idx[r];
+            result[r] = new float[X[i].Length];
+            Array.Copy(X[i], result[r], X[i].Length);
+        }
+        return result;
+    }
+
+    /**
+     * Extract subset of target vector elements
+     */
+    public static float[] SubsetY(float[] y, int[] idx)
+    {
+        var result = new float[idx.Length];
+        for (int r = 0; r < idx.Length; r++)
+        {
+            result[r] = y[idx[r]];
+        }
+        return result;
+    }
+
+    /**
+     * Solve symmetric positive definite system using Cholesky decomposition
+     * A x = b where A is SPD (from normal equations with Ridge regularization)
+     */
+    public static double[] SolveSPDByCholesky(double[,] A, double[] b)
+    {
+        int n = A.GetLength(0);
+        var L = new double[n, n];
+        int fixCount = 0;
+
+        // Cholesky decomposition: A = L L^T
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = 0; j <= i; j++)
+            {
+                double s = A[i, j];
+                for (int k = 0; k < j; k++)
+                {
+                    s -= L[i, k] * L[j, k];
+                }
+
+                if (i == j)
+                {
+                    if (s <= MIN_CHOLESKY_DIAGONAL)
+                    {
+                        fixCount++;
+                        if (fixCount == 1)
+                        {
+                            Debug.LogWarning($"[Cholesky] Matrix not positive definite: diagonal element {i} = {s:E3}");
+                        }
+                        s = MIN_CHOLESKY_DIAGONAL;
+                    }
+                    L[i, j] = Math.Sqrt(s);
+                }
+                else
+                {
+                    L[i, j] = s / L[j, j];
+                }
+            }
+        }
+        
+        if (fixCount > n / 2)
+        {
+            Debug.LogError($"[Cholesky] Critical: Fixed {fixCount}/{n} diagonal elements. Results unreliable!");
+            return null;
+        }
+
+        // Forward substitution: L y = b
+        var y = new double[n];
+        for (int i = 0; i < n; i++)
+        {
+            double s = b[i];
+            for (int k = 0; k < i; k++)
+            {
+                s -= L[i, k] * y[k];
+            }
+            y[i] = s / L[i, i];
+        }
+
+        // Backward substitution: L^T x = y
+        var x = new double[n];
+        for (int i = n - 1; i >= 0; i--)
+        {
+            double s = y[i];
+            for (int k = i + 1; k < n; k++)
+            {
+                s -= L[k, i] * x[k];
+            }
+            x[i] = s / L[i, i];
+        }
+
+        return x;
+    }
+    
+    #endregion
 }
 

@@ -2,6 +2,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 
+/**
+ * Resets game systems and scene objects between trials
+ * Manages player position, health, spawned objects, and protected scene objects
+ * Tracks and cleans up trial-specific objects while preserving protected ones
+ */
 public class GameSystemResetter : MonoBehaviour
 {
     [Header("Component References")]
@@ -43,22 +48,25 @@ public class GameSystemResetter : MonoBehaviour
     
     private void SaveSceneObjectStates()
     {
-        foreach (string objName in protectedObjectNames)
+        SaveObjectsByName(protectedObjectNames);
+        SaveObjectsByTag(protectedTags);
+    }
+
+    private void SaveObjectsByName(List<string> names)
+    {
+        foreach (string objName in names)
         {
             GameObject obj = GameObject.Find(objName);
             if (obj != null && !sceneObjectStates.ContainsKey(obj))
             {
-                sceneObjectStates[obj] = new ObjectState
-                {
-                    position = obj.transform.position,
-                    rotation = obj.transform.rotation,
-                    scale = obj.transform.localScale,
-                    wasActive = obj.activeSelf
-                };
+                SaveObjectState(obj);
             }
         }
-        
-        foreach (string tag in protectedTags)
+    }
+
+    private void SaveObjectsByTag(List<string> tags)
+    {
+        foreach (string tag in tags)
         {
             try
             {
@@ -67,13 +75,7 @@ public class GameSystemResetter : MonoBehaviour
                 {
                     if (obj != null && !sceneObjectStates.ContainsKey(obj))
                     {
-                        sceneObjectStates[obj] = new ObjectState
-                        {
-                            position = obj.transform.position,
-                            rotation = obj.transform.rotation,
-                            scale = obj.transform.localScale,
-                            wasActive = obj.activeSelf
-                        };
+                        SaveObjectState(obj);
                     }
                 }
             }
@@ -83,44 +85,46 @@ public class GameSystemResetter : MonoBehaviour
             }
         }
     }
+
+    private void SaveObjectState(GameObject obj)
+    {
+        sceneObjectStates[obj] = new ObjectState
+        {
+            position = obj.transform.position,
+            rotation = obj.transform.rotation,
+            scale = obj.transform.localScale,
+            wasActive = obj.activeSelf
+        };
+    }
     
     private bool IsProtectedSceneObject(GameObject go)
     {
         if (go == null) return false;
         
         if (sceneObjectStates.ContainsKey(go))
-        {
             return true;
-        }
         
         foreach (string protectedName in protectedObjectNames)
         {
             if (go.name.Contains(protectedName))
-            {
                 return true;
-            }
         }
         
+        return HasProtectedTag(go);
+    }
+
+    private bool HasProtectedTag(GameObject go)
+    {
         foreach (string protectedTag in protectedTags)
         {
             try
             {
                 if (go.CompareTag(protectedTag))
-                {
                     return true;
-                }
             }
             catch (UnityException)
             {
                 continue;
-            }
-        }
-        
-        if (!string.IsNullOrEmpty(go.scene.name) && go.scene.IsValid())
-        {
-            if ((go.hideFlags & HideFlags.DontSave) != 0)
-            {
-                return false;
             }
         }
         
@@ -129,17 +133,11 @@ public class GameSystemResetter : MonoBehaviour
     
     public void TrackSpawned(GameObject go)
     {
-        if (go == null) return;
-        
-        if (IsProtectedSceneObject(go))
-        {
+        if (go == null || IsProtectedSceneObject(go))
             return;
-        }
         
         if (!spawnedTrialObjects.Contains(go))
-        {
             spawnedTrialObjects.Add(go);
-        }
     }
     
     public void ResetPlayerToStartPosition()
@@ -170,11 +168,22 @@ public class GameSystemResetter : MonoBehaviour
     
     public void ResetGameSystemsForTrial()
     {
+        ResetLifeComponents();
+        ResetPlayerIntro();
+        ResetLevelProgress();
+        ResetGameState();
+
+        GameStateManager.SetTrialsActive(true);
+        RestoreSceneObjects();
+    }
+
+    private void ResetLifeComponents()
+    {
         if (playerLife != null)
         {
             playerLife.StopAllCoroutines();
             playerLife.didntGetInputsYet = true;
-            playerLife.ResetBloodSplatter(); // Reset blood splatter for new trial
+            playerLife.ResetBloodSplatter();
         }
 
         if (health != null)
@@ -183,13 +192,19 @@ public class GameSystemResetter : MonoBehaviour
             health.didntGetInputsYet = true;
             health.heal(100f);
         }
+        }
 
+    private void ResetPlayerIntro()
+    {
         var playerIntro = FindObjectOfType<PlayerIntro>();
         if (playerIntro != null)
         {
             playerIntro.ResetIntro();
         }
+        }
 
+    private void ResetLevelProgress()
+    {
         if (levelProgressUI != null)
         {
             var slider = levelProgressUI.GetComponent<Slider>();
@@ -197,16 +212,15 @@ public class GameSystemResetter : MonoBehaviour
             {
                 slider.value = 0f;
             }
+            }
         }
 
+    private void ResetGameState()
+    {
         if (GameStateManager.Instance != null)
         {
             GameStateManager.Instance.ResetState();
         }
-
-        GameStateManager.SetTrialsActive(true);
-        
-        RestoreSceneObjects();
     }
     
     private void RestoreSceneObjects()
@@ -229,79 +243,59 @@ public class GameSystemResetter : MonoBehaviour
     public void PrepareComponentsForClosePanel()
     {
         if (playerLife != null)
-        {
             playerLife.didntGetInputsYet = true;
-        }
         
         if (health != null)
-        {
             health.didntGetInputsYet = true;
-        }
     }
     
     public void PrepareForNextTrial()
     {
+        StopLifeCoroutines();
+        CleanupSpawned();
+        RestoreSceneObjects();
+    }
+
+    private void StopLifeCoroutines()
+    {
         try
         {
             if (health != null) 
-            {
                 health.StopAllCoroutines();
-            }
+
             if (playerLife != null) 
             {
                 playerLife.StopAllCoroutines();
-                playerLife.ResetBloodSplatter(); // Reset blood splatter between trials
+                playerLife.ResetBloodSplatter();
             }
         }
         catch (System.Exception e)
         {
             Debug.LogWarning($"Error stopping coroutines: {e.Message}");
         }
-
-        try
-        {
-            CleanupSpawned();
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"Error during CleanupSpawned: {e.Message}");
-        }
-        
-        RestoreSceneObjects();
     }
     
     public void CleanupSpawned()
     {
         if (spawnedTrialObjects.Count == 0) 
-        {
             return;
-        }
         
         int destroyed = 0;
         var objectsToDestroy = new List<GameObject>(spawnedTrialObjects);
         
         foreach (var go in objectsToDestroy)
         {
-            if (go != null) 
+            if (go != null && !IsProtectedSceneObject(go))
             {
-                if (IsProtectedSceneObject(go))
-                {
-                    continue;
-                }
-                
                 try
                 {
                     go.SetActive(false);
                     
                     #if UNITY_EDITOR
                     if (Application.isPlaying)
-                    {
                         Destroy(go);
-                    }
                     else
-                    {
                         DestroyImmediate(go);
-                    }
                     #else
                     Destroy(go);
                     #endif

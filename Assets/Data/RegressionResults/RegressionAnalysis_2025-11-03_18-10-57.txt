@@ -1,0 +1,124 @@
+Regression | 2025-11-03 18:10:57 | 5 trials
+Avg : 53.2%  | Data Source: Constant Parameters CSV | Trials: [1,2,3,4,5] (5R+0Rand)
+R^2=0.982 AdjR^2=NaN RMSE=3.63% MAE=3.46%
+input type : keyboard
+
+Raw Data:
+T1: Speed=15.00 VerticalSpeed=30.00 IdleUpwardSpeed=0.01 LifeTime=2.00 HealthPerCycle=2.00 CollisionDamage=5.00 TimeBetweenCollides=2.00 HealPoints=10.00 FactorForce=0.00 FinalOxygen=85.0% Duration=0.0s
+T2: Speed=12.00 VerticalSpeed=35.00 IdleUpwardSpeed=0.50 LifeTime=1.50 HealthPerCycle=3.50 CollisionDamage=8.00 TimeBetweenCollides=1.00 HealPoints=5.00 FactorForce=0.00 FinalOxygen=40.0% Duration=0.0s
+T3: Speed=22.00 VerticalSpeed=28.00 IdleUpwardSpeed=0.30 LifeTime=1.00 HealthPerCycle=3.00 CollisionDamage=9.00 TimeBetweenCollides=1.50 HealPoints=4.00 FactorForce=0.00 FinalOxygen=44.0% Duration=0.0s
+T4: Speed=18.00 VerticalSpeed=38.00 IdleUpwardSpeed=0.80 LifeTime=0.80 HealthPerCycle=1.00 CollisionDamage=10.00 TimeBetweenCollides=1.10 HealPoints=3.00 FactorForce=0.00 FinalOxygen=83.0% Duration=0.0s
+T5: Speed=14.00 VerticalSpeed=40.00 IdleUpwardSpeed=0.10 LifeTime=1.20 HealthPerCycle=4.00 CollisionDamage=12.00 TimeBetweenCollides=1.20 HealPoints=6.00 FactorForce=0.00 FinalOxygen=14.0% Duration=0.0s
+
+Trial 1 Analysis:
+  Actual Oxygen: 85.00%
+  Predicted Oxygen: 81.16%
+  Error: 3.84% (4.5%)
+  Duration: 0.0s
+  Feature Contributions:
+    Intercept: 53.2000
+    Health removed per life cycle: -10.4953 * 15.00 = -157.4296
+    Effective drain rate: -10.2885 * 30.00 = -308.6535
+    Collision damage: -5.4231 * 0.01 = -0.0542
+    Idle upward speed: 3.5288 * 2.00 = 7.0576
+    Time between collisions: 4.0616 * 2.00 = 8.1233
+    Horizontal speed: 2.0243 * 5.00 = 10.1213
+
+Trial 2 Analysis:
+  Actual Oxygen: 40.00%
+  Predicted Oxygen: 42.36%
+  Error: 2.36% (5.9%)
+  Duration: 0.0s
+  Feature Contributions:
+    Intercept: 53.2000
+    Health removed per life cycle: -10.4953 * 12.00 = -125.9437
+    Effective drain rate: -10.2885 * 35.00 = -360.0958
+    Collision damage: -5.4231 * 0.50 = -2.7116
+    Idle upward speed: 3.5288 * 1.50 = 5.2932
+    Time between collisions: 4.0616 * 3.50 = 14.2158
+    Horizontal speed: 2.0243 * 8.00 = 16.1941
+
+Trial 3 Analysis:
+  Actual Oxygen: 44.00%
+  Predicted Oxygen: 46.00%
+  Error: 2.00% (4.5%)
+  Duration: 0.0s
+  Feature Contributions:
+    Intercept: 53.2000
+    Health removed per life cycle: -10.4953 * 22.00 = -230.8968
+    Effective drain rate: -10.2885 * 28.00 = -288.0766
+    Collision damage: -5.4231 * 0.30 = -1.6269
+    Idle upward speed: 3.5288 * 1.00 = 3.5288
+    Time between collisions: 4.0616 * 3.00 = 12.1849
+    Horizontal speed: 2.0243 * 9.00 = 18.2184
+
+Trial 4 Analysis:
+  Actual Oxygen: 83.00%
+  Predicted Oxygen: 78.18%
+  Error: 4.82% (5.8%)
+  Duration: 0.0s
+  Feature Contributions:
+    Intercept: 53.2000
+    Health removed per life cycle: -10.4953 * 18.00 = -188.9155
+    Effective drain rate: -10.2885 * 38.00 = -390.9612
+    Collision damage: -5.4231 * 0.80 = -4.3385
+    Idle upward speed: 3.5288 * 0.80 = 2.8230
+    Time between collisions: 4.0616 * 1.00 = 4.0616
+    Horizontal speed: 2.0243 * 10.00 = 20.2427
+
+Trial 5 Analysis:
+  Actual Oxygen: 14.00%
+  Predicted Oxygen: 18.30%
+  Error: 4.30% (30.7%)
+  OUTLIER: High prediction error (may affect model stability)
+  Duration: 0.0s
+  Feature Contributions:
+    Intercept: 53.2000
+    Health removed per life cycle: -10.4953 * 14.00 = -146.9343
+    Effective drain rate: -10.2885 * 40.00 = -411.5381
+    Collision damage: -5.4231 * 0.10 = -0.5423
+    Idle upward speed: 3.5288 * 1.20 = 4.2345
+    Time between collisions: 4.0616 * 4.00 = 16.2466
+    Horizontal speed: 2.0243 * 12.00 = 24.2912
+
+Feature Importance (Impact on Oxygen):
+  RemoveHealthEveryLifeTime      10.4953
+  EffectiveDrainRate             10.2885
+  removeHealthWithCollide        5.4231
+  timeBetweenCollides            4.0616
+  idleUpwardSpeed                3.5288
+  speed                          2.0243
+
+Regression Coefficients:
+  Intercept                              53.2000
+  Health removed per life cycle -10.4953
+  Effective drain rate     -10.2885
+  Collision damage         -5.4231
+  Idle upward speed        3.5288
+  Time between collisions  4.0616
+  Horizontal speed         2.0243
+
+Regression Equation:
+Oxygen = 53.2000
+          - 10.4953 * Health removed per life cycle
+          - 10.2885 * Effective drain rate
+          - 5.4231 * Collision damage
+          + 3.5288 * Idle upward speed
+          + 4.0616 * Time between collisions
+          + 2.0243 * Horizontal speed
+
+OPTIMIZED PARAMETERS FOR TARGET 10% OXYGEN
+
+Predicted: 28.76% | Error: 18.760%
+
+Parameters:
+  Speed               =    16.20
+  VerticalSpeed       =    34.20
+  IdleUpwardSpeed     =     0.34
+  LifeTime            =     1.04s
+  HealthPerLifeCycle  =     3.51
+  CollisionDamage     =    11.44%
+  TimeBetweenCollides =     1.36s
+  HealPoints          =     3.92%
+  FactorForce         =     0.00x
+

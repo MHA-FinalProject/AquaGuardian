@@ -6,7 +6,8 @@ using System.Collections.Generic;
 
 /**
  * TrialSystemManager - Manages the trial system lifecycle
- * Handles trial flow: Start - Run - End - Continue - Complete
+ * Handles the trial system lifecycle: Start - Run - End - Continue - Complete
+ * See also: PanelOpenUp, TrialParameterManager, TrialFishSpawner, TrialUIController, GameSystemResetter 
  */
 public class TrialSystemManager : MonoBehaviour
 {
@@ -16,14 +17,14 @@ public class TrialSystemManager : MonoBehaviour
     [SerializeField] private TrialFishSpawner fishSpawner;
     [SerializeField] private TrialUIController uiController;
     [SerializeField] private GameSystemResetter systemResetter;
-    
+
     [Header("Trial Settings")]
     [SerializeField] private int totalTrials = 5;
-    
+
     [Header("Audio Settings")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip trialCompletionSound;
-    
+
     // Trial state
     private bool trialsMode = false;
     private int currentTrialNumber = 0;
@@ -31,24 +32,24 @@ public class TrialSystemManager : MonoBehaviour
     private float trialStartTime;
     private bool _startingNext = false;
     private List<Collider> _disabledFinishers = new List<Collider>();
-    
+
     // Public getters
     public bool TrialsMode => trialsMode;
     public int CurrentTrialNumber => currentTrialNumber;
     public int TotalTrials => totalTrials;
     public TrialDataModels.TrialData CurrentTrialData => currentTrialData;
-    
+
     void Start()
     {
         GameStateManager.OnGameEnded += OnGameEnded;
     }
-    
+
     void OnDestroy()
     {
         GameStateManager.OnGameEnded -= OnGameEnded;
     }
-    
-   
+
+
     public void StartTrials()
     {
         // Ensure GameStateManager exists
@@ -59,26 +60,26 @@ public class TrialSystemManager : MonoBehaviour
             {
                 GameObject gsmObj = new GameObject("GameStateManager");
                 gsmObj.AddComponent<GameStateManager>();
-                
+
             }
         }
-        
+
         trialsMode = true;
         currentTrialNumber = 0;
         GameStateManager.SetTrialsActive(true);
         DisableAllFinishers();
-        
-        
+
+
         if (uiController != null)
             uiController.CloseTrialControlPanel(false);
-        
+
         if (CoroutineHost.Instance != null)
             CoroutineHost.Instance.StartCoroutine(StartNextTrialCoroutine());
         else
             StartCoroutine(StartNextTrialCoroutine());
     }
-    
- 
+
+
     public void ContinueToNextTrial()
     {
         if (_startingNext) return;
@@ -93,7 +94,7 @@ public class TrialSystemManager : MonoBehaviour
 
         StartNextTrialExplicit();
     }
-    
+
     public void OnTrialFishReached(float finalOxygen, bool completed)
     {
         if (!trialsMode) return;
@@ -103,11 +104,11 @@ public class TrialSystemManager : MonoBehaviour
 
         EndTrialAndShowPanel(finalOxygen, completed);
     }
-    
+
     public void RestartCurrentTrial()
     {
         if (_startingNext) return;
-        
+
         if (CoroutineHost.Instance != null)
             CoroutineHost.Instance.StartCoroutine(RestartCurrentTrialCoroutine());
         else
@@ -117,23 +118,23 @@ public class TrialSystemManager : MonoBehaviour
     public void CompleteAllTrials()
     {
         ExitTrialsMode();
-        
+
         if (systemResetter != null)
             systemResetter.CleanupAllTrialObjects();
-        
+
         // Show completion UI first
         if (uiController != null)
             uiController.UpdateCompletionUI();
     }
-    
-    
+
+
     private void OnGameEnded(float finalOxygen, bool completed)
     {
         if (!trialsMode) return;
-        
+
         if (currentTrialData == null)
             currentTrialData = new TrialDataModels.TrialData { trialId = currentTrialNumber };
-        
+
         EndTrialAndShowPanel(finalOxygen, completed);
     }
 
@@ -148,11 +149,11 @@ public class TrialSystemManager : MonoBehaviour
     private IEnumerator RestartCurrentTrialCoroutine()
     {
         _startingNext = true;
-        
+
         // Close any UI panels before restarting
         if (uiController != null)
             uiController.CloseTrialControlPanel(false);
-        
+
         var regressionUI = FindObjectOfType<TrialRegressionUI>();
         if (regressionUI != null)
             regressionUI.ForceCloseRegressionPanel();
@@ -170,10 +171,10 @@ public class TrialSystemManager : MonoBehaviour
         }
         if (panelOpenUp != null)
             panelOpenUp.caveInfos.Clear();
-        
+
         if (!GameStateManager.AreTrialsActive)
         {
-           // Debug.LogError("CRITICAL: Trials became inactive during restart!");
+            // Debug.LogError("CRITICAL: Trials became inactive during restart!");
             GameStateManager.SetTrialsActive(true);
         }
 
@@ -217,14 +218,14 @@ public class TrialSystemManager : MonoBehaviour
             uiController.UpdateTrialUI(currentTrialNumber, totalTrials);
 
         GameStateManager.Instance?.NotifyPanelClosed();
-        
+
         // Start timing the trial
         trialStartTime = Time.time;
         Debug.Log($"[TrialSystem] Trial {currentTrialNumber} started");
-        
+
         _startingNext = false;
     }
-    
+
     private IEnumerator StartNextTrialCoroutine()
     {
         _startingNext = true;
@@ -232,7 +233,7 @@ public class TrialSystemManager : MonoBehaviour
         // Close any UI panels before starting next trial
         if (uiController != null)
             uiController.CloseTrialControlPanel(false);
-        
+
         var regressionUI = FindObjectOfType<TrialRegressionUI>();
         if (regressionUI != null)
             regressionUI.ForceCloseRegressionPanel();
@@ -294,36 +295,36 @@ public class TrialSystemManager : MonoBehaviour
             uiController.UpdateTrialUI(currentTrialNumber, totalTrials);
 
         GameStateManager.Instance?.NotifyPanelClosed();
-        
+
         // Start timing the trial
         trialStartTime = Time.time;
         Debug.Log($"[TrialSystem] Trial {currentTrialNumber} started");
-        
+
         _startingNext = false;
     }
-    
- 
+
+
     private void EndTrialAndShowPanel(float finalOxygen, bool completed)
     {
         // Calculate trial duration
         float trialEndTime = Time.time;
         float duration = trialEndTime - trialStartTime;
-        
+
         // Determine if Amadeo/Emulation was ACTUALLY used during this trial
         // Check both: 1) Configuration (InputType), AND 2) Actual input source during trial
         AmadeoClient amadeoClient = FindObjectOfType<AmadeoClient>();
         PlayerMovement playerMovement = FindObjectOfType<PlayerMovement>();
         float isAmadeoMode = 0f;
-        
+
         if (amadeoClient != null && playerMovement != null)
         {
             // Check configuration
             InputType inputType = amadeoClient.CurrentInputType;
             bool isConfiguredForAmadeo = (inputType == InputType.Amadeo || inputType == InputType.EmulationMode);
-            
+
             // Check actual input usage during trial
             bool actuallyUsedAmadeo = playerMovement.ActuallyUsedAmadeoInput;
-            
+
             // Set IsAmadeoMode only if BOTH conditions are met:
             // 1. Configured for Amadeo/Emulation mode
             // 2. Movement actually came from Amadeo (not keyboard fallback)
@@ -355,17 +356,17 @@ public class TrialSystemManager : MonoBehaviour
                 Debug.LogWarning($"[TrialSystemManager] Trial {currentTrialData.trialId}: PlayerMovement not found, using configuration only (InputType={inputType})");
             }
         }
-        
+
         currentTrialData.finalOxygenRemaining = finalOxygen;
         currentTrialData.completed = completed;
         currentTrialData.trialDuration = duration;
         currentTrialData.IsAmadeoMode = isAmadeoMode;
-        
+
         Debug.Log($" Trial {currentTrialData.trialId} ended - O2: {finalOxygen:F1}%, Duration: {duration:F1}s, Completed: {completed}, IsAmadeoMode: {isAmadeoMode}");
-        
+
         if (completed)
             PlayTrialCompletionSound();
-        
+
         if (completed && parameterManager != null)
         {
             bool csvSaved = parameterManager.SaveTrialResultToCSV(currentTrialData);
@@ -384,13 +385,13 @@ public class TrialSystemManager : MonoBehaviour
             uiController.OpenTrialControlPanel();
         }
     }
-    
+
     private void PlayTrialCompletionSound()
     {
         if (audioSource != null && trialCompletionSound != null)
             audioSource.PlayOneShot(trialCompletionSound);
     }
-    
+
 
     private void PrepareForNextTrial()
     {
@@ -401,25 +402,25 @@ public class TrialSystemManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
-    
+
     private void ExitTrialsMode()
     {
         trialsMode = false;
         GameStateManager.SetTrialsActive(false);
-        
+
         if (uiController != null)
             uiController.CloseTrialControlPanel(false);
-        
+
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
-    
+
     private void DisableAllFinishers()
     {
         _disabledFinishers.Clear();
         var finishers = FindObjectsOfType<GoToEndGame>();
-        
+
         foreach (var finisher in finishers)
         {
             var collider = finisher.GetComponent<Collider>();
@@ -430,7 +431,7 @@ public class TrialSystemManager : MonoBehaviour
             }
         }
     }
-    
+
     private void ReenableFinishers()
     {
         foreach (var collider in _disabledFinishers)

@@ -3,12 +3,38 @@ using System;
 
 
 /** 
-    * TrialDataModels
-    * 
-    * This file contains data models for trial data, cave information, and parameter ranges.
+ * Data models for regression analysis system
+ * TrialData: Game parameters + results (10 params + oxygen %)
+ * RegressionResult: ML analysis results with optimized parameters
+ * CaveInfo: Cave geometry data
+ * ParameterRanges: Valid parameter ranges for optimization
     */
 public static class TrialDataModels
 {
+    /**
+     * Feature names for regression analysis (single source of truth)
+     * Must match TrialData field names and ParameterHelper indices!
+     * 
+     * 10 FEATURES:
+     * 1. speed - Horizontal forward speed
+     * 2. verticalSpeed - Vertical movement speed
+     * 3. idleUpwardSpeed - Passive upward drift
+     * 4. lifeTime - Oxygen tank lifetime (seconds)
+     * 5. RemoveHealthEveryLifeTime - Health removed per lifeTime cycle
+     * 6. removeHealthWithCollide - Health removal per collision
+     * 7. timeBetweenCollides - Collision cooldown (seconds)
+     * 8. healHealthPoint - Oxygen restored by health packs
+     * 9. factorForce - Amadeo device force multiplier (0 for keyboard)
+     * 10. EffectiveDrainRate - Derived: RemoveHealthEveryLifeTime / lifeTime
+     */
+    public static readonly string[] FeatureNames =
+    {
+        "speed", "verticalSpeed", "idleUpwardSpeed", "lifeTime",
+        "RemoveHealthEveryLifeTime", "removeHealthWithCollide",
+        "timeBetweenCollides", "healHealthPoint", "factorForce", "EffectiveDrainRate"
+    };
+
+    public static int FeatureCount => FeatureNames.Length;
 
     [Serializable]
     public class TrialData
@@ -30,9 +56,21 @@ public static class TrialDataModels
         public float trialDuration; // Duration in seconds
 
         // Derived property: Effective drain rate (RemoveHealthEveryLifeTime / lifeTime)
-        // if is higher 
         public float EffectiveDrainRate => RemoveHealthEveryLifeTime / Mathf.Max(0.1f, lifeTime);
         
+        // Derived property: Effective collision damage rate (removeHealthWithCollide / timeBetweenCollides)
+        public float EffectiveCollisionDamageRate => removeHealthWithCollide / Mathf.Max(0.1f, timeBetweenCollides);
+    }
+
+    [Serializable]
+    public class RegressionResult
+    {
+        public string summaryText;
+        public string fullDetailsText;
+        public System.Collections.Generic.Dictionary<string, float> correlations;
+        public float averageOxygen;
+        public TrialData optimizedSolution;  // Optimized parameters for target oxygen level
+        public float optimizedSolutionError;  // Prediction error of optimized solution (%)
     }
 
  

@@ -33,8 +33,8 @@ public class TrialDataCache : MonoBehaviour
     // Current run number (starts at 0)
     private int currentRunNumber = 0;
 
-    // Maximum number of trials per run (configurable: 5 or 10)
-    private const int MAX_TRIALS = 10;
+    // Maximum number of trials per run (fixed at 5 for stability with small-n regression)
+    private const int MAX_TRIALS = 5;
     
     void Awake()
     {
@@ -47,41 +47,38 @@ public class TrialDataCache : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    public void SaveTrialOxygen(int trialId, float oxygenRemaining)
+  
+    public void BeginRun()
     {
-        if (trialId == 1)
-        {
-            if (currentRunOxygenValues.Count > 0)
-            {
-                var runData = new List<float>();
-                for (int i = 1; i <= MAX_TRIALS; i++)
-                {
-                    runData.Add(currentRunOxygenValues.ContainsKey(i) ? currentRunOxygenValues[i] : 0f);
-                }
-                allRunsHistory.Add(runData);
-            }
-            
-            currentRunOxygenValues.Clear();
-            currentRunNumber++;
-         
-        }
-        
-        currentRunOxygenValues[trialId] = oxygenRemaining;
-        Debug.Log($" Cached Trial {trialId}: Oxygen={oxygenRemaining:F1}%");
-        
-        if (trialId == MAX_TRIALS)
-        {
-            var runData = new List<float>();
-            for (int i = 1; i <= MAX_TRIALS; i++)
-            {
-                runData.Add(currentRunOxygenValues.ContainsKey(i) ? currentRunOxygenValues[i] : 0f);
-            }
-            allRunsHistory.Add(runData);
-        }
+        currentRunOxygenValues.Clear();
+        currentRunNumber++;
+        Debug.Log($"[Cache] Started Run #{currentRunNumber}");
     }
-
+    
+    public void AppendTrial(int trialId, float oxygenRemaining)
+    {
+        currentRunOxygenValues[trialId] = oxygenRemaining;
+        Debug.Log($"[Cache] Trial {trialId}: Oxygen={oxygenRemaining:F1}%");
+    }
+    
+    public void EndRun()
+    {
+        if (currentRunOxygenValues.Count == 0)
+        {
+            Debug.LogWarning("[Cache] EndRun called but no trials recorded!");
+            return;
+        }
+        
+        var runData = new List<float>();
+        for (int i = 1; i <= MAX_TRIALS; i++)
+        {
+            runData.Add(currentRunOxygenValues.ContainsKey(i) ? currentRunOxygenValues[i] : 0f);
+        }
+        allRunsHistory.Add(runData);
+        Debug.Log($"[Cache] Finished Run #{currentRunNumber} with {currentRunOxygenValues.Count} trials (stored {MAX_TRIALS} values)");
+    }
     // Get the LATEST complete run's oxygen values (for regression)
-    // Returns exactly 5 values (0 for missing trials to maintain index alignment)
+    // Returns exactly MAX_TRIALS values (0 for missing trials to maintain index alignment)
     public List<float> GetLatestRunOxygenValues()
     {
         if (allRunsHistory.Count > 0)
@@ -89,8 +86,9 @@ public class TrialDataCache : MonoBehaviour
             return allRunsHistory[allRunsHistory.Count - 1];
         }
         
+      
         var currentData = new List<float>();
-        for (int i = 1; i <= 5; i++)
+        for (int i = 1; i <= MAX_TRIALS; i++)
         {
             currentData.Add(currentRunOxygenValues.ContainsKey(i) ? currentRunOxygenValues[i] : 0f);
         }

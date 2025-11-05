@@ -204,6 +204,13 @@
         "com.unity.render-pipelines.core": "14.0.9"
       }
     },
+    "com.unity.scripting.python.windows": {
+      "version": "1.2.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
     "com.unity.searcher": {
       "version": "4.9.2",
       "depth": 2,

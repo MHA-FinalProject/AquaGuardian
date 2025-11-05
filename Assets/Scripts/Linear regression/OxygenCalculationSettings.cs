@@ -1,9 +1,7 @@
 using UnityEngine;
 using System.Linq;
 
-/// <summary>
-/// Calculation modes for combining multiple oxygen runs
-/// </summary>
+// Calculation modes for combining multiple oxygen runs
 public enum OxygenCalculationMode
 {
     Average,         // Average of all runs
@@ -15,14 +13,12 @@ public enum OxygenCalculationMode
     SpecificColumn   // Use a specific column name
 }
 
-/// <summary>
-/// Settings for how to calculate final oxygen from multiple CSV runs
-/// </summary>
+// Settings for how to calculate final oxygen from multiple CSV runs
 public class OxygenCalculationSettings : MonoBehaviour
 {
     [Header("Oxygen Calculation Method")]
     [Tooltip("How to calculate final oxygen from multiple runs in CSV")]
-    public OxygenCalculationMode calculationMode = OxygenCalculationMode.Average;
+    public OxygenCalculationMode calculationMode = OxygenCalculationMode.LastRun;  // Changed from Average to LastRun - each column is a different person
     
     [Header("Specific Column (if SpecificColumn mode)")]
     [Tooltip("Column name to use (e.g., 'o2_run7', 'o2_run1')")]

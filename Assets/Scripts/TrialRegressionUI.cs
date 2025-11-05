@@ -23,8 +23,9 @@ public class TrialRegressionUI : MonoBehaviour
     [SerializeField] private bool autoSaveResults = true;
     [SerializeField] private string saveFolder = "RegressionResults";
 
-    private TrialRegressionAlgorithm.RegressionResult lastResult;
+    private TrialDataModels.RegressionResult lastResult;
     private TrialUIController trialUIController;
+    private string lastSavedReportHash; // Prevent duplicate saves of the same analysis
 
     void Start()
     {
@@ -46,7 +47,7 @@ public class TrialRegressionUI : MonoBehaviour
             trialUIController = FindObjectOfType<TrialUIController>();
             
         bool useRandomParameters = trialUIController != null && trialUIController.IsRandomParametersMode();
-        var trialData = TrialDataLoader.LoadTrialDataFromCSV(useRandomParameters);
+        var trialData = TrialDataService.LoadAllTrials(useRandomParameters);
         
         int trialCount = trialData != null ? trialData.Count : 0;
         Debug.Log($"[TrialRegressionUI] Starting regression analysis - Mode: {(useRandomParameters ? "RANDOM" : "CONSTANT (CSV)")}, Trials: {trialCount}");
@@ -58,6 +59,7 @@ public class TrialRegressionUI : MonoBehaviour
         }
 
         lastResult = TrialRegressionAlgorithm.PerformRegressionAnalysis(trialData);
+        lastSavedReportHash = null; // Reset hash for new analysis
         ShowRegressionResults(lastResult.summaryText);
 
         if (autoSaveResults)
@@ -122,7 +124,7 @@ public class TrialRegressionUI : MonoBehaviour
             trialUIController = FindObjectOfType<TrialUIController>();
             
         bool useRandomParameters = trialUIController != null && trialUIController.IsRandomParametersMode();
-        var trialData = TrialDataLoader.LoadTrialDataFromCSV(useRandomParameters);
+        var trialData = TrialDataService.LoadAllTrials(useRandomParameters);
         return trialData != null && trialData.Count >= 2;
     }
 
@@ -134,6 +136,18 @@ public class TrialRegressionUI : MonoBehaviour
             return;
         }
 
-        TrialRegressionAlgorithm.SaveRegressionResultsToFile(lastResult, saveFolder);
+        // Prevent duplicate saves: check if this is the same report we just saved
+        string currentReportHash = lastResult.fullDetailsText?.GetHashCode().ToString();
+        if (currentReportHash == lastSavedReportHash)
+        {
+            Debug.Log("[TrialRegressionUI] Skipping duplicate save - same report already saved");
+            return;
+        }
+
+        bool saved = TrialRegressionAlgorithm.SaveRegressionResultsToFile(lastResult, saveFolder);
+        if (saved)
+        {
+            lastSavedReportHash = currentReportHash;
+        }
     }
 }

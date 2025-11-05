@@ -12,12 +12,12 @@ public class TrialFishSpawner : MonoBehaviour
     [SerializeField] private GameObject[] trialFishPrefabs = new GameObject[5];
     [SerializeField] private GameObject chestPrefab;
     [SerializeField] private bool addGoToEndGameToFish = true;
-    
+
     [Header("Component References")]
     [SerializeField] private PlayerMovement playerMovement;
-    
+
     private GameObject currentTrialFish;
-    
+
     public void SetChestPrefab(GameObject chest)
     {
         if (chest != null)
@@ -25,7 +25,7 @@ public class TrialFishSpawner : MonoBehaviour
             chestPrefab = chest;
         }
     }
-    
+
     public GameObject CreateTrialFish(Vector3 position, int trialNumber)
     {
         if (currentTrialFish != null)
@@ -33,20 +33,20 @@ public class TrialFishSpawner : MonoBehaviour
             Destroy(currentTrialFish);
             currentTrialFish = null;
         }
-        
+
         int trialIndex = Mathf.Clamp(trialNumber - 1, 0, 4);
         GameObject selectedPrefab = null;
-        
+
         if (trialFishPrefabs != null && trialIndex < trialFishPrefabs.Length)
         {
             selectedPrefab = trialFishPrefabs[trialIndex];
         }
-        
+
         if (selectedPrefab == null && fishPrefab != null)
         {
             selectedPrefab = fishPrefab;
         }
-        
+
         if (selectedPrefab == null && chestPrefab != null)
         {
             selectedPrefab = chestPrefab;
@@ -62,25 +62,25 @@ public class TrialFishSpawner : MonoBehaviour
             fish = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             fish.transform.position = position;
             fish.transform.localScale = new Vector3(2f, 1.5f, 3f);
-            
+
             var renderer = fish.GetComponent<MeshRenderer>();
             if (renderer != null)
             {
                 renderer.material.color = Color.cyan;
             }
         }
-        
+
         fish.name = $"TrialFish_{trialNumber}";
         fish.tag = "TrialFish";
         fish.layer = LayerMask.NameToLayer("Default");
         fish.SetActive(true);
-        
+
         currentTrialFish = fish;
         SetupFishTrigger(fish);
-  
+
         return fish;
     }
-    
+
     private void SetupFishTrigger(GameObject fish)
     {
         var existingCollider = fish.GetComponent<Collider>();
@@ -88,7 +88,7 @@ public class TrialFishSpawner : MonoBehaviour
         {
             existingCollider.isTrigger = true;
             existingCollider.enabled = true;
-            
+
             if (existingCollider is SphereCollider sc)
             {
                 sc.radius = Mathf.Max(sc.radius, 2.0f);
@@ -109,7 +109,7 @@ public class TrialFishSpawner : MonoBehaviour
             triggerCollider.isTrigger = true;
             triggerCollider.radius = 2.5f;
         }
-        
+
         var rb = fish.GetComponent<Rigidbody>();
         if (rb == null)
         {
@@ -118,9 +118,9 @@ public class TrialFishSpawner : MonoBehaviour
         rb.isKinematic = true;
         rb.useGravity = false;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-        
+
         EnsurePlayerTriggerSetup();
-        
+
         if (addGoToEndGameToFish)
         {
             var goToEnd = fish.AddComponent<GoToEndGame>();
@@ -135,14 +135,14 @@ public class TrialFishSpawner : MonoBehaviour
     private void EnsurePlayerTriggerSetup()
     {
         if (playerMovement == null) return;
-        
+
         var playerCollider = playerMovement.GetComponent<Collider>();
         if (playerCollider == null)
         {
             playerCollider = playerMovement.gameObject.AddComponent<CapsuleCollider>();
         }
         playerCollider.isTrigger = false;
-        
+
         var playerRb = playerMovement.GetComponent<Rigidbody>();
         if (playerRb == null)
         {
@@ -151,7 +151,7 @@ public class TrialFishSpawner : MonoBehaviour
         playerRb.useGravity = false;
         playerRb.collisionDetectionMode = CollisionDetectionMode.Continuous;
     }
-  
+
     public void CleanupCurrentFish()
     {
         if (currentTrialFish != null)
@@ -160,20 +160,20 @@ public class TrialFishSpawner : MonoBehaviour
             currentTrialFish = null;
         }
     }
-    
+
     [ContextMenu("Verify Fish Position")]
     public void VerifyFishPosition()
     {
         var allFish = GameObject.FindGameObjectsWithTag("TrialFish");
         var player = GameObject.FindGameObjectWithTag("Player");
-        
+
         if (player != null && allFish.Length > 0)
         {
             foreach (var fish in allFish)
             {
                 float distance = Vector3.Distance(player.transform.position, fish.transform.position);
                 Debug.Log($"Distance from player to fish '{fish.name}': {distance:F1} units");
-                
+
                 if (distance > 1000f)
                 {
                     Debug.LogWarning($"Fish might be too far from player");
@@ -181,7 +181,7 @@ public class TrialFishSpawner : MonoBehaviour
             }
         }
     }
-   
+
     [ContextMenu("Check Fish Prefab Status")]
     public void CheckPrefabStatus()
     {
@@ -190,7 +190,7 @@ public class TrialFishSpawner : MonoBehaviour
             Debug.LogError("WARNING: No global fish prefab assigned! Fish will be replaced by chest!");
         }
     }
-    
+
     void OnDestroy()
     {
         if (currentTrialFish != null)

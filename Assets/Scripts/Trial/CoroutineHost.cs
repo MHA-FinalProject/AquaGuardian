@@ -1,8 +1,7 @@
 using UnityEngine;
 
-/// Global, always-active coroutine runner. Attach once in the bootstrap scene.
-/// Ensures coroutines can start even if UI objects are inactive.
-
+// Global, always-active coroutine runner. Attach once in the bootstrap scene.
+// Ensures coroutines can start even if UI objects are inactive.
 public class CoroutineHost : MonoBehaviour
 {
     private static CoroutineHost _instance;
