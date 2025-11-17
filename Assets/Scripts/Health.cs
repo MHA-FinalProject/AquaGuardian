@@ -26,9 +26,13 @@ public class Health : MonoBehaviour
     private float RemoveHealthEveryLifeTime;  // Health removed every lifeTime cycle
     public TMP_InputField RemoveHealthEveryLifeTime_inputField;
 
+    [Header("Game Data (Optional - leave empty to use singleton)")]
+    [SerializeField] private GameDataSO gameDataOverride;
+
     [Header("Internal States")]
     private bool moveOxygen = false;
     public bool didntGetInputsYet = false;
+
 
     void Start()
     {
@@ -40,20 +44,22 @@ public class Health : MonoBehaviour
             StartCoroutine(DisappearHealthPoints());
         }
     }
-    
-    // Get max health from GameConfig.Instance (fallback to 100f if not available)
+
+    // Get max health from GameDataSO (fallback to 100f if not available)
     private float GetMaxHealth()
     {
-        if (GameConfig.Instance != null)
-            return GameConfig.Instance.maxHealth;
+        GameDataSO gameData = gameDataOverride != null ? gameDataOverride : GameDataSO.Instance;
+        if (gameData != null)
+            return gameData.maxHealth;
         return 100f;
     }
-    
-    // Get factor lerp speed from GameConfig.Instance (fallback to 3f if not available)
+
+    // Get factor lerp speed from GameDataSO (fallback to 3f if not available)
     private float GetFactorLerpSpeed()
     {
-        if (GameConfig.Instance != null)
-            return GameConfig.Instance.factorLerpSpeed;
+        GameDataSO gameData = gameDataOverride != null ? gameDataOverride : GameDataSO.Instance;
+        if (gameData != null)
+            return gameData.factorLerpSpeed;
         return 3f;
     }
 
@@ -66,13 +72,13 @@ public class Health : MonoBehaviour
         }
 
         // Smart formatting: shows up to 3 decimals, removes trailing zeros
-        // 100.000 → "100", 97.8 → "97.8", 97.8975666 → "97.898"
+        // 100.000 -> "100", 97.8 -> "97.8", 97.8975666 -> "97.898"
         healthText.text = "Oxygen: " + health.ToString("0.###") + "%";
 
         healthBarFiller();
         colorChanger();
 
-        bool panelClosed = Panel != null ? !Panel.activeSelf : true;
+        bool panelClosed = Panel == null || !Panel.activeSelf;
         if (GameStateManager.Instance != null)
         {
             panelClosed = GameStateManager.Instance.IsPanelClosed;
@@ -161,19 +167,19 @@ public class Health : MonoBehaviour
     void gameOver()
     {
         bool trialsActive = IsTrialModeActive();
-        
+
         Debug.Log($"[Health] gameOver() called - Trials Active: {trialsActive}, Health: {health}");
-        
+
         if (trialsActive)
         {
             // In trials: Open trial panel and notify
             //Debug.Log("[Health] Trial failed - Opening trial panel");
-            
+
             // Stop game time
             Time.timeScale = 0f;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
-            
+
             // Find and open trial UI panel
             var trialUIController = FindObjectOfType<TrialUIController>();
             if (trialUIController != null)
@@ -185,10 +191,10 @@ public class Health : MonoBehaviour
             {
                 Debug.LogError("[Health] TrialUIController not found!");
             }
-            
+
             // Notify the system
             GameStateManager.NotifyGameEnded(health, false);
-            return; 
+            return;
         }
 
         // In normal game: Load the Game_Over scene
@@ -197,7 +203,7 @@ public class Health : MonoBehaviour
         SceneManager.LoadScene("Game_Over");
     }
 
-  
+
     bool IsTrialModeActive()
     {
         // Check if the trial mode is active via GameStateManager.AreTrialsActive (static property)
@@ -215,7 +221,7 @@ public class Health : MonoBehaviour
             return true;
         }
 
-       
+
         // Redundant check - already checked AreTrialsActive above
         // if (GameStateManager.Instance != null)
         // {

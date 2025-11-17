@@ -124,7 +124,10 @@ public class PlayerIntro : MonoBehaviour
             }
 
             // Notify GameStateManager that intro is complete
-            GameStateManager.Instance?.NotifyIntroComplete();
+            if (GameStateManager.Instance != null)
+            {
+                GameStateManager.Instance.NotifyIntroComplete();
+            }
            // Debug.Log("[PlayerIntro] Intro complete, notified GameStateManager");
         }
         else

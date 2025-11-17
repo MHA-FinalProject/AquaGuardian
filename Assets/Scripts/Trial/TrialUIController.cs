@@ -20,7 +20,6 @@ public class TrialUIController : MonoBehaviour
     [SerializeField] private GameObject endStatusText;         // Status text when complete
 
     [Header("UI Texts")]
-    [SerializeField] private TMP_Text instructionsText;  // Text for instructions only
     [SerializeField] private TMP_Text trialResultsText;  // Text for results only
 
     [Header("UI Buttons")]
@@ -62,7 +61,6 @@ public class TrialUIController : MonoBehaviour
         if (duringTrialStatusText != null) duringTrialStatusText.SetActive(false);
         if (endStatusText != null) endStatusText.SetActive(false);
 
-        if (instructionsText != null) instructionsText.text = "Press start to begin";
         if (trialResultsText != null) trialResultsText.text = ""; // Clean results, no mutual overwriting
     }
 
@@ -90,14 +88,28 @@ public class TrialUIController : MonoBehaviour
             });
         }
 
-        // Continue button
+        // Continue button (also used for Restart when trial fails)
         if (continueTrialButton != null)
         {
             continueTrialButton.onClick.RemoveAllListeners();
             continueTrialButton.onClick.AddListener(() =>
             {
                 if (trialSystemManager != null)
-                    trialSystemManager.ContinueToNextTrial();
+                {
+                    // If trial failed and can retry, restart instead of continue
+                    bool canRetry = trialSystemManager.CanRetryCurrentTrial;
+                    var currentTrialData = trialSystemManager.CurrentTrialData;
+                    bool trialFailed = currentTrialData != null && !currentTrialData.completed;
+                    
+                    if (trialFailed && canRetry)
+                    {
+                        trialSystemManager.RestartCurrentTrial();
+                    }
+                    else
+                    {
+                        trialSystemManager.ContinueToNextTrial();
+                    }
+                }
             });
         }
 
@@ -223,24 +235,7 @@ public class TrialUIController : MonoBehaviour
             if (endStatusText != null) endStatusText.SetActive(false);
         }
 
-        // Instructions now go ONLY to instructionsText
-        if (instructionsText != null)
-        {
-            if (!trialsMode || currentTrial == 0)
-            {
-                instructionsText.text = "Press start to begin";
-            }
-            else if (currentTrial < totalTrials)
-            {
-                instructionsText.text = trialFailed
-                    ? "Restart to retry or Continue to skip"
-                    : "Press Continue to proceed";
-            }
-            else
-            {
-                instructionsText.text = "Click Analyze to see results";
-            }
-        }
+        // Instructions handled by status text objects, not instructionsText
 
         UpdateTrialButtonsState(trialsMode, currentTrial, totalTrials, trialFailed);
     }
@@ -270,7 +265,9 @@ public class TrialUIController : MonoBehaviour
             string resultText;
             if (!completed)
             {
-                resultText = $"Trial {currentTrial}/{totalTrials} - Try again\nOxygen: {finalOxygen:F1}%";
+                bool canRetry = trialSystemManager != null && trialSystemManager.CanRetryCurrentTrial;
+                string message = canRetry ? "You have 1 more attempt" : "No more attempts";
+                resultText = $"Trial {currentTrial}/{totalTrials} - {message}\nOxygen: {finalOxygen:F1}%";
             }
             else
             {
@@ -314,14 +311,6 @@ public class TrialUIController : MonoBehaviour
         {
             bool showContinue = trialsMode && currentTrial > 0 && currentTrial < totalTrials;
             continueTrialButton.gameObject.SetActive(showContinue);
-
-            // Update continue button text based on trial status
-            if (showContinue)
-            {
-                var label = continueTrialButton.GetComponentInChildren<TMP_Text>();
-                if (label != null)
-                    label.text = trialFailed ? "Skip to Next" : "Continue";
-            }
         }
 
         if (analyzeTrialsButton != null)
@@ -386,7 +375,6 @@ public class TrialUIController : MonoBehaviour
 
         int totalTrials = trialSystemManager?.TotalTrials ?? 5;
 
-        if (instructionsText != null) instructionsText.text = "Click Analyze to see results";
         if (trialResultsText != null) trialResultsText.text = $"All {totalTrials} trials completed!";
 
         UpdateTrialButtonsState(true, totalTrials, totalTrials);

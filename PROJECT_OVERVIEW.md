@@ -20,7 +20,7 @@
 ```mermaid
 flowchart LR
     A[5 Trials] --> B[Feature Extraction]
-    B --> C[Ridge Regression]
+    B --> C[Regression Model]
     C --> D[Cross-Validation]
     D --> E[3-Stage Optimization]
     E --> F[Optimized Parameters]
@@ -49,7 +49,7 @@ flowchart LR
 
 1. **Trial Execution** - `TrialSystemManager` orchestrates 5 trials, `TrialDataService` handles CSV I/O
 2. **Feature Extraction** - `FeatureExtractor` converts raw data to 10-feature vectors
-3. **Model Training** - `MultipleLinearRegression` with Ridge regularization via `OxygenPredictor`
+3. **Model Training** - Regression model (C# mode: `MultipleLinearRegression` with Ridge | Python mode: ElasticNet/Huber/PLS via HTTP server)
 4. **Validation** - K-Fold cross-validation in `RegressionUtilities`
 5. **Optimization** - 3-stage parameter solving in `DifficultyParameterSolver` (see [Optimization Algorithm](#optimization-algorithm))
 6. **Reporting** - Analysis summary generation in `TrialReportGenerator`
@@ -91,6 +91,74 @@ The system automatically adapts features based on input device:
   - Only marked as Amadeo mode if device was **actually used** during trial (not keyboard fallback)
   - If no Amadeo trials exist, `factorForce` is automatically excluded from optimization
 
+## Regression Modes
+
+The system supports **two regression modes**:
+
+### Mode 1: C# Built-in Regression (Default)
+
+- Pure C# implementation (no external dependencies)
+- Uses Ridge regression with adaptive regularization
+- Fast and integrated directly into Unity
+- **No setup required** - works out of the box
+
+### Mode 2: Python Regression Server (Advanced)
+
+- External Python server with advanced ML models
+- Supports ElasticNet, Ridge, Huber, PLS algorithms
+- Better for complex optimization scenarios
+- Requires Python 3.9+
+
+**Python Dependencies** (`requirements.txt`):
+
+```txt
+# Core ML dependencies
+numpy>=1.21.0
+pandas>=1.3.0
+scikit-learn>=1.0.0
+
+# Server dependencies (optional - only for server mode)
+flask>=2.0.0
+flask-cors>=3.0.0
+```
+
+**Installation:**
+
+```bash
+pip install -r requirements.txt
+```
+
+**Usage Options:**
+
+**Option A: Offline Training** (Train models from CSV)
+
+```bash
+python PythonScripts/train_regression_model.py Assets/Data/Trials/Trial_5_runs_.csv ElasticNet
+# Output: regression_model_elasticnet.json
+```
+
+**Option B: Real-time Server** (Unity connects via HTTP)
+
+```bash
+python PythonScripts/regression_server.py
+# Server runs on localhost:5000
+```
+
+**Unity Setup:**
+
+1. Enable the **"python model"** GameObject in the scene
+2. In **RegressionAnalyzer** component, check ✅ **"Auto Load Python"**
+3. Place `regression_model_*.json` in `Assets/StreamingAssets/RegressionModels/`
+
+**How it works:**
+
+- **Offline Mode:** Unity loads pre-trained JSON model file
+- **Server Mode:** Unity sends trial data via HTTP POST to `/train`, receives coefficients
+- Unity uses the Python model for predictions and optimization
+- Optimization algorithms still run in Unity (C# side)
+
+**For detailed setup instructions, see [README_PYTHON_REGRESSION.md](README_PYTHON_REGRESSION.md)**
+
 ## Quick Start
 
 ```csharp
@@ -116,6 +184,8 @@ if (result.optimizedSolution != null) {
 ## Key Components
 
 The system architecture consists of 13 core components that work together to transform trial data into optimized parameters.
+
+> **Note:** Components 1-13 below describe the **C# Built-in Mode**. For Python mode, the core ML engine (components 3-8) is replaced by an external Python server (see [README_PYTHON_REGRESSION.md](README_PYTHON_REGRESSION.md)).
 
 ### 1. TrialRegressionAlgorithm.cs
 
@@ -147,7 +217,7 @@ The system architecture consists of 13 core components that work together to tra
 - `ExtractFeatures(trial)` (line 43) - Extracts 10 features from trial data, handles input mode differences (see [Input Mode Handling](#input-mode-handling))
 - `GetPatientBaseline(trials, ranges)` - Provides personalized baseline from player history (uses median values)
 
-### 3. MultipleLinearRegression.cs
+### 3. MultipleLinearRegression.cs (C# mode)
 
 **Location:** `Assets/Scripts/Linear regression/MultipleLinearRegression.cs`
 
@@ -159,7 +229,7 @@ The system architecture consists of 13 core components that work together to tra
 - **Model equation:** $$O_2 = \beta_0 + \beta_1 \cdot \text{speed} + \beta_2 \cdot \text{verticalSpeed} + \ldots + \beta_{10} \cdot \text{drainRate}$$
 - Prevents overfitting with small datasets via regularization
 
-### 4. OxygenPredictor.cs
+### 4. OxygenPredictor.cs (C# mode)
 
 **Location:** `Assets/Scripts/Linear regression/OxygenPredictor.cs`
 
@@ -171,7 +241,7 @@ The system architecture consists of 13 core components that work together to tra
 - `PredictOxygen(parameters)` (line 58) - Predicts oxygen % for given parameters (clamped to 0-100%)
 - `GetFeatureImportance()` - Returns feature importance ranking for optimization
 
-### 5. DifficultyParameterSolver.cs
+### 5. DifficultyParameterSolver.cs (C# mode)
 
 **Location:** `Assets/Scripts/Linear regression/DifficultyParameterSolver.cs`
 
@@ -183,7 +253,7 @@ The system architecture consists of 13 core components that work together to tra
 - `RandomSweepOptimizer(...)` (line 530) - Random search fallback
 - `SolveForTargetDifficultyMulti(...)` (line 38) - Conservative gradient fallback
 
-### 6. RegressionUtilities.cs
+### 6. RegressionUtilities.cs (C# mode)
 
 **Location:** `Assets/Scripts/RegressionUtilities.cs`
 
@@ -195,7 +265,7 @@ The system architecture consists of 13 core components that work together to tra
 - `PerformCrossValidationAndErrorCalculation(...)` - K-Fold cross-validation (2-5 folds), calculates RMSE, MAE, R²
 - `PrepareOptimizationFeatures(...)` - Filters banned features (e.g., excludes `factorForce` if no Amadeo trials, excludes derived features like `EffectiveDrainRate`)
 
-### 7. RegressionMath.cs
+### 7. RegressionMath.cs (C# mode)
 
 **Location:** `Assets/Scripts/Linear regression/RegressionMath.cs`
 
@@ -203,7 +273,7 @@ The system architecture consists of 13 core components that work together to tra
 
 **Key function:** `EffectiveBeta(...)` - Calculates true coefficient impact including chain rule effects for derived features.
 
-### 8. FeatureNormalizer.cs
+### 8. FeatureNormalizer.cs (C# mode)
 
 **Location:** `Assets/Scripts/Linear regression/FeatureNormalizer.cs`
 
@@ -278,6 +348,8 @@ The system architecture consists of 13 core components that work together to tra
 ---
 
 ## Optimization Algorithm
+
+> **Note:** This section describes the **C# Built-in Mode** optimization. Python mode uses its own optimization within the Python server.
 
 ### How It Finds Optimal Parameters
 

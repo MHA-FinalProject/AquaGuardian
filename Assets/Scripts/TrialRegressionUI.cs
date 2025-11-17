@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using System.IO;
 
 /**
    * TrialRegressionUI
@@ -23,6 +24,10 @@ public class TrialRegressionUI : MonoBehaviour
     [SerializeField] private bool autoSaveResults = true;
     [SerializeField] private string saveFolder = "RegressionResults";
 
+    [Header("Python Model Auto-Load")]
+    [SerializeField] private bool autoLoadPythonModel = false;
+    [SerializeField] private string pythonModelFileName = "regression_model_elasticnet.json";
+
     private TrialDataModels.RegressionResult lastResult;
     private TrialUIController trialUIController;
     private string lastSavedReportHash; // Prevent duplicate saves of the same analysis
@@ -39,6 +44,12 @@ public class TrialRegressionUI : MonoBehaviour
 
         if (regressionPanel != null)
             regressionPanel.SetActive(false);
+
+        // AUTO-LOAD Python model if enabled
+        if (autoLoadPythonModel)
+        {
+            TrialRegressionAlgorithm.TryAutoLoadPythonModel(pythonModelFileName);
+        }
     }
 
     public void CalculateRegression()

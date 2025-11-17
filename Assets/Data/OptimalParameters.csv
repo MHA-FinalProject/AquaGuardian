@@ -1,0 +1,11 @@
+Parameter,Value
+speed,17.66
+verticalSpeed,31.80
+idleUpwardSpeed,0.010
+lifeTime,1.360
+downHealthPairSec,2.60
+removeHealthWithCollide,8.58
+timeBetweenCollides,1.82
+healHealthPoint,5.04
+factorForce,3.000
+generated,2025-10-16 12:15:58

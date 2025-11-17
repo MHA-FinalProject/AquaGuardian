@@ -85,12 +85,8 @@ public class TrialParameterManager : MonoBehaviour
             return false;
         }
         
-        // Prevent duplicate saves
-        if (trialData.trialId == lastSavedTrialId)
-        {
-            Debug.LogWarning($"Trial {trialData.trialId} already saved - skipping duplicate save");
-            return true;
-        }
+        // Note: Removed duplicate save prevention to allow retries to be recorded
+        // Each attempt (including retries) should create a new column in the CSV
         
         // Save to CSV and update cache (cache handled inside SaveTrialResult)
         bool saved = TrialDataService.SaveTrialResult(trialData, currentModeIsRandom, trialParametersPath, randomParametersPath);
@@ -98,6 +94,7 @@ public class TrialParameterManager : MonoBehaviour
         if (saved)
         {
             lastSavedTrialId = trialData.trialId;
+            Debug.Log($"[TrialParameterManager] Saved trial {trialData.trialId} - O2: {trialData.finalOxygenRemaining:F1}%");
         }
         else
         {

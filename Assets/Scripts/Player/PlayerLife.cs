@@ -12,7 +12,7 @@ public class PlayerLife : MonoBehaviour
 {
 
     [Header("Collision Tracking")]
-    private int collisionCount = 0;
+    private int collisionCount = 0; // helper for debug 
     private bool canCollide = true;
 
     // ----- Health Management -----
@@ -21,9 +21,9 @@ public class PlayerLife : MonoBehaviour
     private Health healthBar2;  // Reference to the HealthBar component
     private float removeHealthWithCollide;  // Health to be removed on collision
     public TMP_InputField removeHealthWithCollide_inputField;  // Input field for health removal
-    private float timeBetweenCollides;  // Time to wait between collisions
+    private float timeBetweenCollides;  
     public TMP_InputField timeBetweenCollides_inputField;  // Input field for time between collisions
-    private float healHealthPoint;  // Health to be healed
+    private float healHealthPoint; 
     public TMP_InputField healHealthPoints_inputField;  // Input field for healing health
     public bool didntGetInputsYet = false;  // Flag to indicate if inputs haven't been received yet
 
@@ -38,8 +38,12 @@ public class PlayerLife : MonoBehaviour
     [Header("Visual Effects")]
     [SerializeField] private Image bloodSplatterImage;  // Reference to the blood splatter image
 
+    // ----- Game Data -----
+    [Header("Game Data (Optional - leave empty to use singleton)")]
+    [SerializeField] private GameDataSO gameDataOverride;
+
     // ----- Fade Control -----
-    // Values are now loaded from GameConfig.Instance
+    // Values are now loaded from GameDataSO (override or singleton)
 
     void Start()
     {
@@ -115,17 +119,20 @@ public class PlayerLife : MonoBehaviour
     
     private float GetWaitTime()
     {
-        return GameConfig.Instance != null ? GameConfig.Instance.playerLifeWaitTime : 2f;
+        GameDataSO gameData = gameDataOverride != null ? gameDataOverride : GameDataSO.Instance;
+         return gameData != null ? gameData.playerLifeWaitTime : 2f;
     }
     
     private float GetColorAlphaValue()
     {
-        return GameConfig.Instance != null ? GameConfig.Instance.colorAlphaValue : 0.5f;
+        GameDataSO gameData = gameDataOverride != null ? gameDataOverride : GameDataSO.Instance;
+        return gameData != null ? gameData.colorAlphaValue : 0.5f;
     }
     
     private float GetTimeUntilFadeOut()
     {
-        return GameConfig.Instance != null ? GameConfig.Instance.timeUntilFadeOut : 3f;
+        GameDataSO gameData = gameDataOverride != null ? gameDataOverride : GameDataSO.Instance;
+        return gameData != null ? gameData.timeUntilFadeOut : 3f;
     }
 
     void OnCollisionEnter(Collision collision)
@@ -174,7 +181,7 @@ public class PlayerLife : MonoBehaviour
     {
         if (bloodSplatterImage == null) yield break;
         
-        // Get values from GameConfig.Instance
+        // Get values from GameDataSO.Instance
         float alphaValue = GetColorAlphaValue();
         float fadeTime = GetTimeUntilFadeOut();
         

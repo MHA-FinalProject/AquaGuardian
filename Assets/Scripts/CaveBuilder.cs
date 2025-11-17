@@ -7,20 +7,20 @@ using System.Linq;
  */
 public class CaveBuilder : MonoBehaviour
 {
-    [Header("Game Config")]
-    [Tooltip("GameConfig reference. If not set, will try to load automatically.")]
-    [SerializeField] private GameConfig gameConfigOverride;
-    
-    [Header("Prefab References")]
-    [SerializeField] private GameObject cavePrefab;
-    [SerializeField] private GameObject oxygenPrefab;
-    [SerializeField] private GameObject wallPrefab;
-    [SerializeField] private GameObject arrowsPrefab;
 
-    [Header("CSV Data")]
-    [SerializeField] private TextAsset csvFile;
+    [SerializeField] private GameDataSO gameDataOverride;
+    
+    // Note: CSV file and prefabs are passed via methods (SetCSVFile, BuildAllCaves)
+    // No need to assign them in Inspector - PanelOpenUp handles that
+    private TextAsset csvFile; // Set via SetCSVFile() method
     private string[] csvLines = null;
     private int numOfLines = 0;
+    
+    // Temporary prefab storage (set during BuildAllCaves)
+    private GameObject cavePrefab;
+    private GameObject oxygenPrefab;
+    private GameObject wallPrefab;
+    private GameObject arrowsPrefab;
 
     [Header("Tracking")]
     private List<TrialDataModels.CaveInfo> caveInfos = new List<TrialDataModels.CaveInfo>();
@@ -94,14 +94,14 @@ public class CaveBuilder : MonoBehaviour
             return Vector3.zero;
         }
 
-        // Use override if set, otherwise use singleton instance
-        GameConfig gameConfig = gameConfigOverride != null ? gameConfigOverride : GameConfig.Instance;
+        // Get GameDataSO (override or singleton)
+        GameDataSO gameConfig = gameDataOverride != null ? gameDataOverride : GameDataSO.Instance;
         
         if (gameConfig == null)
         {
-            Debug.LogError("GameConfig is null - cannot build caves! Please either:\n" +
-                         "1. Assign GameConfig to the 'Game Config Override' field in CaveBuilder inspector, OR\n" +
-                         "2. Ensure GameConfig.asset exists in a Resources folder.");
+            Debug.LogError("GameDataSO is null - cannot build caves! Please either:\n" +
+                         "1. Assign GameDataSO to the 'Game Data Override' field in CaveBuilder inspector, OR\n" +
+                         "2. Ensure GameDataSO asset exists in a Resources folder.");
             return Vector3.zero;
         }
 
@@ -186,12 +186,12 @@ public class CaveBuilder : MonoBehaviour
 
     public Vector3 GetEndObjectPosition(Vector3 lastCavePosition)
     {
-        // Use override if set, otherwise use singleton instance
-        GameConfig gameConfig = gameConfigOverride != null ? gameConfigOverride : GameConfig.Instance;
+        // Get GameDataSO (override or singleton)
+        GameDataSO gameConfig = gameDataOverride != null ? gameDataOverride : GameDataSO.Instance;
         
         if (gameConfig == null)
         {
-            Debug.LogError("GameConfig is null - cannot get end object position!");
+            Debug.LogError("GameDataSO is null - cannot get end object position!");
             return lastCavePosition;
         }
         

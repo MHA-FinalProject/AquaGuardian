@@ -10,7 +10,6 @@ using System.Linq;
  */
 public static class RegressionUtilities
 {
-    private const float TARGET_TOLERANCE = 5f;
     private const float RANDOM_SWEEP_THRESHOLD = 5.0f;
 
     public static void CalculateTrialStatistics(

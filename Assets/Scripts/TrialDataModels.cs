@@ -54,6 +54,7 @@ public static class TrialDataModels
         public bool completed;
         public bool isRandomParameters; // true if loaded from random_trial.csv
         public float trialDuration; // Duration in seconds
+        public int attemptNumber = 1; // Number of attempts for this trial (1 = first attempt, 2 = retry after failure, etc.)
 
         // Derived property: Effective drain rate (RemoveHealthEveryLifeTime / lifeTime)
         public float EffectiveDrainRate => RemoveHealthEveryLifeTime / Mathf.Max(0.1f, lifeTime);
@@ -93,12 +94,12 @@ public static class TrialDataModels
         [Header("Movement Parameters")]
         public Vector2 speedRange = new Vector2(10f, 40f);
         public Vector2 verticalSpeedRange = new Vector2(15f, 45f);
-        public Vector2 idleUpwardSpeedRange = new Vector2(0.01f, 3f);  // Changed: 5→3 (more realistic)
+        public Vector2 idleUpwardSpeedRange = new Vector2(0.01f, 3f);  // Changed: 5->3 (more realistic)
 
         [Header("Health Parameters")]
         public Vector2 healHealthPointRange = new Vector2(3f, 15f);
         public Vector2 timeBetweenCollidesRange = new Vector2(1f, 5f);
-        public Vector2 removeHealthWithCollideRange = new Vector2(5f, 20f);  // Changed: 15→20 (more damage for difficulty)
+        public Vector2 removeHealthWithCollideRange = new Vector2(5f, 20f);  // Changed: 15->20 (more damage for difficulty)
         public Vector2 RemoveHealthEveryLifeTimeRange = new Vector2(0.5f, 7f);  // Health removed every lifeTime cycle
         public Vector2 lifeTimeRange = new Vector2(0.5f, 4f);
         

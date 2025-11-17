@@ -1,4 +1,3 @@
-#if false
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -422,8 +421,9 @@ public class CaveTracker : MonoBehaviour
  
         
         // Export CSV and TXT files
-        ReportExporter.SaveSessionCsv(this, panel, health, pm);
-        ReportExporter.SaveSessionTxt(this, panel, health, pm);
+        // TODO: Uncomment when ReportExporter is implemented
+        // ReportExporter.SaveSessionCsv(this, panel, health, pm);
+        // ReportExporter.SaveSessionTxt(this, panel, health, pm);
      
     }
     
@@ -491,4 +491,3 @@ public class CaveTracker : MonoBehaviour
         Debug.Log("CaveTracker: Cave stats initialization complete!");
     }
 }
-#endif

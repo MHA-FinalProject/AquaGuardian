@@ -4,11 +4,11 @@ using TMPro;
 /**
  * Manages player movement (horizontal/vertical) and handles keyboard/Amadeo device input
  * Tracks input source for regression analysis. Supports unified movement system for both input modes
- * See also: getEventFromAmadeoClientDiver, GameStateManager, GameConfig
+ * See also: getEventFromAmadeoClientDiver, GameStateManager, GameDataSO
  */
 public class PlayerMovement : MonoBehaviour
 {
-    // ----- Movement Settings -----
+   
     [Header("Movement Settings")]
     public float speed;  // Speed of the player
     public TMP_InputField speed_inputField;  // Input field for speed
@@ -21,22 +21,34 @@ public class PlayerMovement : MonoBehaviour
 
     // ----- UI References -----
     [Header("UI References")]
-    public GameObject Panel;  // Reference to the UI panel
+    public GameObject Panel;
+
+    // ----- Game Data -----
+    [Header("Game Data (Optional - leave empty to use singleton)")]
+    [SerializeField] private GameDataSO gameDataOverride;
 
     // ----- Game State -----
     [Header("Game State")]
     public bool canMove = true;  // Flag to control if the player can move
     public bool afterText = false;  // Flag to check if the intro text has been shown
     private bool _debugLoggedOnce = false;  // Flag to log state once after intro
-    
+
+    // Helper method to get GameDataSO
+    private GameDataSO GetGameData()
+    {
+        return gameDataOverride != null ? gameDataOverride : GameDataSO.Instance;
+    }
+
     private float GetIdleUpwardFactor()
     {
-        return GameConfig.Instance != null ? GameConfig.Instance.idleUpwardFactor : 0.5f;
+        GameDataSO gameData = GetGameData();
+        return gameData != null ? gameData.idleUpwardFactor : 0.5f;
     }
-    
+
     public float GetCollisionDelay()
     {
-        return GameConfig.Instance != null ? GameConfig.Instance.playerCollisionDelay : 2f;
+        GameDataSO gameData = GetGameData();
+        return gameData != null ? gameData.playerCollisionDelay : 2f;
     }
 
     // ----- Scene References -----
@@ -71,25 +83,17 @@ public class PlayerMovement : MonoBehaviour
     {
         // Use GameStateManager for reliable state checking
         // Only allow movement after panel is closed AND intro text is complete
-        if (GameStateManager.Instance != null)
-        {
-            canMove = GameStateManager.Instance.IsPanelClosed && afterText;
-        }
-        else
-        {
-            // Fallback: Check if the panel is active and afterText is complete
-            if (Panel != null)
-            {
-                canMove = !Panel.activeSelf && afterText;
-            }
-        }
+        bool isPanelClosed = GameStateManager.Instance != null
+            ? GameStateManager.Instance.IsPanelClosed
+            : (Panel == null || !Panel.activeSelf);
+
+        canMove = isPanelClosed && afterText;
 
         // Debug log once after intro completes to see state
         if (afterText && !_debugLoggedOnce)
         {
             _debugLoggedOnce = true;
-            bool isPanelClosed = GameStateManager.Instance != null ? GameStateManager.Instance.IsPanelClosed : !Panel.activeSelf;
-            Debug.Log($"[PlayerMovement] After intro: afterText={afterText}, IsPanelClosed={isPanelClosed}, canMove={canMove}");
+         //   Debug.Log($"[PlayerMovement] After intro: afterText={afterText}, IsPanelClosed={isPanelClosed}, canMove={canMove}");
             if (!canMove)
             {
                 Debug.LogWarning("[PlayerMovement] WARNING: CANNOT MOVE! Panel might not be properly closed.");
@@ -122,7 +126,7 @@ public class PlayerMovement : MonoBehaviour
 
         // Calculate vertical movement speed based on input
         float verticalMovementSpeed;
-        
+
         if (Mathf.Abs(verticalInput) < verticalTolerance)
         {
             // Within tolerance: apply idle upward speed
@@ -142,8 +146,8 @@ public class PlayerMovement : MonoBehaviour
                 // Keyboard: multiply input by speed and add idle speed when moving down
                 verticalMovementSpeed = verticalInput * verticalSpeed;
                 if (verticalInput <= 0)
-        {
-            verticalMovementSpeed += idleUpwardSpeed;
+                {
+                    verticalMovementSpeed += idleUpwardSpeed;
                 }
             }
         }
@@ -164,7 +168,7 @@ public class PlayerMovement : MonoBehaviour
     {
         // Get keyboard input for vertical movement
         float upDownInput = Input.GetAxis("UpDown");   // Change in Edit -> Project Settings -> Input Manager -> Axes - UpDown
-        
+
         // Use unified movement function
         ApplyMovement(upDownInput);
     }
@@ -184,9 +188,7 @@ public class PlayerMovement : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Wall") || collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("Cave"))
         {
-            Debug.Log("collision " + gameObject.name + " " + collision.gameObject.name);
-
-          
+           // Debug.Log("collision " + gameObject.name + " " + collision.gameObject.name);
         }
     }
 

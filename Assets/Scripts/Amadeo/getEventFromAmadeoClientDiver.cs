@@ -77,7 +77,7 @@ public class getEventFromAmadeoClientDiver : MonoBehaviour
                 pm.notGetForcesFromAmadeo = false;
 
                 // Parse factor force from input field
-                float factorForce = 10f; // Default value
+                float factorForce = factor_forces; // Default value from serialized field
                 if (factor_force_inputField != null && !string.IsNullOrEmpty(factor_force_inputField.text))
                 {
                     if (float.TryParse(factor_force_inputField.text, out float parsedFactor))

@@ -542,17 +542,81 @@ public static class TrialDataService
                 return false;
             }
 
-            // Determine if this is the first trial of a new run
-            bool isFirstTrialOfRun = (trialData.trialId == 1);
-
             // Parse header
             var headerFields = lines[0].Split(',').ToList();
 
-            // Find or create new oxygen column
+            // Find the last oxygen column
+            int lastO2ColumnIndex = -1;
+            for (int i = headerFields.Count - 1; i >= 0; i--)
+            {
+                if (headerFields[i].StartsWith("o2_run"))
+                {
+                    lastO2ColumnIndex = i;
+                    break;
+                }
+            }
+
+            // Check if we need to create a new column or use existing one
             string newColumnName = "";
             int newColumnIndex = -1;
+            bool needNewColumn = false;
 
-            if (isFirstTrialOfRun)
+            // Determine if this is the first trial of a new run
+            bool isFirstTrialOfRun = (trialData.trialId == 1);
+
+            // Check if we need a new column by examining if current trial already has data in last column
+            if (lastO2ColumnIndex >= 0)
+            {
+                // Find this trial's row and check if it has data in the last column
+                for (int i = 1; i < lines.Count; i++)
+                {
+                    var fields = lines[i].Split(',').ToList();
+                    if (fields.Count > 0 && int.TryParse(fields[0], out int trialId) && trialId == trialData.trialId)
+                    {
+                        // Check if last column has data for THIS trial
+                        if (lastO2ColumnIndex < fields.Count && !string.IsNullOrWhiteSpace(fields[lastO2ColumnIndex]))
+                        {
+                            // Data exists - check if it's a failed attempt (0 or very close to 0)
+                            if (float.TryParse(fields[lastO2ColumnIndex], out float existingO2) && existingO2 <= 0.1f)
+                            {
+                                // Previous attempt was a failure (0%) - overwrite it instead of creating new column
+                                newColumnIndex = lastO2ColumnIndex;
+                                newColumnName = headerFields[lastO2ColumnIndex];
+                                trialData.attemptNumber = 2; // Mark as second attempt
+                                Debug.Log($"[TrialDataService] Trial {trialData.trialId} has failed attempt ({existingO2}%) in {headerFields[lastO2ColumnIndex]}, overwriting with attempt #{trialData.attemptNumber}");
+                            }
+                            else
+                            {
+                                // Previous attempt was successful - create new column for retry
+                                needNewColumn = true;
+                                Debug.Log($"[TrialDataService] Trial {trialData.trialId} already has successful data ({existingO2}%) in {headerFields[lastO2ColumnIndex]}, creating new column for retry");
+                            }
+                        }
+                        else
+                        {
+                            // No data yet - use existing column
+                            newColumnIndex = lastO2ColumnIndex;
+                            newColumnName = headerFields[lastO2ColumnIndex];
+                        }
+                        break;
+                    }
+                }
+                
+                // If trial row not found, use existing column
+                if (!needNewColumn && newColumnIndex == -1)
+                {
+                    newColumnIndex = lastO2ColumnIndex;
+                    newColumnName = headerFields[lastO2ColumnIndex];
+                }
+            }
+            else
+            {
+                // No oxygen columns exist yet - create first one
+                needNewColumn = true;
+            }
+
+            // Create new column if needed
+            if (needNewColumn || (isFirstTrialOfRun && lastO2ColumnIndex == -1))
             {
                 // Count existing oxygen columns to determine run number
                 int runNumber = headerFields.Count(h => h.StartsWith("o2_run")) + 1;
@@ -562,25 +626,8 @@ public static class TrialDataService
                 headerFields.Add(newColumnName);
                 lines[0] = string.Join(",", headerFields);
                 newColumnIndex = headerFields.Count - 1;
-            }
-            else
-            {
-                // Use the last oxygen column (most recent run)
-                for (int i = headerFields.Count - 1; i >= 0; i--)
-                {
-                    if (headerFields[i].StartsWith("o2_run"))
-                    {
-                        newColumnIndex = i;
-                        newColumnName = headerFields[i];
-                        break;
-                    }
-                }
-
-                if (newColumnIndex == -1)
-                {
-                    Debug.LogError("No oxygen column found for subsequent trials!");
-                    return false;
-                }
+                
+                Debug.Log($"[TrialDataService] Creating new run column: {newColumnName} (Trial {trialData.trialId})");
             }
 
             // Update the trial row

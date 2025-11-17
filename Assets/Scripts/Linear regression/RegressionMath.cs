@@ -18,9 +18,7 @@ public static class RegressionMath
     
     #region Gradient Descent Optimization
     
-    /**
-     * Calculate effective coefficient including chain rule for derived features
-     */
+    // Calculate effective coefficient including chain rule for derived features
     public static float EffectiveBeta(
         MultipleLinearRegression model,
         int featureIndex,
@@ -40,9 +38,7 @@ public static class RegressionMath
         int modelIdx = System.Array.IndexOf(modelFeatureNames, featureName);
         
         if (modelIdx < 0 || modelIdx + 1 >= model.coefficients.Length)
-        {
             return 0f;  // Feature not in model
-        }
         
         // Get direct coefficient
         float beta = model.coefficients[modelIdx + 1];
@@ -56,7 +52,7 @@ public static class RegressionMath
         float effectiveDrainRateBeta = (drainRateModelIdx >= 0 && drainRateModelIdx + 1 < model.coefficients.Length) 
             ? model.coefficients[drainRateModelIdx + 1] : 0f;
         
-        // Chain rule for lifeTime: ∂EDR/∂lifeTime = -RemoveHealthEveryLifeTime / lifeTime²
+        // Chain rule for lifeTime: dEDR/d lifeTime = -RemoveHealthEveryLifeTime / (lifeTime^2)
         if (featureIndex == 3) // lifeTime
         {
             float currentDrop = ParameterHelper.Get(currentParams, 4);
@@ -70,7 +66,7 @@ public static class RegressionMath
                 beta += effectiveDrainRateBeta * normalizedDerivative;
             }
         }
-        // Chain rule for RemoveHealthEveryLifeTime: ∂EDR/∂drop = 1 / lifeTime
+        // Chain rule for RemoveHealthEveryLifeTime: dEDR/d drop = 1 / lifeTime
         else if (featureIndex == 4) // RemoveHealthEveryLifeTime
         {
             float currentLife = ParameterHelper.Get(currentParams, 3);
@@ -87,9 +83,7 @@ public static class RegressionMath
         return beta;
     }
 
-    /**
-     * Calculate sum of squared betas for global normalization in gradient descent
-     */
+    // Calculate sum of squared betas for global normalization in gradient descent
     public static float SumBetaSq(
         MultipleLinearRegression model,
         int[] freeFeatures,
@@ -111,14 +105,10 @@ public static class RegressionMath
     
     #region NaN/Inf Protection
     
-    /**
-     * Check if a value is NaN or Infinity
-     */
+  
     public static bool IsBad(float v) => float.IsNaN(v) || float.IsInfinity(v);
     
-    /**
-     * Clean NaN/Inf values in a vector
-     */
+  
     public static void CleanVector(float[] v, float replacement = NAN_REPLACEMENT)
     {
         if (v == null) return;
@@ -137,9 +127,7 @@ public static class RegressionMath
         }
     }
     
-    /**
-     * Clean NaN/Inf values in a matrix
-     */
+    // Clean NaN/Inf values in a matrix
     public static void CleanMatrix(float[][] X, float replacement = NAN_REPLACEMENT)
     {
         if (X == null) return;

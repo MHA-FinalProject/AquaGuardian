@@ -12,7 +12,7 @@ using System.Linq;
    * game systems such as AmadeoClient and TrialSystemManager.
    */
 
-public partial class PanelOpenUp : MonoBehaviour
+public class PanelOpenUp : MonoBehaviour
 {
 
     [Header("Amadeo Client and UI Components")]
@@ -45,12 +45,56 @@ public partial class PanelOpenUp : MonoBehaviour
     [Header("Cave Building")]
     [SerializeField] private CaveBuilder caveBuilder;
 
+    [Header("Game Data (Optional - leave empty to use singleton)")]
+    [SerializeField] private GameDataSO gameDataOverride;
+
     // Cave info is now managed by CaveBuilder
-    public List<TrialDataModels.CaveInfo> caveInfos => caveBuilder != null ? caveBuilder.CaveInfos : new List<TrialDataModels.CaveInfo>();
+    // Access via: caveBuilder.CaveInfos
+    
+    // Public property to access cave infos
+    public List<TrialDataModels.CaveInfo> caveInfos
+    {
+        get { return caveBuilder != null ? caveBuilder.CaveInfos : null; }
+    }
+    
+    // Method to clear cave infos (delegates to CaveBuilder)
+    public void ClearCaveInfos()
+    {
+        if (caveBuilder != null)
+        {
+            caveBuilder.CaveInfos.Clear();
+        }
+    }
 
     private TextAsset originalCaveFile;
 
+    // Helper properties and methods
+    private bool IsInTrialsMode => trialSystemManager != null && trialSystemManager.TrialsMode;
 
+    private void SetCaveFile(TextAsset file)
+    {
+        csvFile = file;
+        if (caveBuilder != null)
+        {
+            caveBuilder.SetCSVFile(file);
+        }
+    }
+
+    private void SetupChestPrefab()
+    {
+        if (fishSpawner != null && chest != null)
+        {
+            fishSpawner.SetChestPrefab(chest);
+        }
+    }
+
+    private void TrackSpawnedObject(GameObject obj)
+    {
+        if (systemResetter != null && obj != null)
+        {
+            systemResetter.TrackSpawned(obj);
+        }
+    }
 
     void Start()
     {
@@ -61,17 +105,15 @@ public partial class PanelOpenUp : MonoBehaviour
         originalCaveFile = csvFile;
 
         // Load CSV via CaveBuilder
-        if (csvFile != null && caveBuilder != null)
+        if (csvFile != null)
         {
-            caveBuilder.SetCSVFile(csvFile);
+            SetCaveFile(csvFile);
         }
-        else if (csvFile == null)
+        else
         {
             Debug.LogError("No CSV file assigned!");
         }
 
-        // Subscribe to events
-        GameStateManager.OnGameEnded += OnGameEnded;
         
         // Check if panel is already closed (e.g., after scene restart)
         // If panel is closed, notify GameStateManager immediately
@@ -92,10 +134,6 @@ public partial class PanelOpenUp : MonoBehaviour
         Cursor.visible = true;
     }
 
-    void OnDestroy()
-    {
-        GameStateManager.OnGameEnded -= OnGameEnded;
-    }
 
     private void AutoWireManagers()
     {
@@ -127,10 +165,7 @@ public partial class PanelOpenUp : MonoBehaviour
             }
         }
 
-        if (fishSpawner != null && chest != null)
-        {
-            fishSpawner.SetChestPrefab(chest);
-        }
+        SetupChestPrefab();
 
         if (uiController == null)
         {
@@ -181,16 +216,13 @@ public partial class PanelOpenUp : MonoBehaviour
             return;
         }
 
-        caveBuilder.SetCSVFile(csvFile);
+        SetCaveFile(csvFile);
 
         Vector3 lastCavePosition = caveBuilder.BuildAllCaves(caveObject, oxygenObject, wall, arrows);
 
         foreach (var obj in caveBuilder.GetSpawnedObjects())
         {
-            if (systemResetter != null)
-            {
-                systemResetter.TrackSpawned(obj);
-            }
+            TrackSpawnedObject(obj);
         }
 
         if (_client != null)
@@ -199,11 +231,7 @@ public partial class PanelOpenUp : MonoBehaviour
         }
 
         Vector3 endPosition = caveBuilder.GetEndObjectPosition(lastCavePosition);
-
-        if (fishSpawner != null && chest != null)
-        {
-            fishSpawner.SetChestPrefab(chest);
-        }
+        SetupChestPrefab();
 
         GameObject endObject = CreateEndObject(endPosition);
 
@@ -215,27 +243,21 @@ public partial class PanelOpenUp : MonoBehaviour
         playerLife.didntGetInputsYet = true;
         health.didntGetInputsYet = true;
 
-        bool inTrialsMode = (trialSystemManager != null && trialSystemManager.TrialsMode);
-        if (!inTrialsMode)
+        if (!IsInTrialsMode && GameStateManager.Instance != null)
         {
-            GameStateManager.Instance?.NotifyPanelClosed();
+            GameStateManager.Instance.NotifyPanelClosed();
         }
     }
 
     private GameObject CreateEndObject(Vector3 position)
     {
-        bool inTrialsMode = (trialSystemManager != null && trialSystemManager.TrialsMode);
-
-        if (inTrialsMode)
+        if (IsInTrialsMode)
         {
             // Use TrialFishSpawner to create fish
             if (fishSpawner != null && trialSystemManager != null)
             {
                 GameObject fish = fishSpawner.CreateTrialFish(position, trialSystemManager.CurrentTrialNumber);
-                if (fish != null && systemResetter != null)
-                {
-                    systemResetter.TrackSpawned(fish);
-                }
+                TrackSpawnedObject(fish);
                 return fish;
             }
 
@@ -248,20 +270,14 @@ public partial class PanelOpenUp : MonoBehaviour
             emergencyFish.tag = "TrialFish";
             emergencyFish.GetComponent<Collider>().isTrigger = true;
             emergencyFish.GetComponent<MeshRenderer>().material.color = Color.red;
-            if (systemResetter != null)
-            {
-                systemResetter.TrackSpawned(emergencyFish);
-            }
+            TrackSpawnedObject(emergencyFish);
             return emergencyFish;
         }
         else
         {
             // Normal mode - create chest
             GameObject chestObj = Instantiate(chest, position, Quaternion.identity);
-            if (systemResetter != null)
-            {
-                systemResetter.TrackSpawned(chestObj);
-            }
+            TrackSpawnedObject(chestObj);
             return chestObj;
         }
     }
@@ -278,35 +294,23 @@ public partial class PanelOpenUp : MonoBehaviour
         }
     }
 
-    private void OnGameEnded(float finalOxygen, bool completed)
-    {
-        if (trialSystemManager == null || !trialSystemManager.TrialsMode)
-        {
-            //Debug.Log($"Game ended (normal mode): oxygen={finalOxygen:F1}%, completed={completed}");
-        }
-    }
 
     public void LoadCaveFileForTrial(int trialNumber)
     {
         int caveIndex = trialNumber - 1;
 
-        // Get config from GameConfig.Instance
-        if (GameConfig.Instance == null)
+        // Get config from GameDataSO (override or singleton)
+        GameDataSO config = gameDataOverride != null ? gameDataOverride : GameDataSO.Instance;
+        if (config == null)
         {
-            Debug.LogError("GameConfig.Instance is null! Cannot load cave file for trial.");
+            Debug.LogError("GameDataSO is null! Cannot load cave file for trial.");
             return;
         }
-
-        var config = GameConfig.Instance;
 
         // Try TextAsset array first
         if (config.caveFiles != null && caveIndex >= 0 && caveIndex < config.caveFiles.Length && config.caveFiles[caveIndex] != null)
         {
-            csvFile = config.caveFiles[caveIndex];
-            if (caveBuilder != null)
-            {
-                caveBuilder.SetCSVFile(csvFile);
-            }
+            SetCaveFile(config.caveFiles[caveIndex]);
             return;
         }
 
@@ -329,11 +333,7 @@ public partial class PanelOpenUp : MonoBehaviour
         }
 
         // Final fallback to original
-        csvFile = originalCaveFile;
-        if (caveBuilder != null)
-        {
-            caveBuilder.SetCSVFile(csvFile);
-        }
+        SetCaveFile(originalCaveFile);
     }
 
 
@@ -341,11 +341,7 @@ public partial class PanelOpenUp : MonoBehaviour
     {
         if (originalCaveFile != null)
         {
-            csvFile = originalCaveFile;
-            if (caveBuilder != null)
-            {
-                caveBuilder.SetCSVFile(csvFile);
-            }
+            SetCaveFile(originalCaveFile);
         }
     }
 }
