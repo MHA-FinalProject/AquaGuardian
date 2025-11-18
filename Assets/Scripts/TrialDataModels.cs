@@ -1,14 +1,17 @@
 using UnityEngine;
 using System;
 
-
-/** 
- * Data models for regression analysis system
- * TrialData: Game parameters + results (10 params + oxygen %)
- * RegressionResult: ML analysis results with optimized parameters
- * CaveInfo: Cave geometry data
- * ParameterRanges: Valid parameter ranges for optimization
-    */
+/**
+ * TrialDataModels - Core data structures for AquaGuardian
+ * 
+ * This static class contains all primary data models used across the game:
+ * 
+ * Models:
+ *   - TrialData: Trial parameters, results, and metadata
+ *   - RegressionResult: Machine learning regression analysis results
+ *   - CaveInfo: Cave geometry and positioning data (used in BOTH trial and regular modes)
+ *   - ParameterRanges: Valid parameter ranges for trial generation and optimization
+ */
 public static class TrialDataModels
 {
     /**
@@ -36,6 +39,10 @@ public static class TrialDataModels
 
     public static int FeatureCount => FeatureNames.Length;
 
+    /// <summary>
+    /// TrialData - Complete trial information including parameters and results
+    /// Used in: Trial system, Regression analysis, CSV export/import
+    /// </summary>
     [Serializable]
     public class TrialData
     {
@@ -63,6 +70,11 @@ public static class TrialDataModels
         public float EffectiveCollisionDamageRate => removeHealthWithCollide / Mathf.Max(0.1f, timeBetweenCollides);
     }
 
+    /// <summary>
+    /// RegressionResult - Machine learning regression analysis output
+    /// Contains predictions, optimized parameters, and detailed reports
+    /// Used in: TrialRegressionAlgorithm, TrialRegressionUI, TrialReportGenerator
+    /// </summary>
     [Serializable]
     public class RegressionResult
     {
@@ -74,7 +86,11 @@ public static class TrialDataModels
         public float optimizedSolutionError;  // Prediction error of optimized solution (%)
     }
 
- 
+    /// <summary>
+    /// CaveInfo - Cave geometry and spatial data
+    /// SHARED STRUCTURE: Used in both regular gameplay and trial mode
+    /// Used in: CaveBuilder, CaveTracker, PanelOpenUp, TrialSystemManager
+    /// </summary>
     [Serializable]
     public class CaveInfo
     {
@@ -87,11 +103,16 @@ public static class TrialDataModels
         public float distanceFromPrevious;
     }
 
-
+    /// <summary>
+    /// ParameterRanges - Valid ranges for game parameters
+    /// Used for: Trial generation, Random parameter creation, Optimization constraints
+    /// Used in: TrialParameterManager, DifficultyParameterSolver, FeatureExtractor
+    /// </summary>
     [Serializable]
     public class ParameterRanges
     {
         [Header("Movement Parameters")]
+        
         public Vector2 speedRange = new Vector2(10f, 40f);
         public Vector2 verticalSpeedRange = new Vector2(15f, 45f);
         public Vector2 idleUpwardSpeedRange = new Vector2(0.01f, 3f);  // Changed: 5->3 (more realistic)
@@ -104,6 +125,7 @@ public static class TrialDataModels
         public Vector2 lifeTimeRange = new Vector2(0.5f, 4f);
         
         [Header("Force Multiplication")]
+        [Tooltip("Factor for Amadeo device force multiplication (0 for keyboard)")]
         public Vector2 factorForceRange = new Vector2(0.5f, 5f);  // Factor for force multiplication
     }
 }

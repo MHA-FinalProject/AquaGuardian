@@ -52,7 +52,7 @@ public class TrialDataCache : MonoBehaviour
     {
         currentRunOxygenValues.Clear();
         currentRunNumber++;
-        Debug.Log($"[Cache] Started Run #{currentRunNumber}");
+       // Debug.Log($"[Cache] Started Run #{currentRunNumber}");
     }
     
     public void AppendTrial(int trialId, float oxygenRemaining)
@@ -130,11 +130,6 @@ public class TrialDataCache : MonoBehaviour
     [ContextMenu("Print Cache State")]
     public void PrintCacheState()
     {
-        foreach (var kvp in currentRunOxygenValues.OrderBy(x => x.Key))
-        {
-            // Debug.Log($"  Trial {kvp.Key}: {kvp.Value:F1}%");
-        }
-        
         for (int i = 0; i < allRunsHistory.Count; i++)
         {
             var run = allRunsHistory[i];

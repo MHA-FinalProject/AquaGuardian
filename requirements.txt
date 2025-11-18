@@ -5,4 +5,4 @@ scikit-learn>=1.0.0
 
 # Server dependencies (optional - only needed for regression_server.py)
 flask>=2.0.0
-flask-cors>=3.0.0
+Flask-Cors>=3.0.0

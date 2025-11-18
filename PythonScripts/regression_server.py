@@ -87,12 +87,12 @@ def load_trial_data_from_csv(csv_path):
     
     if not valid_mask.all():
         n_removed = (~valid_mask).sum()
-        print(f"⚠ Warning: Removed {n_removed} rows with NaN values")
+        print(f" Warning: Removed {n_removed} rows with NaN values")
         y = y[valid_mask]
         X = X[valid_mask]
-        print(f"✓ Valid samples remaining: {len(y)}")
+        print(f" Valid samples remaining: {len(y)}")
     else:
-        print(f"✓ All {len(y)} samples are valid (no NaN values)")
+        print(f" All {len(y)} samples are valid (no NaN values)")
     
     if len(y) == 0:
         raise ValueError("No valid samples found after removing NaN values")
@@ -270,8 +270,6 @@ if __name__ == '__main__':
     print("   - POST /predict - Predict oxygen from features")
     print("   - GET  /model/download - Download model as JSON")
     print("   - GET  /health - Health check")
-    print("\n   Example:")
-    print('   curl -X POST http://localhost:5000/train -H "Content-Type: application/json" -d \'{"csv_path": "Assets/Data/Trials/Trial_5_runs_.csv", "model_type": "ElasticNet"}\'')
     print("\n   Server running on http://localhost:5000")
     app.run(host='0.0.0.0', port=5000, debug=True)
 

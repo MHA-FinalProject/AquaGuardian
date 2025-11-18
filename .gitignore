@@ -25,6 +25,8 @@
 
 # Visual Studio cache directory
 .vs/
+.cursor/
+./
 # orel use this 
 
 /Assets/Scripts/DifficultySystem_Future/
@@ -37,6 +39,7 @@
 # Generated reports
 Assets/Subject/
 README_REGRESSION_SYSTEM.md
+.
 
 
 # Temp screenshots and test images
