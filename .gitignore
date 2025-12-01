@@ -49,6 +49,10 @@ Assets/**/צילום*
 Assets/**/ל*.png
 Assets/Data/RegressionResults/
 
+# Screenshots in root directory (should be in docs/images/)
+צילום מסך*.png
+צילום מסך*.jpg
+
 
 
 

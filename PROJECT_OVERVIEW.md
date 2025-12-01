@@ -715,19 +715,20 @@ If both fail: use Baseline Fallback
   then
 Report shows: [Selected: method_name]
 ```
-# ScreenShots
-![alt text](<צילום מסך 2025-12-01 124550-1.png>)
+# Screenshots
 
-![alt text](<צילום מסך 2025-12-01 213208.png>)
+![Screenshot 1](<docs/images/צילום מסך 2025-12-01 124550-1.png>)
 
-![alt text](<צילום מסך 2025-12-01 213254.png>)
+![Screenshot 2](<docs/images/צילום מסך 2025-12-01 213208.png>)
 
-![alt text](<צילום מסך 2025-12-01 213327.png>)
+![Screenshot 3](<docs/images/צילום מסך 2025-12-01 213254.png>)
 
-![alt text](<צילום מסך 2025-12-01 213345.png>)
+![Screenshot 4](<docs/images/צילום מסך 2025-12-01 213327.png>)
 
-![alt text](<צילום מסך 2025-12-01 213547.png>)
+![Screenshot 5](<docs/images/צילום מסך 2025-12-01 213345.png>)
 
-![alt text](<צילום מסך 2025-12-01 143048-1.png>)
+![Screenshot 6](<docs/images/צילום מסך 2025-12-01 213547.png>)
 
-![alt text](<צילום מסך 2025-12-01 165038-1.png>)
+![Screenshot 7](<docs/images/צילום מסך 2025-12-01 143048-1.png>)
+
+![Screenshot 8](<docs/images/צילום מסך 2025-12-01 165038-1.png>)
