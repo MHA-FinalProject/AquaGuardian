@@ -29,6 +29,9 @@ public static class TrialDataModels
      * 8. healHealthPoint - Oxygen restored by health packs
      * 9. factorForce - Amadeo device force multiplier (0 for keyboard)
      * 10. EffectiveDrainRate - Derived: RemoveHealthEveryLifeTime / lifeTime
+     * 
+     * NOTE: EffectiveDrainRate is used in regression but banned from optimization
+     * (to prevent multicollinearity in parameter optimization)
      */
     public static readonly string[] FeatureNames =
     {
@@ -115,7 +118,7 @@ public static class TrialDataModels
         
         public Vector2 speedRange = new Vector2(10f, 40f);
         public Vector2 verticalSpeedRange = new Vector2(15f, 45f);
-        public Vector2 idleUpwardSpeedRange = new Vector2(0.01f, 3f);  // Changed: 5->3 (more realistic)
+        public Vector2 idleUpwardSpeedRange = new Vector2(0.01f, 8f); 
 
         [Header("Health Parameters")]
         public Vector2 healHealthPointRange = new Vector2(3f, 15f);
@@ -126,7 +129,7 @@ public static class TrialDataModels
         
         [Header("Force Multiplication")]
         [Tooltip("Factor for Amadeo device force multiplication (0 for keyboard)")]
-        public Vector2 factorForceRange = new Vector2(0.5f, 5f);  // Factor for force multiplication
+        public Vector2 factorForceRange = new Vector2(0.5f, 15f);  // Factor for force multiplication
     }
 }
 

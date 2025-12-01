@@ -81,7 +81,7 @@ public class GameStateManager : MonoBehaviour
     public static void SetTrialsActive(bool active)
     {
         _trialsActive = active;
-        Debug.Log($"[GameStateManager] Trials set to: {active}");
+        //Debug.Log($"[GameStateManager] Trials set to: {active}");
     }
     
     public static void NotifyGameEnded(float oxygen, bool completed)

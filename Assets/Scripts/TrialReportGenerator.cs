@@ -22,8 +22,6 @@ public static class TrialReportGenerator
         {"healHealthPoint", "Heal health points"},
         {"factorForce", "Force multiplier"},
         {"EffectiveDrainRate", "Effective drain rate"}
-        // {"EffectiveCollisionDamageRate", "Effective collision damage rate"}  // REMOVED: redundant
-        // To restore: uncomment above and update FeatureExtractor
     };
 
     private static string FormatDisplayName(string rawName)
@@ -61,7 +59,12 @@ public static class TrialReportGenerator
         OxygenPredictor predictor,
         TrialDataModels.TrialData optimizedSolution,
         float optimizedSolutionError,
-        float targetOxygen)
+        float targetOxygen,
+        TrialDataModels.TrialData gradientSolution = null,
+        float gradientError = float.NaN,
+        TrialDataModels.TrialData sweepSolution = null,
+        float sweepError = float.NaN,
+        string selectedMethod = null)  // Parameters kept for API compatibility but not used in summary
     {
         int randomCount = trials.Count(t => t.isRandomParameters);
         int regularCount = trials.Count - randomCount;
@@ -69,8 +72,14 @@ public static class TrialReportGenerator
         // Short summary (5-8 lines max)
         string summary = "Summary of the regression analysis:\n\n";
         
-        // Line 1: Basic info
-        summary += $"Trials: {trials.Count} | Target: {targetOxygen.ToString("F1", CI)}% | Avg Error: {avgError.ToString("F2", CI)}%\n\n";
+        // Line 1: Basic info with model metrics
+        var model = predictor?.GetModel();
+        string metricsStr = "";
+        if (model != null)
+        {
+            metricsStr = $" | R^2={model.rSquared.ToString("F3", CI)} RMSE={model.rootMeanSquaredError.ToString("F2", CI)}% MAE={avgError.ToString("F2", CI)}%";
+        }
+        summary += $"Trials: {trials.Count} | Target: {targetOxygen.ToString("F1", CI)}%{metricsStr}\n\n";
         
         // Line 2-3: Optimized parameters (all in one compact line)
         if (optimizedSolution != null)
@@ -90,7 +99,6 @@ public static class TrialReportGenerator
         }
 
         // Line 5-6: Model coefficients (compact)
-        var model = predictor?.GetModel();
         if (model != null && model.coefficients != null && model.coefficients.Length > 0)
         {
             summary += "The coefficients of the regression model are as follows:\n";
@@ -118,7 +126,12 @@ public static class TrialReportGenerator
         OxygenPredictor predictor,
         TrialDataModels.TrialData optimizedSolution,
         float optimizedSolutionError,
-        float targetOxygen)
+        float targetOxygen,
+        TrialDataModels.TrialData gradientSolution = null,
+        float gradientError = float.NaN,
+        TrialDataModels.TrialData sweepSolution = null,
+        float sweepError = float.NaN,
+        string selectedMethod = null)
     {
         int randomCount = trials.Count(t => t.isRandomParameters);
         int regularCount = trials.Count - randomCount;
@@ -134,12 +147,11 @@ public static class TrialReportGenerator
         string trialList = $"[{string.Join(",", selectedTrialIds)}]";
         report += $"Avg : {avgOxygen.ToString("F1", CI)}%  | Data Source: {dataSource} | Trials: {trialList} \n";
         
-        // Line 3: "R^2=0.996 AdjR^2=NaN RMSE=1.21% MAE=0.93%"
+        // Line 3: Model metrics in one line
         var model = predictor?.GetModel();
         if (model != null)
         {
-            string adjR2 = float.IsNaN(model.adjustedRSquared) ? "NaN" : model.adjustedRSquared.ToString("F3", CI);
-            report += $"R^2={model.rSquared.ToString("F3", CI)} AdjR^2={adjR2} RMSE={model.rootMeanSquaredError.ToString("F2", CI)}% MAE={avgError.ToString("F2", CI)}%\n";
+            report += $"R^2={model.rSquared.ToString("F3", CI)} RMSE={model.rootMeanSquaredError.ToString("F2", CI)}% MAE={avgError.ToString("F2", CI)}%\n";
         }
         
         // Line 4: "input type : keyboard" or "input type : amadeo"
@@ -302,8 +314,31 @@ public static class TrialReportGenerator
             
             report += $"OPTIMIZED PARAMETERS FOR TARGET {targetOxygen.ToString("F0", CI)}% OXYGEN\n";
             report += "\n";
-            report += $"Predicted: {predictedOptimal.ToString("F2", CI)}% | Error: {optimizedSolutionError.ToString("F3", CI)}%\n";
+            
+            // Show selected method
+            string methodStr = !string.IsNullOrEmpty(selectedMethod) ? $" [Selected: {selectedMethod}]" : "";
+            report += $"Predicted: {predictedOptimal.ToString("F2", CI)}% | Error: {optimizedSolutionError.ToString("F3", CI)}%{methodStr}\n";
             report += "\n";
+            
+            // Show optimization comparison if both methods were run
+            bool hasGradient = gradientSolution != null && !float.IsNaN(gradientError);
+            bool hasSweep = sweepSolution != null && !float.IsNaN(sweepError);
+            if (hasGradient || hasSweep)
+            {
+                report += "=== Optimization Comparison ===\n";
+                if (hasGradient)
+                {
+                    float gradientPred = predictor.PredictOxygen(gradientSolution);
+                    report += $"Gradient 3-Phase: Predicted {gradientPred.ToString("F2", CI)}% (err={gradientError.ToString("F2", CI)}%)\n";
+                }
+                if (hasSweep)
+                {
+                    float sweepPred = predictor.PredictOxygen(sweepSolution);
+                    report += $"RandomSweep:      Predicted {sweepPred.ToString("F2", CI)}% (err={sweepError.ToString("F2", CI)}%)\n";
+                }
+                report += "\n";
+            }
+            
             report += "Parameters:\n";
             report += $"  Speed               = {optimizedSolution.speed.ToString("F2", CI).PadLeft(8)}\n";
             report += $"  VerticalSpeed       = {optimizedSolution.verticalSpeed.ToString("F2", CI).PadLeft(8)}\n";
@@ -328,7 +363,11 @@ public static class TrialReportGenerator
         TrialDataModels.TrialData solution,
         float solutionError,
         float targetOxygen,
-        (string feature, float importance)[] importance = null)
+        (string feature, float importance)[] importance = null,
+        TrialDataModels.TrialData pythonGradientSolution = null,
+        float pythonGradientError = float.MaxValue,
+        TrialDataModels.TrialData csharpSweepSolution = null,
+        float csharpSweepError = float.MaxValue)
     {
         var modelData = pythonModel?.Model;
         string modelType = modelData?.model_type ?? "Unknown";
@@ -362,9 +401,38 @@ public static class TrialReportGenerator
             float idleEffective = isAmadeo ? solution.idleUpwardSpeed * 0.5f : solution.idleUpwardSpeed;
             
             builder.AppendLine("Based on your trial performance, the following parameters have been determined:");
-            builder.AppendLine($"speed: {solution.speed.ToString("F2", CI)}, verticalSpeed: {solution.verticalSpeed.ToString("F2", CI)}, idleUpwardSpeed: {idleEffective.ToString("F2", CI)}, lifeTime: {solution.lifeTime.ToString("F2", CI)}, RemoveHealthEveryLifeTime: {solution.RemoveHealthEveryLifeTime.ToString("F2", CI)}, removeHealthWithCollide: {solution.removeHealthWithCollide.ToString("F2", CI)}, timeBetweenCollides: {solution.timeBetweenCollides.ToString("F2", CI)}, healHealthPoint: {solution.healHealthPoint.ToString("F2", CI)}, factorForce: {factorForceEff.ToString("F2", CI)}");
+            
+            // Show C# (Built-in) parameters first
+            if (csharpSweepSolution != null && csharpSweepError < float.MaxValue)
+            {
+                float csharpPred = pythonModel.PredictOxygen(csharpSweepSolution);
+                bool csharpIsAmadeo = csharpSweepSolution.IsAmadeoMode > 0.5f;
+                float csharpFactorForceEff = csharpIsAmadeo ? csharpSweepSolution.factorForce : 0f;
+                float csharpIdleEffective = csharpIsAmadeo ? csharpSweepSolution.idleUpwardSpeed * 0.5f : csharpSweepSolution.idleUpwardSpeed;
+                
+                builder.AppendLine($"Built-in (C#): speed={csharpSweepSolution.speed.ToString("F2", CI)}, vSpeed={csharpSweepSolution.verticalSpeed.ToString("F2", CI)}, idle={csharpIdleEffective.ToString("F2", CI)}, life={csharpSweepSolution.lifeTime.ToString("F2", CI)}, drain={csharpSweepSolution.RemoveHealthEveryLifeTime.ToString("F2", CI)}, collide={csharpSweepSolution.removeHealthWithCollide.ToString("F2", CI)}, timeColl={csharpSweepSolution.timeBetweenCollides.ToString("F2", CI)}, heal={csharpSweepSolution.healHealthPoint.ToString("F2", CI)}, force={csharpFactorForceEff.ToString("F2", CI)} | Pred: {csharpPred.ToString("F2", CI)}% (err={csharpSweepError.ToString("F2", CI)}%)");
+            }
+            
+            // Show Python model parameters
+            if (pythonGradientSolution != null && pythonGradientError < float.MaxValue)
+            {
+                float pythonPred = pythonModel.PredictOxygen(pythonGradientSolution);
+                bool pythonIsAmadeo = pythonGradientSolution.IsAmadeoMode > 0.5f;
+                float pythonFactorForceEff = pythonIsAmadeo ? pythonGradientSolution.factorForce : 0f;
+                float pythonIdleEffective = pythonIsAmadeo ? pythonGradientSolution.idleUpwardSpeed * 0.5f : pythonGradientSolution.idleUpwardSpeed;
+                
+                builder.AppendLine($"Python Model: speed={pythonGradientSolution.speed.ToString("F2", CI)}, vSpeed={pythonGradientSolution.verticalSpeed.ToString("F2", CI)}, idle={pythonIdleEffective.ToString("F2", CI)}, life={pythonGradientSolution.lifeTime.ToString("F2", CI)}, drain={pythonGradientSolution.RemoveHealthEveryLifeTime.ToString("F2", CI)}, collide={pythonGradientSolution.removeHealthWithCollide.ToString("F2", CI)}, timeColl={pythonGradientSolution.timeBetweenCollides.ToString("F2", CI)}, heal={pythonGradientSolution.healHealthPoint.ToString("F2", CI)}, force={pythonFactorForceEff.ToString("F2", CI)} | Pred: {pythonPred.ToString("F2", CI)}% (err={pythonGradientError.ToString("F2", CI)}%)");
+            }
+            
+            // Fallback if no comparison available
+            if (csharpSweepSolution == null && pythonGradientSolution == null)
+            {
+                builder.AppendLine($"speed: {solution.speed.ToString("F2", CI)}, verticalSpeed: {solution.verticalSpeed.ToString("F2", CI)}, idleUpwardSpeed: {idleEffective.ToString("F2", CI)}, lifeTime: {solution.lifeTime.ToString("F2", CI)}, RemoveHealthEveryLifeTime: {solution.RemoveHealthEveryLifeTime.ToString("F2", CI)}, removeHealthWithCollide: {solution.removeHealthWithCollide.ToString("F2", CI)}, timeBetweenCollides: {solution.timeBetweenCollides.ToString("F2", CI)}, healHealthPoint: {solution.healHealthPoint.ToString("F2", CI)}, factorForce: {factorForceEff.ToString("F2", CI)}");
+            }
+            
+            // Summary line with optimized prediction
             builder.AppendLine();
-            builder.AppendLine($"Prediction: {predicted.ToString("F2", CI)}% | Error: {solutionError.ToString("F3", CI)}%");
+            builder.AppendLine($"Optimized for {targetOxygen.ToString("F1", CI)}%: Predicted: {predicted.ToString("F1", CI)}% Error: {solutionError.ToString("F2", CI)}%");
             builder.AppendLine();
         }
         
@@ -401,7 +469,12 @@ public static class TrialReportGenerator
         (string feature, float importance)[] importance,
         TrialDataModels.TrialData solution,
         float solutionError,
-        float targetOxygen)
+        float targetOxygen,
+        TrialDataModels.TrialData pythonGradientSolution = null,
+        float pythonGradientError = float.MaxValue,
+        TrialDataModels.TrialData csharpSweepSolution = null,
+        float csharpSweepError = float.MaxValue,
+        string selectedMethod = null)
     {
         var modelData = pythonModel?.Model;
         var featureNames = modelData?.feature_names ?? FeatureExtractor.FeatureNames;
@@ -461,9 +534,48 @@ public static class TrialReportGenerator
             float factorForceEff = isAmadeo ? solution.factorForce : 0f;
             float idleEffective = isAmadeo ? solution.idleUpwardSpeed * 0.5f : solution.idleUpwardSpeed;
             
-            builder.AppendLine($"Optimized for {targetOxygen.ToString("F1", CI)}%: Predicted: {predicted.ToString("F1", CI)}% Error: {solutionError.ToString("F2", CI)}%");
+            // Show which algorithm was selected
+            string selectedAlgorithm = !string.IsNullOrEmpty(selectedMethod) ? selectedMethod : "Unknown";
+            if (selectedAlgorithm == "Unknown")
+            {
+                // Try to determine from comparison solutions
+                if (pythonGradientSolution != null && csharpSweepSolution != null)
+                {
+                    selectedAlgorithm = pythonGradientError <= csharpSweepError ? "Python Gradient" : "RandomSweep";
+                }
+                else if (pythonGradientSolution != null)
+                {
+                    selectedAlgorithm = "Python Gradient";
+                }
+                else if (csharpSweepSolution != null)
+                {
+                    selectedAlgorithm = "RandomSweep";
+                }
+            }
+            
+            builder.AppendLine($"Optimized for {targetOxygen.ToString("F1", CI)}%: Predicted: {predicted.ToString("F1", CI)}% Error: {solutionError.ToString("F2", CI)}% [Selected: {selectedAlgorithm}]");
             builder.AppendLine();
             builder.AppendLine($"speed: {solution.speed.ToString("F2", CI)} verticalSpeed: {solution.verticalSpeed.ToString("F2", CI)} idleUpwardSpeed: {idleEffective.ToString("F2", CI)} lifeTime: {solution.lifeTime.ToString("F2", CI)} RemoveHealthEveryLifeTime: {solution.RemoveHealthEveryLifeTime.ToString("F2", CI)} removeHealthWithCollide: {solution.removeHealthWithCollide.ToString("F2", CI)} timeBetweenCollides: {solution.timeBetweenCollides.ToString("F2", CI)} healHealthPoint: {solution.healHealthPoint.ToString("F2", CI)} factorForce: {factorForceEff.ToString("F2", CI)}");
+            
+            // Optimization comparison
+            if (pythonGradientSolution != null && pythonGradientError < float.MaxValue && 
+                csharpSweepSolution != null && csharpSweepError < float.MaxValue)
+            {
+                float pythonPred = pythonModel.PredictOxygen(pythonGradientSolution);
+                float csharpPred = pythonModel.PredictOxygen(csharpSweepSolution);
+                bool pythonIsAmadeo = pythonGradientSolution.IsAmadeoMode > 0.5f;
+                bool csharpIsAmadeo = csharpSweepSolution.IsAmadeoMode > 0.5f;
+                float pythonFactorForceEff = pythonIsAmadeo ? pythonGradientSolution.factorForce : 0f;
+                float csharpFactorForceEff = csharpIsAmadeo ? csharpSweepSolution.factorForce : 0f;
+                float pythonIdleEffective = pythonIsAmadeo ? pythonGradientSolution.idleUpwardSpeed * 0.5f : pythonGradientSolution.idleUpwardSpeed;
+                float csharpIdleEffective = csharpIsAmadeo ? csharpSweepSolution.idleUpwardSpeed * 0.5f : csharpSweepSolution.idleUpwardSpeed;
+                
+                builder.AppendLine();
+                builder.AppendLine("=== Optimization Comparison ===");
+                builder.AppendLine($"Python Gradient: {pythonPred.ToString("F2", CI)}% (err={pythonGradientError.ToString("F2", CI)}%) | RandomSweep: {csharpPred.ToString("F2", CI)}% (err={csharpSweepError.ToString("F2", CI)}%)");
+                builder.AppendLine($"Python params:     speed={pythonGradientSolution.speed.ToString("F2", CI)} vSpeed={pythonGradientSolution.verticalSpeed.ToString("F2", CI)} idle={pythonIdleEffective.ToString("F2", CI)} life={pythonGradientSolution.lifeTime.ToString("F2", CI)} drain={pythonGradientSolution.RemoveHealthEveryLifeTime.ToString("F2", CI)} collide={pythonGradientSolution.removeHealthWithCollide.ToString("F2", CI)} timeColl={pythonGradientSolution.timeBetweenCollides.ToString("F2", CI)} heal={pythonGradientSolution.healHealthPoint.ToString("F2", CI)} force={pythonFactorForceEff.ToString("F2", CI)}");
+                builder.AppendLine($"RandomSweep params: speed={csharpSweepSolution.speed.ToString("F2", CI)} vSpeed={csharpSweepSolution.verticalSpeed.ToString("F2", CI)} idle={csharpIdleEffective.ToString("F2", CI)} life={csharpSweepSolution.lifeTime.ToString("F2", CI)} drain={csharpSweepSolution.RemoveHealthEveryLifeTime.ToString("F2", CI)} collide={csharpSweepSolution.removeHealthWithCollide.ToString("F2", CI)} timeColl={csharpSweepSolution.timeBetweenCollides.ToString("F2", CI)} heal={csharpSweepSolution.healHealthPoint.ToString("F2", CI)} force={csharpFactorForceEff.ToString("F2", CI)}");
+            }
             builder.AppendLine();
         }
         
@@ -584,18 +696,14 @@ public static class TrialReportGenerator
             if (!Directory.Exists(savePath))
             {
                 Directory.CreateDirectory(savePath);
-                Debug.Log($"[TrialReportGenerator] Created directory: {savePath}");
             }
 
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             string prefix = isPythonModel ? "PythonRegression" : "UnityRegression";
             string fileName = $"{prefix}_{timestamp}.txt";
             string fullPath = Path.Combine(savePath, fileName);
-
-            Debug.Log($"[TrialReportGenerator] Saving report - IsPythonModel: {isPythonModel}, FileName: {fileName}, Path: {fullPath}");
             
             File.WriteAllText(fullPath, fullReport);
-            Debug.Log($"[TrialReportGenerator] Report saved successfully: {fileName}");
             return true;
         }
         catch (Exception e)

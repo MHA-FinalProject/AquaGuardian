@@ -6,17 +6,20 @@ using System.Linq;
 /**
 * Handler for Python-trained regression models
 * Manages loading, switching, and using Python-trained models (ElasticNet, Ridge, etc.)
-* alongside Unity's built-in model. Provides auto-loading, prediction, optimization,
-* and reporting capabilities for hybrid ML workflows.
-* See also: PythonRegressionModel, TrialRegressionAlgorithm, OxygenPredictor
+* alongside Unity's built-in model. Loads patient-specific models from Python server,
+* performs predictions, optimization, and generates reports for hybrid ML workflows.
+* See also: PythonRegressionModel, PythonRegressionServerClient, TrialRegressionAlgorithm, OxygenPredictor
 */
 public static class PythonRegressionHandler
 {
     private static PythonRegressionModel pythonModel = null;
     
     // Flag to control whether to use Python model or Unity model
-  
     public static bool usePythonModel = false;
+    
+    // Flag to enable optimization comparison (Python Gradient vs C# RandomSweep)
+    // If false, only C# RandomSweep is used (more reliable)
+    public static bool enableOptimizationComparison = false;
 
     // Check if Python model is loaded and active
     public static bool IsModelReady => usePythonModel && pythonModel != null && pythonModel.IsLoaded;
@@ -30,8 +33,6 @@ public static class PythonRegressionHandler
         if (success)
         {
             usePythonModel = true;
-           // Debug.Log($"[PythonHandler] Python model loaded and activated");
-           // Debug.Log($"   {pythonModel.GetModelInfo()}");
         }
         else
         {
@@ -41,95 +42,12 @@ public static class PythonRegressionHandler
         return success;
     }
 
-    // Switch to Unity built-in model
-    public static void UseUnityModel()
-    {
-        usePythonModel = false;
-        Debug.Log("[PythonHandler] Switched to Unity built-in model");
-    }
-
-    // Switch to Python model (if loaded)
-    public static bool UsePythonModel()
-    {
-        if (pythonModel == null || !pythonModel.IsLoaded)
-        {
-            Debug.LogWarning("[PythonHandler] Python model not loaded! Call LoadPythonModel() first.");
-            return false;
-        }
-        usePythonModel = true;
-        Debug.Log("[PythonHandler] Switched to Python model");
-        return true;
-    }
-
     // Get current model type description
     public static string GetCurrentModelType()
     {
         if (usePythonModel && pythonModel != null && pythonModel.IsLoaded)
             return $"Python ({pythonModel.Model.model_type})";
         return "Unity (Ridge)";
-    }
-
-    // AUTO-LOAD: Try to automatically load Python model from common locations
-    // Searches in: StreamingAssets/RegressionModels/, Data/RegressionModels/, and root
-    public static bool TryAutoLoadPythonModel(string preferredModelName = "regression_model_elasticnet.json")
-    {
-        if (pythonModel != null && pythonModel.IsLoaded)
-        {
-            Debug.Log("[PythonHandler] Python model already loaded");
-            return true;
-        }
-
-        // List of paths to search (in order of preference)
-        string[] searchPaths = new string[]
-        {
-            System.IO.Path.Combine(Application.streamingAssetsPath, "RegressionModels", preferredModelName),
-            System.IO.Path.Combine(Application.dataPath, "Data", "RegressionModels", preferredModelName),
-            System.IO.Path.Combine(Application.streamingAssetsPath, preferredModelName),
-            System.IO.Path.Combine(Application.dataPath, "Data", preferredModelName),
-            System.IO.Path.Combine(Application.dataPath, "..", preferredModelName)
-        };
-
-        foreach (string path in searchPaths)
-        {
-            if (System.IO.File.Exists(path))
-            {
-                Debug.Log($"[PythonHandler] Found Python model at: {path}");
-                if (LoadPythonModel(path))
-                {
-                    return true;
-                }
-            }
-        }
-
-        // If preferred name not found, try to find any JSON file (but skip example files)
-        string[] fallbackPaths = new string[]
-        {
-            System.IO.Path.Combine(Application.streamingAssetsPath, "RegressionModels"),
-            System.IO.Path.Combine(Application.dataPath, "Data", "RegressionModels"),
-            System.IO.Path.Combine(Application.streamingAssetsPath, "")
-        };
-
-        foreach (string dir in fallbackPaths)
-        {
-            if (System.IO.Directory.Exists(dir))
-            {
-                string[] jsonFiles = System.IO.Directory.GetFiles(dir, "regression_model_*.json");
-                jsonFiles = jsonFiles.Where(f => !f.Contains("example") && !f.Contains("_example")).ToArray();
-                if (jsonFiles.Length > 0)
-                {
-                    string foundPath = jsonFiles[0];
-                    Debug.Log($"[PythonHandler] Auto-found Python model: {foundPath}");
-                    if (LoadPythonModel(foundPath))
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        Debug.Log("[PythonHandler] No valid Python model found - using Unity model");
-        Debug.Log("   To use Python model: Train with 'python PythonScripts/train_regression_model.py <csv> ElasticNet'");
-        return false;
     }
 
  
@@ -186,43 +104,98 @@ public static class PythonRegressionHandler
 
         var (ranges, baseline) = PrepareOptimizationBaseline(allTrialData, targetOxygen);
 
-        // Use DifficultyParameterSolver with Python predictor
-        // Try improved optimization first (using Python model coefficients)
-        var solution = OptimizeWithPythonModel(baseline, topIndices, targetOxygen, ranges, anyAmadeoTrials);
-        float error = solution != null 
-            ? Mathf.Abs(pythonModel.PredictOxygen(solution) - targetOxygen)
-            : float.MaxValue;
+        TrialDataModels.TrialData solution;
+        float error;
+        TrialDataModels.TrialData pythonGradientSolution = null;
+        float pythonGradientError = float.MaxValue;
+        TrialDataModels.TrialData sweepSolution = null;
+        float sweepError = float.MaxValue;
 
-        // Fallback to RandomSweepOptimizer if needed
-        if (solution == null || float.IsNaN(error) || error > 5.0f)
-        {
-            var (sweepCandidate, sweepError) = DifficultyParameterSolver.RandomSweepOptimizer(
+        // ALWAYS run both methods and choose the best one
+        
+        // Method 1: Python Gradient (optimized for sparse coefficients)
+            pythonGradientSolution = OptimizeWithPythonModel(baseline, topIndices, targetOxygen, ranges, anyAmadeoTrials);
+            pythonGradientError = pythonGradientSolution != null 
+                ? Mathf.Abs(pythonModel.PredictOxygen(pythonGradientSolution) - targetOxygen)
+                : float.MaxValue;
+
+        // Method 2: RandomSweep (more samples if gradient failed or had high error)
+        int sweepSamples = pythonGradientError > 10f ? 800 : (pythonGradientError > 5f ? 500 : 300);
+        (sweepSolution, sweepError) = DifficultyParameterSolver.RandomSweepOptimizer(
                 d => pythonModel.PredictOxygenUnclamped(d),
-                ranges, targetOxygen, anyAmadeoTrials, samples: 300); // Increased samples
+                ranges, targetOxygen, anyAmadeoTrials, samples: sweepSamples);
 
-            if (sweepCandidate != null && sweepError < (float.IsNaN(error) ? float.MaxValue : error))
+            // Choose best solution
+        bool gradientValid = pythonGradientSolution != null && !float.IsNaN(pythonGradientError);
+        bool sweepValid = sweepSolution != null && !float.IsNaN(sweepError);
+        string selectedMethod = "Unknown";
+
+        if (gradientValid && sweepValid)
+        {
+            // Both valid - choose the better one
+            if (pythonGradientError <= sweepError)
             {
-                solution = sweepCandidate;
+                solution = pythonGradientSolution;
+                error = pythonGradientError;
+                selectedMethod = "Python Gradient";
+            }
+            else
+            {
+                solution = sweepSolution;
                 error = sweepError;
+                selectedMethod = "RandomSweep";
             }
         }
+        else if (gradientValid)
+        {
+            solution = pythonGradientSolution;
+            error = pythonGradientError;
+            selectedMethod = "Python Gradient";
+        }
+        else if (sweepValid)
+        {
+            solution = sweepSolution;
+            error = sweepError;
+            selectedMethod = "RandomSweep";
+        }
+        else
+        {
+            // Both failed - use baseline
+            solution = baseline;
+            error = Mathf.Abs(pythonModel.PredictOxygenUnclamped(baseline) - targetOxygen);
+            selectedMethod = "Baseline Fallback";
+        }
+
 
         result.optimizedSolution = solution;
         result.optimizedSolutionError = error;
 
-        // Generate reports using TrialReportGenerator
-        result.summaryText = TrialReportGenerator.GeneratePythonModelSummary(
-            allTrialData, avgError, pythonModel, solution, error, targetOxygen, allImportance);
-        result.fullDetailsText = TrialReportGenerator.GeneratePythonModelFullReport(
-            allTrialData, avgError, result.averageOxygen, pythonModel,
-            allImportance, solution, error, targetOxygen);
+        // Generate reports - always pass selectedMethod
+        if (enableOptimizationComparison && pythonGradientSolution != null && sweepSolution != null)
+        {
+            result.summaryText = TrialReportGenerator.GeneratePythonModelSummary(
+                allTrialData, avgError, pythonModel, solution, error, targetOxygen, allImportance,
+                pythonGradientSolution, pythonGradientError, sweepSolution, sweepError);
+            result.fullDetailsText = TrialReportGenerator.GeneratePythonModelFullReport(
+                allTrialData, avgError, result.averageOxygen, pythonModel,
+                allImportance, solution, error, targetOxygen,
+                pythonGradientSolution, pythonGradientError, sweepSolution, sweepError, selectedMethod);
+        }
+        else
+        {
+            // No comparison details, but still pass the selected method
+            result.summaryText = TrialReportGenerator.GeneratePythonModelSummary(
+                allTrialData, avgError, pythonModel, solution, error, targetOxygen, allImportance);
+            result.fullDetailsText = TrialReportGenerator.GeneratePythonModelFullReport(
+                allTrialData, avgError, result.averageOxygen, pythonModel,
+                allImportance, solution, error, targetOxygen,
+                null, float.MaxValue, null, float.MaxValue, selectedMethod);
+        }
 
         return result;
     }
 
-   
-
-    // Optimize parameters using Python model coefficients (gradient-based)
+    // Optimize parameters using Python model coefficients (gradient-based, optimized for sparse coefficients)
     private static TrialDataModels.TrialData OptimizeWithPythonModel(
         TrialDataModels.TrialData baseline,
         int[] topIndices,
@@ -245,33 +218,52 @@ public static class PythonRegressionHandler
         if (error < 0.5f)
             return solution; // Already close enough
 
-        // Adaptive learning rate based on error
-        float learningRate = error > 40f ? 0.5f : (error > 20f ? 0.3f : (error > 10f ? 0.2f : 0.1f));
-        int maxIterations = error > 40f ? 200 : (error > 20f ? 150 : (error > 10f ? 100 : 50));
+        // If error is too large, gradient descent may not work well - return null to use RandomSweep
+        if (error > 50f)
+            return null;
+
+        // Adaptive learning rate - start smaller and use adaptive decay
+        float initialLearningRate = error > 20f ? 0.1f : (error > 10f ? 0.05f : 0.02f);
+        float learningRate = initialLearningRate;
+        int maxIterations = error > 20f ? 200 : (error > 10f ? 150 : 100);
+        float bestError = error;
+        TrialDataModels.TrialData bestSolution = solution;
 
         string[] featureNames = TrialDataModels.FeatureNames;
         
-        for (int iter = 0; iter < maxIterations && error > 0.1f; iter++)
+        // Count non-zero coefficients (Python often has sparse betas from ElasticNet/Lasso)
+        int nonZeroCount = 0;
+        float sumSquaredCoeffs = 0f;
+        foreach (int idx in topIndices)
         {
-            float delta = currentO2 - targetOxygen;
-            if (Mathf.Abs(delta) < 0.1f)
-                break;
-
-            // Update top features based on their coefficients
-            float sumSquaredCoeffs = 0f;
-            foreach (int idx in topIndices)
+            if (idx >= 0 && idx < model.betas.Length)
             {
-                if (idx >= 0 && idx < model.betas.Length)
+                float coeff = model.betas[idx];
+                if (Mathf.Abs(coeff) > 1e-9f)
                 {
-                    float coeff = model.betas[idx];
+                    nonZeroCount++;
                     sumSquaredCoeffs += coeff * coeff;
                 }
             }
+        }
 
-            if (sumSquaredCoeffs < 1e-9f)
-                break; // No meaningful coefficients
+        if (sumSquaredCoeffs < 1e-9f || nonZeroCount < 2)
+            return null; // Not enough meaningful coefficients for gradient descent
+        
+        for (int iter = 0; iter < maxIterations && error > 0.2f; iter++)
+        {
+            float delta = currentO2 - targetOxygen;
+            if (Mathf.Abs(delta) < 0.2f)
+                break;
+
+            // Adaptive learning rate decay
+            if (iter > 0 && iter % 20 == 0)
+            {
+                learningRate *= 0.9f; // Decay learning rate
+            }
 
             // Update each top feature
+            bool anyUpdate = false;
             foreach (int idx in topIndices)
             {
                 if (idx < 0 || idx >= featureNames.Length || idx >= model.betas.Length)
@@ -289,17 +281,43 @@ public static class PythonRegressionHandler
                 float normalizedCoeff = coeff / Mathf.Sqrt(sumSquaredCoeffs);
                 
                 // Update: move opposite to error direction, scaled by coefficient
-                float update = -delta * normalizedCoeff * learningRate;
+                // Use smaller step size for more stability
+                float update = -delta * normalizedCoeff * learningRate * 0.5f;
                 float newVal = Mathf.Clamp(currentVal + update, range.x, range.y);
                 
-                ParameterHelper.Set(ref solution, idx, newVal);
+                if (Mathf.Abs(newVal - currentVal) > 1e-6f)
+                {
+                    ParameterHelper.Set(ref solution, idx, newVal);
+                    anyUpdate = true;
+                }
             }
+
+            if (!anyUpdate)
+                break; // No more updates possible
 
             currentO2 = pythonModel.PredictOxygenUnclamped(solution);
             error = Mathf.Abs(currentO2 - targetOxygen);
+            
+            // Track best solution
+            if (error < bestError)
+            {
+                bestError = error;
+                bestSolution = solution;
+            }
+            
+            // Early stopping if error increases significantly
+            if (iter > 10 && error > bestError * 2f)
+            {
+                solution = bestSolution;
+                break;
+            }
         }
 
-        return solution;
+        // Only return if error is reasonable
+        if (bestError > 5f)
+            return null; // Gradient descent failed, let RandomSweep handle it
+            
+        return bestSolution;
     }
 
     // Get parameter range for feature index
@@ -331,6 +349,5 @@ public static class PythonRegressionHandler
         return (ranges, baseline);
     }
 
-  
 }
 

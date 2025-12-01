@@ -17,6 +17,10 @@ public class PythonRegressionServerClient : MonoBehaviour
     [SerializeField] private bool autoTrainOnStart = false;
     [SerializeField] private string csvPath = "Assets/Data/Trials/Trial_5_runs_.csv";
     [SerializeField] private string modelType = "ElasticNet";
+    [SerializeField] private bool useSmallDatasetMethod = true;  // Use /train_small for small datasets (5-10 samples)
+    
+    [Header("Optimization Settings")]
+    [SerializeField] private bool enableOptimizationComparison = false;  // Compare Python Gradient vs C# RandomSweep
 
     private bool isServerAvailable = false;
 
@@ -25,6 +29,14 @@ public class PythonRegressionServerClient : MonoBehaviour
     {
         public string csv_path;
         public string model_type;
+    }
+
+    [System.Serializable]
+    private class TrainSmallRequest
+    {
+        public string csv_path;
+        public string model_type;
+        public int n_features;
     }
 
     [System.Serializable]
@@ -67,6 +79,13 @@ public class PythonRegressionServerClient : MonoBehaviour
         public float train_mae;
         public float train_r2;
         public float train_rmse;
+        // Additional fields for /train_small endpoint
+        public int n_features_selected;
+        public string[] selected_features;
+        public int[] selected_indices;
+        public float cv_mae;
+        public float cv_r2;
+        public float cv_rmse;
 #pragma warning restore 0649
     }
 
@@ -102,7 +121,6 @@ public class PythonRegressionServerClient : MonoBehaviour
             if (request.result == UnityWebRequest.Result.Success)
             {
                 isServerAvailable = true;
-                Debug.Log($"[PythonServer] Health check: {request.downloadHandler.text}");
             }
             else
             {
@@ -129,7 +147,7 @@ public class PythonRegressionServerClient : MonoBehaviour
         var request = new TrainRequest
         {
             csv_path = resolvedCsvPath,
-            model_type = modelType
+            model_type = string.IsNullOrWhiteSpace(modelType) ? "ElasticNet" : modelType.Trim()
         };
 
         string json = JsonUtility.ToJson(request);
@@ -141,7 +159,6 @@ public class PythonRegressionServerClient : MonoBehaviour
             www.downloadHandler = new DownloadHandlerBuffer();
             www.SetRequestHeader("Content-Type", "application/json");
 
-            Debug.Log($"[PythonServer] Training model: {resolvedCsvPath}, type: {modelType}");
             yield return www.SendWebRequest();
 
             if (www.result == UnityWebRequest.Result.Success)
@@ -149,10 +166,7 @@ public class PythonRegressionServerClient : MonoBehaviour
                 try
                 {
                     var modelResponse = JsonUtility.FromJson<ModelResponse>(www.downloadHandler.text);
-                    Debug.Log($"[PythonServer] Model trained successfully!");
-                    Debug.Log($"   Samples: {modelResponse.model.n_samples}");
-                    Debug.Log($"   Train MAE: {modelResponse.model.train_mae:F2}%");
-                    Debug.Log($"   Train R^2: {modelResponse.model.train_r2:F3}");
+                    //Debug.Log($"[PythonServer] Model trained (samples: {modelResponse.model.n_samples}, MAE: {modelResponse.model.train_mae:F2}%, R^2: {modelResponse.model.train_r2:F3})");
                     
                     // Load model into Unity's regression system
                     LoadModelFromServer(modelResponse.model);
@@ -261,15 +275,145 @@ public class PythonRegressionServerClient : MonoBehaviour
         string json = JsonUtility.ToJson(unityModel);
         System.IO.File.WriteAllText(tempPath, json);
 
-        // Load into Unity regression system
-        if (TrialRegressionAlgorithm.LoadPythonModel(tempPath))
+        // Load into Unity regression system via PythonRegressionHandler
+        if (!PythonRegressionHandler.LoadPythonModel(tempPath))
         {
-            Debug.Log("Model loaded from Python server into Unity");
+            Debug.LogError("[PythonServer] Failed to load model from server");
+        }
+    }
+
+    /// <summary>
+    /// Train model optimized for small datasets (5-10 samples) using Lasso feature selection
+    /// </summary>
+    public IEnumerator TrainModelSmall(string csvPath, string modelType = "Ridge", int nFeatures = 3, Action<bool> onComplete = null)
+    {
+        string resolvedCsvPath = ResolveCsvPath(csvPath);
+
+        if (!System.IO.File.Exists(resolvedCsvPath))
+        {
+            Debug.LogError($"[PythonServer] CSV file not found: {resolvedCsvPath}");
+            onComplete?.Invoke(false);
+            yield break;
+        }
+
+        var request = new TrainSmallRequest
+        {
+            csv_path = resolvedCsvPath,
+            model_type = string.IsNullOrWhiteSpace(modelType) ? "Ridge" : modelType.Trim(),
+            n_features = nFeatures
+        };
+
+        string json = JsonUtility.ToJson(request);
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
+
+        using (UnityWebRequest www = UnityWebRequest.PostWwwForm($"{serverUrl}/train_small", "application/json"))
+        {
+            www.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            www.downloadHandler = new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                try
+                {
+                    var modelResponse = JsonUtility.FromJson<ModelResponse>(www.downloadHandler.text);
+                    
+                    // Load model into Unity's regression system
+                    LoadModelFromServer(modelResponse.model);
+                    onComplete?.Invoke(true);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"[PythonServer] Failed to parse response: {e.Message}");
+                    onComplete?.Invoke(false);
+                }
+            }
+            else
+            {
+                Debug.LogError($"[PythonServer] Training failed: {www.error}\n{www.downloadHandler.text}");
+                onComplete?.Invoke(false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Train model on server using current trial data and perform analysis
+    /// This is the main entry point for TrialRegressionUI
+    /// Automatically uses /train_small for small datasets (5-10 samples)
+    /// </summary>
+    public IEnumerator TrainAndAnalyze(List<TrialDataModels.TrialData> allTrialData, float targetOxygen, Action<TrialDataModels.RegressionResult> onComplete)
+    {
+        // Sync optimization comparison setting
+        PythonRegressionHandler.enableOptimizationComparison = enableOptimizationComparison;
+        
+        if (!isServerAvailable)
+        {
+            Debug.LogError("[PythonServer] Server not available for training.");
+            onComplete?.Invoke(new TrialDataModels.RegressionResult 
+            { 
+                summaryText = "ERROR: Python server not available.",
+                fullDetailsText = "ERROR: Python server not available.",
+                correlations = new Dictionary<string, float>()
+            });
+            yield break;
+        }
+
+        // 1. Save current trial data to a temporary CSV
+        string tempCsvPath = System.IO.Path.Combine(Application.temporaryCachePath, "current_patient_trials.csv");
+        bool saved = TrialDataService.SaveAllTrialsToCSV(allTrialData, tempCsvPath);
+
+        if (!saved)
+        {
+            Debug.LogError("[PythonServer] Failed to save trial data for server training.");
+            onComplete?.Invoke(new TrialDataModels.RegressionResult 
+            { 
+                summaryText = "ERROR: Failed to save trial data.",
+                fullDetailsText = "ERROR: Failed to save trial data.",
+                correlations = new Dictionary<string, float>()
+            });
+            yield break;
+        }
+
+        // 2. Decide which training method to use
+        int nSamples = allTrialData.Count;
+        bool shouldUseSmallMethod = useSmallDatasetMethod && nSamples >= 5 && nSamples <= 10;
+        
+        bool trainingSuccess = false;
+        
+        if (shouldUseSmallMethod)
+        {
+            int nFeatures = Mathf.Max(2, Mathf.Min(3, nSamples - 2)); // Auto-adjust features
+            yield return StartCoroutine(TrainModelSmall(tempCsvPath, "Ridge", nFeatures, (success) =>
+            {
+                trainingSuccess = success;
+            }));
         }
         else
         {
-            Debug.LogError("Failed to load model from server");
+            string cleanModelType = string.IsNullOrWhiteSpace(modelType) ? "ElasticNet" : modelType.Trim();
+            yield return StartCoroutine(TrainModel(tempCsvPath, cleanModelType, (success) =>
+        {
+            trainingSuccess = success;
+        }));
         }
+
+        if (!trainingSuccess)
+        {
+            Debug.LogError("[PythonServer] Server training failed.");
+            onComplete?.Invoke(new TrialDataModels.RegressionResult 
+            { 
+                summaryText = "ERROR: Server training failed.",
+                fullDetailsText = "ERROR: Server training failed.",
+                correlations = new Dictionary<string, float>()
+            });
+            yield break;
+        }
+
+        // 3. Perform analysis with the newly loaded model
+        var result = PythonRegressionHandler.PerformPythonRegressionAnalysis(allTrialData, targetOxygen);
+        onComplete?.Invoke(result);
     }
 
     private IEnumerator CheckServerAndTrain()
@@ -278,20 +422,16 @@ public class PythonRegressionServerClient : MonoBehaviour
         
         if (isServerAvailable)
         {
-            yield return StartCoroutine(TrainModel(csvPath, modelType, (success) =>
-            {
-                if (success)
-                {
-                    Debug.Log("Model trained and loaded from Python server");
-                }
-            }));
+            string cleanModelType = string.IsNullOrWhiteSpace(modelType) ? "ElasticNet" : modelType.Trim();
+            yield return StartCoroutine(TrainModel(csvPath, cleanModelType));
         }
     }
 
     // Public API for UI or other scripts
     public void TrainModelFromUI()
     {
-        StartCoroutine(TrainModel(csvPath, modelType));
+        string cleanModelType = string.IsNullOrWhiteSpace(modelType) ? "ElasticNet" : modelType.Trim();
+        StartCoroutine(TrainModel(csvPath, cleanModelType));
     }
 
     public bool IsServerAvailable => isServerAvailable;

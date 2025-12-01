@@ -50,13 +50,13 @@ public class PanelOpenUp : MonoBehaviour
 
     // Cave info is now managed by CaveBuilder
     // Access via: caveBuilder.CaveInfos
-    
+
     // Public property to access cave infos
     public List<TrialDataModels.CaveInfo> caveInfos
     {
         get { return caveBuilder != null ? caveBuilder.CaveInfos : null; }
     }
-    
+
     // Method to clear cave infos (delegates to CaveBuilder)
     public void ClearCaveInfos()
     {
@@ -114,7 +114,7 @@ public class PanelOpenUp : MonoBehaviour
             Debug.LogError("No CSV file assigned!");
         }
 
-        
+
         // Check if panel is already closed (e.g., after scene restart)
         // If panel is closed, notify GameStateManager immediately
         if (Panel != null && !Panel.activeSelf)

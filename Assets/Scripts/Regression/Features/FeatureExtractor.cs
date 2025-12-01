@@ -4,26 +4,24 @@ using System.Collections.Generic;
 using System.Linq;
 
 /**
- * Feature extraction for regression analysis
+ * Feature extraction utility for regression analysis.
  * 
- * NOTE: FeatureNames are defined in TrialDataModels.FeatureNames (single source of truth)
- * If adding/removing features, update:
- * 1. TrialDataModels.TrialData (field definition)
- * 2. TrialDataModels.FeatureNames (this array - single source of truth)
- * 3. ParameterHelper.Get/Set/Range (switch cases)
+ * Converts TrialDataModels.TrialData into 10-feature vectors for ML training/prediction.
+ * Handles input mode adjustments: Amadeo (idleUpwardSpeed *= 0.5, factorForce active) vs Keyboard (factorForce = 0).
+ * Calculates derived feature: EffectiveDrainRate = RemoveHealthEveryLifeTime / lifeTime.
  * 
- * INPUT MODE ADJUSTMENTS:
- *  - Amadeo: idleUpwardSpeed *= 0.5 (weaker drift), factorForce active
- *  - Keyboard: factorForce = 0 (no force sensitivity)
+ * NOTE: FeatureNames defined in TrialDataModels.FeatureNames (single source of truth).
  */
 public static class FeatureExtractor
 {
-    // Use FeatureNames from TrialDataModels (single source of truth)
-    // Delegates to TrialDataModels to avoid duplication
+    // Gets feature names array from TrialDataModels (10 features: speed, verticalSpeed, idleUpwardSpeed, lifeTime, RemoveHealthEveryLifeTime, removeHealthWithCollide, timeBetweenCollides, healHealthPoint, factorForce, EffectiveDrainRate)
     public static string[] FeatureNames => TrialDataModels.FeatureNames;
+
+    // Gets total feature count (always 10)
     public static int FeatureCount => TrialDataModels.FeatureCount;
 
-    // Extract features from single trial
+    // Extracts feature vector from a single trial. Adjusts idleUpwardSpeed (Amadeo *= 0.5) and factorForce (Keyboard = 0), calculates EffectiveDrainRate. Returns array of 10 features matching FeatureNames order.
+    //  Called from: OxygenPredictor, DifficultyParameterSolver, PythonRegressionModel, TrialReportGenerator
     public static float[] ExtractFeatures(TrialDataModels.TrialData trial)
     {
         bool isAmadeo = trial.IsAmadeoMode > 0.5f;
@@ -45,7 +43,9 @@ public static class FeatureExtractor
         };
     }
 
-    // Extract features from multiple trials
+    // Extracts feature matrix from multiple trials (2D array: [trial_index][feature_index]). 
+    // Called from: OxygenPredictor.TrainModel, RegressionUtilities.PerformCrossValidationAndErrorCalculation
+    // Returns: 2D array: [trial_index][feature_index] = feature_value
     public static float[][] ExtractFeatures(List<TrialDataModels.TrialData> trials)
     {
         float[][] X = new float[trials.Count][];
@@ -54,7 +54,7 @@ public static class FeatureExtractor
         return X;
     }
 
-    // Extract features and targets
+    // Extracts feature matrix (X) and target vector (y) from trials. Called from: OxygenPredictor.TrainModel, RegressionUtilities.PerformCrossValidationAndErrorCalculation
     public static (float[][] X, float[] y) ExtractFeaturesAndTargets(List<TrialDataModels.TrialData> trials)
     {
         float[][] X = ExtractFeatures(trials);
@@ -62,7 +62,15 @@ public static class FeatureExtractor
         return (X, y);
     }
 
-    // Get personalized baseline from patient history (median by default, falls back to mid-range if <3 trials)
+    /**
+     * Calculates personalized baseline from patient trial history.
+     * 
+     * If < 3 trials: returns mid-range defaults. If >= 3: calculates median (default) or mean per parameter.
+     * For factorForce: only includes Amadeo trials if any exist, otherwise 0.
+     * Used as optimization starting point to personalize solutions to patient's historical ranges.
+     * 
+     * Called from: RegressionUtilities.PrepareOptimizationBaseline, PythonRegressionHandler
+     */
     public static TrialDataModels.TrialData GetPatientBaseline(
         List<TrialDataModels.TrialData> trials,
         TrialDataModels.ParameterRanges ranges,
@@ -91,7 +99,7 @@ public static class FeatureExtractor
         };
     }
 
-    // Get mid-range defaults from parameter ranges
+    // Calculates mid-range defaults (min+max)/2 for each parameter. Used as fallback when patient has < 3 trials
     public static TrialDataModels.TrialData GetMidRangeDefaults(TrialDataModels.ParameterRanges ranges)
     {
         float GetMid(Vector2 range) => (range.x + range.y) * 0.5f;
@@ -111,7 +119,7 @@ public static class FeatureExtractor
         };
     }
 
-    // Compute median of values
+    // Computes median value (robust to outliers). If even count, returns average of two middle values
     private static float ComputeMedian(IEnumerable<float> values)
     {
         var list = values as IList<float> ?? values.ToList();

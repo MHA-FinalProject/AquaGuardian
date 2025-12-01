@@ -7,21 +7,33 @@ using System.Linq;
  * 
  * Trains on trial data to predict oxygen % based on 10 game parameters (speed, verticalSpeed, etc.).
  * Uses adaptive Ridge regularization and optional feature selection for small datasets (<10 trials).
- * Used by DifficultyParameterSolver for parameter optimization.
  * 
- * See also: FeatureExtractor, MultipleLinearRegression, DifficultyParameterSolver, TrialRegressionAlgorithm
+ * Used by RegressionUtilities.OptimizeParameters which passes PredictOxygenUnclamped as a callback
+ * to DifficultyParameterSolver for parameter optimization.
+ * 
+ * See also: FeatureExtractor, MultipleLinearRegression, DifficultyParameterSolver, TrialRegressionAlgorithm, RegressionUtilities
  */
 public class OxygenPredictor
 {
     private MultipleLinearRegression model;
     private string[] FeatureNames => FeatureExtractor.FeatureNames;
-    
     private int[] selectedFeatureIndices;
     private string[] selectedFeatureNames;
     private bool useFeatureSelection = false;
-
     public int maxFeaturesForTraining = 10;
     
+    /**
+     *  Called from RegressionUtilities.PerformRegressionAnalysis - main training entry point
+     *  Trains the regression model on trial data to predict oxygen levels from game parameters.
+     * 
+     * Process:
+     * 1. Extracts features and targets from trials
+     * 2. Calculates adaptive Ridge regularization (higher for smaller datasets)
+     * 3. If dataset < 10 trials and feature selection enabled: selects top K features, retrains
+     * 4. Otherwise: trains on all features
+     * 5. Validates model quality (R^2, error thresholds)
+     * 
+     */
     public bool TrainModel(List<TrialDataModels.TrialData> trials, bool enableFeatureSelection = true)
     {
         if (trials == null || trials.Count < 3)
@@ -55,12 +67,15 @@ public class OxygenPredictor
         return ValidateModel(trials);
     }
     
+    //  Predicts oxygen level from game parameters, clamped to [0, 100]%.
     public float PredictOxygen(TrialDataModels.TrialData parameters)
     {
         float unclamped = PredictOxygenUnclamped(parameters);
         return Mathf.Clamp(unclamped, 0f, 100f);
     }
 
+    //  Predicts oxygen level from game parameters without clamping (can be <0 or >100%).
+    //  Used during optimization to allow gradient descent to explore full parameter space.
     public float PredictOxygenUnclamped(TrialDataModels.TrialData parameters)
     {
         if (model == null)
@@ -74,6 +89,8 @@ public class OxygenPredictor
         return model.Predict(features);
     }
 
+    //  Returns feature importance ranking from the trained model.
+    //  Used to determine which features to optimize during parameter search.
     public (string feature, float importance)[] GetFeatureImportance()
     {
         if (model == null)
@@ -85,13 +102,14 @@ public class OxygenPredictor
         return model.GetFeatureImportance();
     }
 
-    public MultipleLinearRegression GetModel()
-        {
+    //  Returns the underlying MultipleLinearRegression model.
+    //  Used to access model coefficients, R^2, and other internal properties.
+    public MultipleLinearRegression GetModel(){
         return model;
     }
 
-    // Train model with given features and regularization
-    private MultipleLinearRegression TrainModelWithFeatures(float[][] X, float[] Y, string[] featureNames, float ridgeLambda)
+    //  Trains a MultipleLinearRegression model with given features and Ridge regularization.
+     private MultipleLinearRegression TrainModelWithFeatures(float[][] X, float[] Y, string[] featureNames, float ridgeLambda)
     {
         var m = new MultipleLinearRegression(normalize: true);
         m.ridgeLambda = ridgeLambda;
@@ -99,7 +117,9 @@ public class OxygenPredictor
         return m;
     }
 
-    // Select top K features based on importance
+   
+     // Selects top K most important features, excluding banned features (EffectiveDrainRate, factorForce if no Amadeo trials).
+     // Stores selected feature indices and names for later use in prediction.
     private void SelectTopFeatures(MultipleLinearRegression tempModel, List<TrialDataModels.TrialData> trials)
     {
         bool anyAmadeoTrials = trials.Any(t => t.IsAmadeoMode > 0.5f);
@@ -132,7 +152,7 @@ public class OxygenPredictor
         }
     }
 
-    // Extract selected features from full feature vector
+    // Extracts selected features from a single feature vector (for prediction). Returns full features if feature selection is disabled.
     private float[] ExtractSelectedFeaturesFromVector(float[] fullFeatures)
     {
         if (!useFeatureSelection || selectedFeatureIndices == null)
@@ -145,7 +165,8 @@ public class OxygenPredictor
         return features;
     }
     
-    // Extract selected features from full feature matrix
+    
+    // Extracts selected features from full feature matrix (for training).Returns full matrix if feature selection is disabled.
     private float[][] ExtractSelectedFeatures(float[][] X_full)
     {
         if (!useFeatureSelection || selectedFeatureIndices == null)
@@ -162,7 +183,19 @@ public class OxygenPredictor
         return X_selected;
     }
     
-    // Validate trained model against training data
+    /**
+     * Validates trained model quality against training data.
+     * 
+     * Checks:
+     * 1. Variance in oxygen data (must be > 0.1%)
+     * 2. Average prediction error (must be below threshold based on dataset size)
+     * 3. R^2 score (must be above threshold based on dataset size and feature selection)
+     * 
+     * Thresholds are more lenient for small datasets (<10 trials) and when using feature selection.
+     * 
+     * Called from: TrainModel
+     * Calls internally: PredictOxygen 
+     */
     private bool ValidateModel(List<TrialDataModels.TrialData> trials)
     {
         float totalError = 0f;

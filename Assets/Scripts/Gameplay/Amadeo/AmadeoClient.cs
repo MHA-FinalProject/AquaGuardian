@@ -76,25 +76,26 @@ public class AmadeoClient : MonoBehaviour
     // We call it after the PanelOpenUp is closed.
     public void StartReceiveData()
     {
-        //  Ensure _cancellationTokenSource is not null
-        if (_cancellationTokenSource == null)
-        {
-            _cancellationTokenSource = new CancellationTokenSource();
-        }
-        else if (_cancellationTokenSource.IsCancellationRequested)
+        // IMPORTANT: First stop any existing data reception to prevent multiple loops
+        StopReceiveData();
+        
+        // Create a fresh CancellationTokenSource
+        if (_cancellationTokenSource != null)
         {
             _cancellationTokenSource.Dispose();
-            _cancellationTokenSource = new CancellationTokenSource();
         }
+        _cancellationTokenSource = new CancellationTokenSource();
+        
         _isReceiving = true;
+        
         if (inputType == InputType.EmulationMode)
         {
-            Debug.Log("StartReceiveData :: Emulation mode is true. Starting emulation data.");
+            Debug.Log("StartReceiveData :: Emulation mode. Starting emulation data.");
             HandleIncomingDataEmu(_cancellationTokenSource.Token);
         }
         else
         {
-            Debug.Log("StartReceiveData :: Amadeo mode is true. Starting Amadeo data.");
+            Debug.Log("StartReceiveData :: Amadeo mode. Starting Amadeo data.");
             ReceiveDataAmadeo(_cancellationTokenSource.Token);
         }
     }
@@ -103,6 +104,12 @@ public class AmadeoClient : MonoBehaviour
     public void StopReceiveData()
     {
         _isReceiving = false;
+        
+        // Cancel the token to stop any running async tasks
+        if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
+        {
+            _cancellationTokenSource.Cancel();
+        }
     }
 
     // Asynchronous method to receive data from the Amadeo device.
@@ -112,6 +119,13 @@ public class AmadeoClient : MonoBehaviour
         {
             try
             {
+                // Check if UDP client is still valid before receiving
+                if (_udpClient == null)
+                {
+                    Debug.LogWarning("UDP client is null, stopping data reception");
+                    break;
+                }
+
                 // Receiving data from UDP and converting it to a string.
                 UdpReceiveResult result = await _udpClient.ReceiveAsync();
                 string receivedData = Encoding.ASCII.GetString(result.Buffer);
@@ -121,6 +135,11 @@ public class AmadeoClient : MonoBehaviour
             catch (OperationCanceledException)
             {
                 Debug.Log("Data reception was canceled.");
+                break;
+            }
+            catch (ObjectDisposedException)
+            {
+                Debug.LogWarning("UDP client was disposed during receive operation");
                 break;
             }
             catch (Exception ex)
@@ -141,7 +160,8 @@ public class AmadeoClient : MonoBehaviour
 
             int index = 0;
 
-            while (_isReceiving)
+            // Check both _isReceiving AND cancellationToken for clean shutdown
+            while (_isReceiving && !cancellationToken.IsCancellationRequested)
             {
                 string line = lines[index];
                 if (!string.IsNullOrWhiteSpace(line))
@@ -150,15 +170,31 @@ public class AmadeoClient : MonoBehaviour
                 }
 
                 index = (index + 1) % lines.Length;
-                await Task.Delay(10, cancellationToken); // Delay between data readings. Emulates the delay between samples.
+                
+                try
+                {
+                    await Task.Delay(10, cancellationToken);
+                }
+                catch (TaskCanceledException)
+                {
+                    // Graceful exit on cancellation
+                    break;
+                }
             }
 
             Debug.Log("HandleIncomingDataEmu: Stopped receiving data.");
         }
-        catch (TaskCanceledException e)
+        catch (TaskCanceledException)
         {
-            Debug.Log($"Task was canceled: {e.Message}");
-            throw;
+            Debug.Log("HandleIncomingDataEmu: Task was canceled.");
+        }
+        catch (OperationCanceledException)
+        {
+            Debug.Log("HandleIncomingDataEmu: Operation was canceled.");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"HandleIncomingDataEmu: Exception: {ex.Message}");
         }
     }
 
@@ -295,7 +331,16 @@ public class AmadeoClient : MonoBehaviour
             }
 
             // Calculate the average zeroing forces based on the received data.
-            string[] parsedData = lines.Select(ParseDataFromAmadeo).ToArray();
+            // Filter out null/empty lines before processing
+            string[] validLines = lines.Where(line => !string.IsNullOrWhiteSpace(line)).ToArray();
+            
+            if (validLines.Length == 0)
+            {
+                Debug.LogWarning("No valid data lines received for zeroing forces");
+                return;
+            }
+            
+            string[] parsedData = validLines.Select(ParseDataFromAmadeo).ToArray();
             CalculateZeroingForces(parsedData);
 
         }
@@ -305,7 +350,7 @@ public class AmadeoClient : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogError($"Exception in ReceiveData: {ex.Message}");
+            Debug.LogError($"Exception in SetZeroF: {ex.Message}");
         }
     }
 

@@ -330,6 +330,49 @@ public static class TrialDataService
         return data;
     }
 
+    /**
+     * Save all trial data to a CSV file (for Python server training)
+     * Used to export current patient trials for server-side model training
+     */
+    public static bool SaveAllTrialsToCSV(List<TrialDataModels.TrialData> allTrialData, string outputPath)
+    {
+        if (allTrialData == null || allTrialData.Count == 0)
+        {
+            Debug.LogWarning("[TrialDataService] No trial data to save.");
+            return false;
+        }
+
+        try
+        {
+            // Ensure directory exists
+            string directory = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            var lines = new List<string>();
+            
+            // Write header (must match FormatTrialDataLine: 13 columns)
+            string header = "trial_id,speed,verticalSpeed,idleUpwardSpeed,lifeTime,RemoveHealthEveryLifeTime,removeHealthWithCollide,timeBetweenCollides,healHealthPoint,factorForce,IsAmadeoMode,o2_result,duration";
+            lines.Add(header);
+
+            // Write data
+            foreach (var trial in allTrialData)
+            {
+                lines.Add(FormatTrialDataLine(trial));
+            }
+
+            CsvFileHelper.WriteAllLinesWithRetry(outputPath, lines.ToArray());
+            return true;
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[TrialDataService] Failed to save all trials to CSV: {e.Message}");
+            return false;
+        }
+    }
+
     // ========== Private Helper Methods ==========
 
     /**
@@ -459,7 +502,6 @@ public static class TrialDataService
                 {
                     // Fallback: Use LAST run if no settings found (each column = different person)
                     finalOxygen = validO2Values[validO2Values.Count - 1];
-                    Debug.Log($"[TrialDataService] No OxygenCalculationSettings found, using LastRun fallback: {finalOxygen}% from column {validO2ColumnNames[validO2ColumnNames.Count - 1]}");
                 }
 
                 // Parse trial data
@@ -563,13 +605,11 @@ public static class TrialDataService
                             newColumnIndex = lastO2ColumnIndex;
                             newColumnName = headerFields[lastO2ColumnIndex];
                             trialData.attemptNumber = 2;
-                            Debug.Log($"[TrialDataService] Trial {trialData.trialId} has failed attempt ({existingO2}%) in {headerFields[lastO2ColumnIndex]}, overwriting with attempt #{trialData.attemptNumber}");
                         }
                         else
                         {
                             // Previous attempt was successful - create new column for retry
                             needNewColumn = true;
-                            Debug.Log($"[TrialDataService] Trial {trialData.trialId} already has successful data ({existingO2}%) in {headerFields[lastO2ColumnIndex]}, creating new column for retry");
                         }
                     }
                     else

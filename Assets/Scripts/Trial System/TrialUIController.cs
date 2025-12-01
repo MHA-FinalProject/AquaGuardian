@@ -100,7 +100,7 @@ public class TrialUIController : MonoBehaviour
                     bool canRetry = trialSystemManager.CanRetryCurrentTrial;
                     var currentTrialData = trialSystemManager.CurrentTrialData;
                     bool trialFailed = currentTrialData != null && !currentTrialData.completed;
-                    
+
                     if (trialFailed && canRetry)
                     {
                         trialSystemManager.RestartCurrentTrial();
@@ -145,6 +145,12 @@ public class TrialUIController : MonoBehaviour
 
     public void OpenTrialControlPanel()
     {
+        // Hide Main Panel when Trial Control Panel opens
+        if (mainPanel != null)
+        {
+            mainPanel.SetActive(false);
+        }
+
         if (trialControlPanel != null)
         {
             trialControlPanel.SetActive(true);
@@ -386,6 +392,7 @@ public class TrialUIController : MonoBehaviour
     private void OnRandomModeToggled(bool isOn)
     {
         // Mode changed - handled by UI
+
     }
 
     public bool IsRandomParametersMode()

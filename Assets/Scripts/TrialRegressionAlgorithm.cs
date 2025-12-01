@@ -5,44 +5,24 @@ using System.Globalization;
 
 
 /**
- * Main orchestrator for regression analysis workflow
+ * Main orchestrator for Unity Ridge regression analysis workflow.
  * 
- * Coordinates ML regression pipeline: trains model, performs cross-validation, optimizes
- * parameters for target oxygen (default: 10%), and generates reports. Primary entry point
- * for regression analysis. Python model integration handled by PythonRegressionHandler.
+ * Called from TrialRegressionUI.CalculateRegression when Python server is disabled or unavailable.
+ * Python server mode is handled separately by PythonRegressionServerClient.TrainAndAnalyze.
  * 
- * See also: OxygenPredictor, RegressionUtilities, DifficultyParameterSolver, FeatureExtractor, 
- *           TrialReportGenerator, PythonRegressionHandler
+ * See also: TrialRegressionUI, OxygenPredictor, RegressionUtilities, DifficultyParameterSolver, 
+ *           FeatureExtractor, TrialReportGenerator, PythonRegressionServerClient
  */
 public class TrialRegressionAlgorithm
 {
     private const float DEFAULT_TARGET_O2 = 10f;
-    private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
 
-    #region Public API - Model Management (Delegates to PythonRegressionHandler)
+    #region Public API - Main Functions
 
-    // Load Python-trained model from JSON
-    public static bool LoadPythonModel(string jsonPath) => PythonRegressionHandler.LoadPythonModel(jsonPath);
-
-    // Switch to Unity built-in model
-    public static void UseUnityModel() => PythonRegressionHandler.UseUnityModel();
-
-    // Switch to Python model (if loaded)
-    public static bool UsePythonModel() => PythonRegressionHandler.UsePythonModel();
-
-    // Get current model type
-    public static string GetCurrentModelType() => PythonRegressionHandler.GetCurrentModelType();
-
-    // AUTO-LOAD: Try to automatically load Python model from common locations
-    public static bool TryAutoLoadPythonModel(string preferredModelName = "regression_model_elasticnet.json") 
-        => PythonRegressionHandler.TryAutoLoadPythonModel(preferredModelName);
-
-    #endregion
-
-    #region Public API - Regression Analysis
-
-    // Main function for regression analysis that coordinates the entire pipeline from input validation to report generation
-    // Supports both Unity built-in model and Python-trained models (hybrid mode)
+    /**
+     * Main entry point for Unity Ridge regression analysis.
+     * Validates input (requires at least 3 trials), then calls PerformUnityRegressionAnalysis.
+     */
     public static TrialDataModels.RegressionResult PerformRegressionAnalysis(List<TrialDataModels.TrialData> allTrialData, float targetOxygen = DEFAULT_TARGET_O2)
     {
         if (allTrialData == null || allTrialData.Count < 3)
@@ -56,19 +36,68 @@ public class TrialRegressionAlgorithm
             };
         }
 
-        // Check if Python model is available and active
-        if (PythonRegressionHandler.IsModelReady)
-        {
-            Debug.Log($"[TrialRegression] Using Python model: {PythonRegressionHandler.GetCurrentModelType()}");
-            return PythonRegressionHandler.PerformPythonRegressionAnalysis(allTrialData, targetOxygen);
-        }
-
-        // Unity model path (fallback)
-        Debug.Log("[TrialRegression] Using Unity built-in model");
         return PerformUnityRegressionAnalysis(allTrialData, targetOxygen);
     }
 
-    // Original Unity regression
+    public static bool SaveRegressionResultsToFile(TrialDataModels.RegressionResult result, string saveFolder = "RegressionResults")
+    {
+        if (result == null || string.IsNullOrEmpty(result.fullDetailsText))
+        {
+            Debug.LogWarning("No results to save!");
+            return false;
+        }
+
+        // Detect if this is a Python model report
+        bool isPythonModel = result.fullDetailsText.Contains("PYTHON MODEL REGRESSION REPORT");
+        return TrialReportGenerator.SaveToFile(result.fullDetailsText, saveFolder, isPythonModel);
+    }
+
+    #endregion
+
+    #region Helper Functions
+
+    /**
+     * Checks if Python server is available for patient-specific training.
+     * 
+     * Returns true if PythonRegressionServerClient exists in scene and server is available.
+     * Useful for UI to check server status before attempting Python-based analysis.
+     * 
+     * Called from: TrialRegressionUI or other UI components
+     * 
+     * @return true if Python server is available, false otherwise
+     */
+    public static bool IsServerAvailable()
+    {
+        var serverClient = UnityEngine.Object.FindObjectOfType<PythonRegressionServerClient>();
+        return serverClient != null && serverClient.IsServerAvailable;
+    }
+
+    /**
+     * Executes Unity Ridge regression analysis workflow.
+     * 
+     * Complete pipeline:
+     * 1. Calculates trial statistics (average oxygen) using RegressionUtilities.CalculateTrialStatistics
+     * 2. Trains OxygenPredictor (Ridge regression) on patient-specific data with all features
+     * 3. Performs cross-validation to evaluate model quality (K-fold CV, calculates RMSE, MAE, R^2)
+     * 4. Prepares optimization features (importance ranking, banned features like EffectiveDrainRate)
+     * 5. Optimizes parameters using RegressionUtilities.OptimizeParameters:
+     *    - Primary: 3-phase gradient descent (analytical → gradient → iterative refinement)
+     *    - Fallback: RandomSweep if error > 5% or solution is null
+     *    - Last resort: Multi-Gradient if all else fails
+     * 6. Generates summary and full reports using TrialReportGenerator
+     * 7. Stores top 5 feature importances in result.correlations dictionary
+     * 
+     * Called from: PerformRegressionAnalysis
+     * 
+     * Calls:
+     * - RegressionUtilities.CalculateTrialStatistics
+     * - OxygenPredictor.TrainModel
+     * - RegressionUtilities.PerformCrossValidationAndErrorCalculation
+     * - RegressionUtilities.PrepareOptimizationFeatures
+     * - RegressionUtilities.OptimizeParameters
+     * - TrialReportGenerator.GenerateSummaryReport
+     * - TrialReportGenerator.GenerateFullReport
+     */
     private static TrialDataModels.RegressionResult PerformUnityRegressionAnalysis(
         List<TrialDataModels.TrialData> allTrialData,
         float targetOxygen)
@@ -84,23 +113,6 @@ public class TrialRegressionAlgorithm
         var predictor = new OxygenPredictor { maxFeaturesForTraining = featureCount };
         bool trained = predictor.TrainModel(allTrialData, enableFeatureSelection: false);
 
-        // EXPERIMENTAL: Aggressive feature selection (COMMENTED - kept for future reference)
-        // Note: This increased error on clean/constant data but may help with noisy real-world data
-        // 
-        // int maxFeatures;
-        // bool enableFeatureSelection;
-        // if (allTrialData.Count <= 5) {
-        //     maxFeatures = 3;  // TOP 3 features
-        //     enableFeatureSelection = true;
-        // } else if (allTrialData.Count <= 8) {
-        //     maxFeatures = 5;  // TOP 5 features
-        //     enableFeatureSelection = true;
-        // } else {
-        //     maxFeatures = featureCount;
-        //     enableFeatureSelection = false;
-        // }
-        // predictor.maxFeaturesForTraining = maxFeatures;
-        // predictor.TrainModel(allTrialData, enableFeatureSelection: enableFeatureSelection);
         
         if (!trained)
         {
@@ -112,17 +124,13 @@ public class TrialRegressionAlgorithm
 
         var model = predictor.GetModel();
 
-        if (model?.featureNames == null || model.featureNames.Length + 1 != model.coefficients?.Length)
-        {
-            Debug.LogError("[Regression] Feature names must align with coefficients (excluding intercept).");
-        }
-
         var (cvRmse, cvMae, cvR2, kFolds, avgError) = RegressionUtilities.PerformCrossValidationAndErrorCalculation(
             allTrialData, model, predictor, featureCount);
 
         var (bannedFeatures, filteredImportance) = RegressionUtilities.PrepareOptimizationFeatures(allTrialData, predictor);
 
-        var (optimizedSolution, optimizedError) = RegressionUtilities.OptimizeParameters(
+        // C# mode: Gradient 3-Phase as primary, RandomSweep as fallback, Multi-Gradient as last resort
+        var (optimizedSolution, optimizedError, selectedMethod) = RegressionUtilities.OptimizeParameters(
             model, predictor, allTrialData, filteredImportance,
             FeatureExtractor.FeatureNames, targetOxygen,
             allTrialData.Any(t => t.IsAmadeoMode > 0.5f));
@@ -130,9 +138,14 @@ public class TrialRegressionAlgorithm
         result.optimizedSolution = optimizedSolution;
         result.optimizedSolutionError = optimizedError;
 
-        result.summaryText = TrialReportGenerator.GenerateSummaryReport(allTrialData, avgError, predictor, optimizedSolution, result.optimizedSolutionError, targetOxygen);
+        // C# mode: Show selected method in report
+        result.summaryText = TrialReportGenerator.GenerateSummaryReport(
+            allTrialData, avgError, predictor, optimizedSolution, result.optimizedSolutionError, targetOxygen,
+            selectedMethod: selectedMethod);
 
-        result.fullDetailsText = TrialReportGenerator.GenerateFullReport(allTrialData, avgError, result.averageOxygen, predictor, optimizedSolution, result.optimizedSolutionError, targetOxygen);
+        result.fullDetailsText = TrialReportGenerator.GenerateFullReport(
+            allTrialData, avgError, result.averageOxygen, predictor, optimizedSolution, result.optimizedSolutionError, targetOxygen,
+            selectedMethod: selectedMethod);
 
         // Store feature importance
         foreach (var (feature, value) in filteredImportance.Take(5))
@@ -141,19 +154,6 @@ public class TrialRegressionAlgorithm
         }
 
         return result;
-    }
-
-    public static bool SaveRegressionResultsToFile(TrialDataModels.RegressionResult result, string saveFolder = "RegressionResults")
-    {
-        if (result == null || string.IsNullOrEmpty(result.fullDetailsText))
-        {
-            Debug.LogWarning("No results to save!");
-            return false;
-        }
-
-        // Detect if this is a Python model report
-        bool isPythonModel = result.fullDetailsText.Contains("PYTHON MODEL REGRESSION REPORT");
-        return TrialReportGenerator.SaveToFile(result.fullDetailsText, saveFolder, isPythonModel);
     }
 
     #endregion

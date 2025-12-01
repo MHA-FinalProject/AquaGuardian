@@ -38,8 +38,10 @@
 # Additional ignore patterns for Unity
 # Generated reports
 Assets/Subject/
-README_REGRESSION_SYSTEM.md
-.
+README_PROJECT_BOOK.md
+README_REGRESSION_DETAILED.md
+cursor_flask_regression_server_implementation.md
+
 
 
 # Temp screenshots and test images
@@ -49,8 +51,9 @@ Assets/Data/RegressionResults/
 
 
 
+
 # Additional UI assets
-Assets/WaterUIPAck/
+
 
 
 

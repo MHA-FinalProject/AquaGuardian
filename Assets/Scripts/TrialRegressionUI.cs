@@ -24,9 +24,8 @@ public class TrialRegressionUI : MonoBehaviour
     [SerializeField] private bool autoSaveResults = true;
     [SerializeField] private string saveFolder = "RegressionResults";
 
-    [Header("Python Model Auto-Load")]
-    [SerializeField] private bool autoLoadPythonModel = false;
-    [SerializeField] private string pythonModelFileName = "regression_model_elasticnet.json";
+    [Header("Python Server Settings")]
+    [SerializeField] private bool usePythonServer = false;  // Default: Unity model
 
     private TrialDataModels.RegressionResult lastResult;
     private TrialUIController trialUIController;
@@ -45,10 +44,20 @@ public class TrialRegressionUI : MonoBehaviour
         if (regressionPanel != null)
             regressionPanel.SetActive(false);
 
-        // AUTO-LOAD Python model if enabled
-        if (autoLoadPythonModel)
+        // Check if Python server is enabled in editor
+        if (usePythonServer)
         {
-            TrialRegressionAlgorithm.TryAutoLoadPythonModel(pythonModelFileName);
+            CheckServerAvailability();
+        }
+    }
+    
+    private void CheckServerAvailability()
+    {
+        var serverClient = FindObjectOfType<PythonRegressionServerClient>();
+        
+        if (serverClient != null)
+        {
+            StartCoroutine(serverClient.CheckServerHealth());
         }
     }
 
@@ -59,9 +68,6 @@ public class TrialRegressionUI : MonoBehaviour
             
         bool useRandomParameters = trialUIController != null && trialUIController.IsRandomParametersMode();
         var trialData = TrialDataService.LoadAllTrials(useRandomParameters);
-        
-        int trialCount = trialData != null ? trialData.Count : 0;
-        Debug.Log($"[TrialRegressionUI] Starting regression analysis - Mode: {(useRandomParameters ? "RANDOM" : "CONSTANT (CSV)")}, Trials: {trialCount}");
 
         if (trialData == null || trialData.Count < 2)
         {
@@ -69,10 +75,38 @@ public class TrialRegressionUI : MonoBehaviour
             return;
         }
 
+        // Check if Python server is enabled and available
+        if (usePythonServer)
+        {
+            var serverClient = FindObjectOfType<PythonRegressionServerClient>();
+            if (serverClient != null && serverClient.IsServerAvailable)
+            {
+                // Show panel immediately with loading message
+                ShowLoadingMessage("Analyzing with Python server...\n\nTraining regression model on trial data...");
+                StartCoroutine(serverClient.TrainAndAnalyze(trialData, 10f, OnServerAnalysisComplete));
+                return;
+            }
+            else
+            {
+                // Server not available, will fall back to Unity model
+            }
+        }
+
+        // Use Unity built-in model (patient-specific Ridge regression)
         lastResult = TrialRegressionAlgorithm.PerformRegressionAnalysis(trialData);
         lastSavedReportHash = null; // Reset hash for new analysis
         ShowRegressionResults(lastResult.summaryText);
 
+        if (autoSaveResults)
+            SaveRegressionResults();
+    }
+    
+    private void OnServerAnalysisComplete(TrialDataModels.RegressionResult result)
+    {
+        lastResult = result;
+        lastSavedReportHash = null;
+        ShowRegressionResults(result.summaryText);
+        
         if (autoSaveResults)
             SaveRegressionResults();
     }
@@ -100,6 +134,18 @@ public class TrialRegressionUI : MonoBehaviour
             regressionResultsText.text = $"ERROR:\n{errorMessage}";
 
         Debug.LogError(errorMessage);
+    }
+
+    private void ShowLoadingMessage(string message)
+    {
+        if (regressionPanel != null)
+        {
+            regressionPanel.SetActive(true);
+            regressionPanel.transform.SetAsLastSibling();
+        }
+
+        if (regressionResultsText != null)
+            regressionResultsText.text = message;
     }
 
     public void CloseRegressionPanel()
@@ -143,7 +189,6 @@ public class TrialRegressionUI : MonoBehaviour
     {
         if (lastResult == null)
         {
-            Debug.LogWarning("No results to save!");
             return;
         }
 
@@ -151,7 +196,6 @@ public class TrialRegressionUI : MonoBehaviour
         string currentReportHash = lastResult.fullDetailsText?.GetHashCode().ToString();
         if (currentReportHash == lastSavedReportHash)
         {
-            Debug.Log("[TrialRegressionUI] Skipping duplicate save - same report already saved");
             return;
         }
 

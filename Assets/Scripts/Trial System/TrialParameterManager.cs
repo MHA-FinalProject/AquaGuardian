@@ -22,9 +22,9 @@ public class TrialParameterManager : MonoBehaviour
     [SerializeField] private string randomParametersPath = "Data/Trials/Trial_Random_Parameters.csv";
     [SerializeField] private TextAsset randomParametersFile; // Fallback if file path doesn't work
     [SerializeField] private TrialDataModels.ParameterRanges parameterRanges = new();
-    
+
     private bool currentModeIsRandom = false;
-    
+
     public TrialDataModels.TrialData LoadAndApplyTrialParameters(int trialNumber, bool useRandomParameters = false)
     {
         currentModeIsRandom = useRandomParameters;
@@ -77,10 +77,10 @@ public class TrialParameterManager : MonoBehaviour
         // Note: Duplicate save prevention is handled by TrialDataService.UpdateOriginalCSV
         // - Failed attempts (0%) are overwritten in the same column
         // - Successful retries create a new column (o2_run2, o2_run3, etc.)
-        
+
         // Save to CSV and update cache (cache handled inside SaveTrialResult)
         bool saved = TrialDataService.SaveTrialResult(trialData, currentModeIsRandom, trialParametersPath, randomParametersPath);
-        
+
         if (saved)
         {
             Debug.Log($"[TrialParameterManager] Saved trial {trialData.trialId} - O2: {trialData.finalOxygenRemaining:F1}%");

@@ -5,9 +5,10 @@ using System.Linq;
 
 /**
 * Python-trained regression model loader and predictor  
-* Loads model JSON exported from scikit-learn (Ridge/ElasticNet/Huber/PLS)
+* Loads patient-specific model JSON from Python server (Ridge/ElasticNet/Huber/PLS)
 * Performs lightweight z-score normalization + dot product prediction
-
+* Used by PythonRegressionHandler to load temporary server models (server_model.json)
+* See also: PythonRegressionHandler, PythonRegressionServerClient
 */
 
 [Serializable]
@@ -66,19 +67,17 @@ public class PythonRegressionModel
                 return false;
             }
 
-            // Validate that model is actually trained (not example/dummy)
+            // Validate that model is actually trained (not dummy/untrained)
             bool allBetasZero = model.betas.All(b => Mathf.Abs(b) < 1e-9f);
             if (model.n_samples == 0 || allBetasZero)
             {
                 Debug.LogWarning($"[PythonRegressionModel] Model appears to be untrained (n_samples={model.n_samples}, all betas zero). Rejecting model.");
-                Debug.LogWarning("   This might be the example file. Train a real model with Python first!");
+                Debug.LogWarning("   Ensure Python server trained the model successfully on patient trials!");
                 model = null;
                 return false;
             }
 
             isLoaded = true;
-            Debug.Log($"[PythonModel] Loaded {model.model_type}: {model.n_features} features, {model.n_samples} samples");
-            Debug.Log($"   Train MAE={model.train_mae:F2}%, RMSE={model.train_rmse:F2}%, R^2={model.train_r2:F3}");
             
             return true;
         }
