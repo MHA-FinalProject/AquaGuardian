@@ -2,18 +2,21 @@
 
 ## Overview
 
-**AquaGuardian** is a rehabilitation game system that uses machine learning to adaptively adjust game difficulty based on patient performance. The system analyzes player trial data and automatically optimizes game parameters to achieve target performance levels (e.g., 10\% oxygen remaining at trial end).
+**AquaGuardian** is a rehabilitation game system that uses machine learning to adaptively adjust game difficulty based on patient performance. The system analyzes player trial data and automatically optimizes game parameters to achieve target performance levels.
 
->**Goal**: Run 5 trials, perform regression analysis, and tune game parameters to achieve 10% oxygen remaining at the end.
+>**Goal**: Run trials, perform regression analysis, and tune game parameters to achieve desired oxygen levels (10%-90%).
 
 **Process**:
 
-- Player completes 5 trials with different parameters from CSV files (`Trial_5_runs_.csv` or `Trial_Random_Parameters.csv`)
+- Player completes trials with different parameters from CSV files (`Trial_5_runs_.csv` or `Trial_Random_Parameters.csv`)
 - ML model learns how parameters affect oxygen consumption
-- System calculates parameters that should yield 10% oxygen
-- Optimized settings used for next session (adaptive difficulty)
+- System calculates parameters for target oxygen levels (single target or multi-target)
+- Optimized settings can be selected and used for next session (adaptive difficulty)
 
-**Entry Point:** `TrialRegressionAlgorithm.PerformRegressionAnalysis()`
+**Entry Points:**
+
+- Single Target: `TrialRegressionAlgorithm.PerformRegressionAnalysis()`
+- Multi-Target: `MultiTargetOptimizer.RunMultiTargetAnalysis()`
 
 ---
 
@@ -375,6 +378,10 @@ TrialRegressionAlgorithm.SaveRegressionResultsToFile()
 | 11 | Reporting | `TrialReportGenerator.cs` | `GenerateFullReport()` | TrialRegressionAlgorithm |
 | 12 | Save | `TrialRegressionAlgorithm.cs` | `SaveRegressionResultsToFile()` :42 | TrialRegressionUI |
 | 13 | Export | `Assets/Data/RegressionResults/` | `UnityRegression_*.txt` | Auto-saved |
+| 14 | Multi-Target | `MultiTargetOptimizer.cs` | `RunMultiTargetAnalysis()` :67 / `OptimizeForAllTargets()` :115 | TrialRegressionUI |
+| 15 | Multi-Target UI | `TrialRegressionUI.cs` | `CalculateMultiTargetAnalysis()` :315 / `OnTargetButtonClicked()` :582 | Button onClick |
+| 16 | Param Selection | `SelectedParametersService.cs` | `SaveSelectedParameters()` / `LoadSelectedParameters()` | TrialRegressionUI, PanelOpenUp |
+| 17 | Param Loading | `PanelOpenUp.cs` | `LoadSelectedParametersToInputFields()` | Start() |
 
 ---
 
@@ -503,23 +510,54 @@ if (result.optimizedSolution != null) {
 
 ### Using the UI
 
-1. Complete 5 trials in the game
-2. Click **"Calculate Regression"** button in the UI
+#### Single Target Analysis (Original)
+1. Complete 5+ trials in the game
+2. Click **"Calculate Regression"** (or **"ANALYZE"**) button in the UI
 3. System automatically:
    - Loads trial data from CSV
    - Trains regression model
-   - Optimizes parameters for target oxygen (10%)
+   - Optimizes parameters for target oxygen (default: 10%)
    - Generates detailed report
 4. Review results in the regression panel
 5. Reports are auto-saved to `Assets/Data/RegressionResults/UnityRegression_*.txt`
 
+#### Multi-Target Analysis (NEW)
+1. Complete 5+ trials in the game
+2. Click **"MULTI TARGET"** button (appears when analysis is available)
+3. System automatically:
+   - Optimizes for 9 target levels (10%-90%)
+   - Displays interactive table with results
+   - Saves to `target.csv` and `MultiTarget_Report_*.csv`
+4. **Select parameters**: Click a button next to any target row
+5. **Confirmation**: Message shows "Selected parameters for target X%"
+6. **Auto-close**: Panel closes after 2 seconds
+7. **Next session**: Selected parameters auto-load into main game input fields
+8. **Modify/Start**: Review parameters in main panel, modify if needed, then start game
+
 ### Output Files
 
 - **Regression Reports**: `Assets/Data/RegressionResults/UnityRegression_YYYY-MM-DD_HH-MM-SS.txt`
-  - Contains model metrics (R², RMSE, MAE)
-  - Shows optimized parameters
+  - Contains model metrics (R^2, RMSE, MAE)
+  - Shows optimized parameters for single target
   - Includes feature importance analysis
   - Comparison between optimization methods (if Python mode enabled)
+
+- **Multi-Target CSV (Game Loading)**: `Assets/Data/MultiTargets/target.csv`
+  - Optimized parameters for 9 difficulty levels (10%-90%)
+  - Field names match code properties for easy loading
+  - 11 parameters per target (no metadata)
+  - Updated each time multi-target analysis runs
+
+- **Multi-Target Reports (Excel)**: `Assets/Data/MultiTargets/MultiTarget_Report_YYYY-MM-DD_HH-MM-SS.csv`
+  - Detailed analysis with metadata (timestamp, trial count, model R^2, RMSE)
+  - 12 parameters including `EffectiveDrainRate` derived feature
+  - Summary statistics (success rate, error ranges)
+  - Excel-friendly formatting with proper headers
+
+- **Selected Parameters**: `Assets/Data/SelectedParameters/SelectedParameters.json`
+  - Stores user-selected parameters from multi-target table
+  - Auto-loads into main game input fields on next session
+  - Includes target oxygen and predicted outcome
 
 - **Trial Data CSV**: `Assets/Data/Trials/Trial_5_runs_.csv` or `Trial_Random_Parameters.csv`
   - Stores all trial parameters and outcomes
@@ -535,15 +573,19 @@ if (result.optimizedSolution != null) {
 | 2 | `FeatureExtractor` | `Assets/Scripts/Regression/Features/` | Converts trial data to feature vectors |
 | 3 | `MultipleLinearRegression` | `Assets/Scripts/Linear regression/` | Ridge regression with L2 regularization |
 | 4 | `OxygenPredictor` | `Assets/Scripts/Linear regression/` | Training/prediction interface |
-| 5 | `DifficultyParameterSolver` | `Assets/Scripts/Linear regression/` | Optimization algorithms |
+| 5 | `DifficultyParameterSolver` | `Assets/Scripts/Linear regression/` | Optimization algorithms (3-solver cascade) |
 | 6 | `RegressionUtilities` | `Assets/Scripts/` | Cross-validation, optimization coordination |
 | 7 | `RegressionMath` | `Assets/Scripts/Linear regression/` | Chain rule for derived features |
 | 8 | `FeatureNormalizer` | `Assets/Scripts/Linear regression/` | Z-score normalization |
-| 9 | `TrialSystemManager` | `Assets/Scripts/` | Trial lifecycle (5 trials) |
+| 9 | `TrialSystemManager` | `Assets/Scripts/` | Trial lifecycle management |
 | 10 | `TrialDataService` | `Assets/Scripts/Trial/` | CSV I/O operations |
 | 11 | `TrialDataCache` | `Assets/Scripts/` | Runtime data caching |
 | 12 | `TrialReportGenerator` | `Assets/Scripts/` | Summary + full report generation |
 | 13 | `TrialDataModels` | `Assets/Scripts/` | Data structures (`TrialData`, `RegressionResult`) |
+| 14 | `MultiTargetOptimizer` | `Assets/Scripts/Regression/` | Multi-target optimization (10%-90%) |
+| 15 | `SelectedParametersService` | `Assets/Scripts/` | Save/load selected parameters to JSON |
+| 16 | `PanelOpenUp` | `Assets/Scripts/` | Main panel, loads selected params to input fields |
+| 17 | `TrialRegressionUI` | `Assets/Scripts/` | UI integration, displays results and tables |
 
 ### Key Equations
 
@@ -715,6 +757,134 @@ If both fail: use Baseline Fallback
   then
 Report shows: [Selected: method_name]
 ```
+
+---
+
+## Multi-Target Optimization System
+
+### Introduction
+
+The **Multi-Target Optimization** feature generates optimized game parameters for a range of difficulty levels (10%-90% target oxygen) in a single analysis. This creates a lookup table of parameters for different difficulty levels, allowing quick adaptation to patient needs.
+
+### How It Works
+
+1. **Analysis**: Click the **"MULTI TARGET"** button (appears when enough trials are available)
+2. **Optimization**: System optimizes for 9 target levels (10%, 20%, 30%... 90%)
+3. **Table Display**: Results shown in an interactive table with predicted outcomes
+4. **Selection**: Click a button next to any row to select those parameters
+5. **Auto-Load**: Selected parameters automatically load into the main game panel for review/modification
+
+### Files Generated
+
+#### 1. `target.csv` (Game Loading)
+```csv
+oygenTarget,predicted_oygen,error,speed,verticalSpeed,idleUpwardSpeed,lifeTime,RemoveHealthEveryLifeTime,removeHealthWithCollide,timeBetweenCollides,healHealthPoint,factorForce
+10%,9.81,0.190,18.481,28.910,0.500,0.735,4.183,9.826,1.156,5.687,0.000
+20%,20.15,0.152,18.630,29.045,0.500,0.812,4.250,9.761,1.198,5.712,0.000
+...
+```
+
+- **Purpose**: Quick parameter loading for games
+- **Location**: `Assets/Data/MultiTargets/target.csv`
+- **Format**: Field names match code properties
+- **Columns**: 11 parameters (no metadata, no derived features)
+
+#### 2. `MultiTarget_Report_*.csv` (Excel Analysis)
+```csv
+Report Type,MULTI-TARGET ANALYSIS
+Generated,2025-12-04 13:26:24
+Trials,150
+Model R^2,0.9845
+Model RMSE,2.34%
+Input Type,Keyboard
+
+Target,Predicted,Error,Speed,VerticalSpeed,IdleUpwardSpeed,LifeTime,Drain,Collide,TimeBetweenCollides,Heal,FactorForce,EffectiveDrainRate
+10%,9.81%,0.190%,18.481,28.910,0.500,0.735,4.183,9.826,1.156,5.687,0.000,5.692
+...
+
+Summary
+Successful,9/9
+Avg Error,0.36%
+Min Error,0.19%
+Max Error,0.46%
+```
+
+- **Purpose**: Detailed analysis in Excel
+- **Location**: `Assets/Data/MultiTargets/MultiTarget_Report_YYYY-MM-DD_HH-MM-SS.csv`
+- **Features**:
+  - Metadata (timestamp, trial count, model quality)
+  - 12 parameters (includes `EffectiveDrainRate` derived feature)
+  - Summary statistics (success rate, error ranges)
+  - Excel-friendly formatting
+
+### Parameter Selection Flow
+
+```mermaid
+flowchart LR
+    A[Click MULTI TARGET] --> B[Generate Table<br/>9 targets × params]
+    B --> C[Display Table<br/>with Buttons]
+    C --> D[User Clicks<br/>Target Button]
+    D --> E[Save to JSON<br/>SelectedParameters.json]
+    E --> F[Show Confirmation<br/>'Selected target X%']
+    F --> G[Auto-close after 2s]
+    G --> H[Next Game Opens]
+    H --> I[Load Parameters<br/>to Input Fields]
+    I --> J[User can Review/<br/>Modify/Start]
+```
+
+### Components
+
+| Component | File | Role |
+|-----------|------|------|
+| **MultiTargetOptimizer** | `Assets/Scripts/Regression/MultiTargetOptimizer.cs` | Core optimization logic for 10%-90% targets |
+| **SelectedParametersService** | `Assets/Scripts/SelectedParametersService.cs` | Save/load selected parameters to JSON |
+| **TrialRegressionUI** | `Assets/Scripts/TrialRegressionUI.cs` | UI integration, table display, button handlers |
+| **PanelOpenUp** | `Assets/Scripts/PanelOpenUp.cs` | Load selected parameters to input fields |
+
+### Usage Example
+
+```csharp
+// 1. Generate multi-target analysis
+string report = MultiTargetOptimizer.RunMultiTargetAnalysis(trials);
+// Saves to: Assets/Data/MultiTargets/target.csv
+//           Assets/Data/MultiTargets/MultiTarget_Report_*.csv
+
+// 2. Load parameters for a specific target
+var params50 = MultiTargetOptimizer.GetParametersForTarget(50f);
+
+// 3. Check if user has selected parameters
+if (SelectedParametersService.HasSelectedParameters()) {
+    var selected = SelectedParametersService.LoadSelectedParameters();
+    float targetOxygen = SelectedParametersService.GetSelectedTargetOxygen();
+    Debug.Log($"Using parameters for {targetOxygen}% target");
+}
+```
+
+### Key Features
+
+- ✅ **Deterministic Results**: Same patient data produces identical optimization results
+- ✅ **Patient-Specific**: Different patients get different optimized parameters
+- ✅ **Excel Compatible**: CSV reports open directly in Excel with proper formatting
+- ✅ **Auto-Load**: Selected parameters automatically populate main game input fields
+- ✅ **Visual Feedback**: Selected row highlighted in table, confirmation message shown
+- ✅ **Robust Optimization**: Uses same 3-solver cascade as single-target optimization
+
+### Technical Details
+
+**Optimization Method**: Same as single-target (Gradient 3-Phase → RandomSweep → Multi-Gradient fallback)
+
+**Deterministic Seeding**: Uses fixed seed based on target oxygen to ensure reproducibility:
+```csharp
+int seed = (int)(targetO2 * 1000); // 10% = 10000, 50% = 50000
+var random = new System.Random(seed);
+```
+
+**Feature Set**: 10 features for C# mode (includes `EffectiveDrainRate`, but it's banned from optimization to prevent multicollinearity)
+
+**Performance**: Typically < 0.5% error per target, completes 9 optimizations in seconds
+
+---
+
 # Screenshots
 
 ![Screenshot 1](<docs/images/צילום מסך 2025-12-01 124550-1.png>)

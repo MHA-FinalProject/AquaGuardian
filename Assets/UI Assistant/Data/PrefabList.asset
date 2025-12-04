@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a17c66616be6ca4eb13e84e9c2cbcc0, type: 3}
+  m_Name: PrefabList
+  m_EditorClassIdentifier: 
+  AutoCreateCanvas: 1
+  EssentialPrefabs:
+  - Name: Button
+    GameObject: {fileID: 7947185782940448060, guid: 7c551a22f1b6bae40b5081b4136da917, type: 3}
+  - Name: Dropdown
+    GameObject: {fileID: 8346209473808232926, guid: 7fc67ef750831184d9fb4daa8b58243b, type: 3}
+  - Name: Input Field
+    GameObject: {fileID: 4462224591721141766, guid: 9f64bce601e07d34e9ea26834f4a7f0d, type: 3}
+  - Name: Option Cycler
+    GameObject: {fileID: 685013468548134762, guid: 9f2f5c07a7d42204581c07f7e311eb08, type: 3}
+  - Name: Scrollbar
+    GameObject: {fileID: 3496550951103082101, guid: e13071cad59300f428268f644c35a838, type: 3}
+  - Name: Slider
+    GameObject: {fileID: 4174779256464132710, guid: c1f5da1929561fb42a32ef07eb85b190, type: 3}
+  - Name: Toggle
+    GameObject: {fileID: 1060082791667005458, guid: d96d29ad13ac58d4fba9d36c4763668d, type: 3}
+  CustomPrefabs: []

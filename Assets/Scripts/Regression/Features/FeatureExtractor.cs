@@ -46,6 +46,7 @@ public static class FeatureExtractor
     // Extracts feature matrix from multiple trials (2D array: [trial_index][feature_index]). 
     // Called from: OxygenPredictor.TrainModel, RegressionUtilities.PerformCrossValidationAndErrorCalculation
     // Returns: 2D array: [trial_index][feature_index] = feature_value
+    //for example X[0][2] = idleUpwardSpeed of trial 0
     public static float[][] ExtractFeatures(List<TrialDataModels.TrialData> trials)
     {
         float[][] X = new float[trials.Count][];

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 
@@ -17,45 +18,23 @@ public class getEventFromAmadeoClientDiver : MonoBehaviour
     [Header("Movement Settings")]
    // [SerializeField] private float smoothSpeed = 1.5f;  // Smoothing factor for movement speed
     [SerializeField] float verticalTolerance = 0.1f;  // Tolerance for vertical movement to avoid unnecessary small adjustments
+    [SerializeField] bool invertForceDirection = false;  // Invert force direction (use if forces are negative)
 
     // === UI Elements ===
     [Header("UI Components")]
-    [SerializeField] GameObject Panel;  
+    [SerializeField] GameObject Panel;  // Reference to a UI panel
     public TMP_InputField factor_force_inputField;  // Input field to adjust the force multiplier
 
     // === Internal State ===
-    private Rigidbody rb;  // Rigidbody component for physics-based movement
+    private Rigidbody rb;  // Reference to the Rigidbody component
     private PlayerMovement pm;  // Reference to the PlayerMovement script
-    private int indexForce = 2;  // Index of the selected finger (default: 2 = middle finger)
-    private float cachedFactorForce;  // Cached factor force value
+    private int indexForce = -1;  // Index of the selected finger (force to be used)
 
     void Start()
     {
-        rb = GetComponent<Rigidbody>();  // Get the Rigidbody component attached to the GameObject
+        rb = GetComponent<Rigidbody>();  // Get the Rigidbody component
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;  // Set collision detection mode to Continuous for better accuracy
-
         pm = GetComponent<PlayerMovement>();  // Get the PlayerMovement script component
-        
-        // Initialize cached factor force
-        cachedFactorForce = factor_forces;
-        SyncFactorForceFromInputField();
-    }
-    
-    void Update()
-    {
-        // Sync factor force from input field
-        SyncFactorForceFromInputField();
-    }
-    
-    private void SyncFactorForceFromInputField()
-    {
-        if (factor_force_inputField != null && !string.IsNullOrEmpty(factor_force_inputField.text))
-        {
-            if (float.TryParse(factor_force_inputField.text, out float parsedFactor))
-            {
-                cachedFactorForce = parsedFactor;
-            }
-        }
     }
 
     // Subscribe to the OnForcesUpdated event when the object is enabled
@@ -83,7 +62,116 @@ public class getEventFromAmadeoClientDiver : MonoBehaviour
         Debug.Log($"[getEventFromAmadeoClientDiver] Selected finger index: {fingerIndex}");
     }
 
+    /* LEGACY CODE (original version):
     // Handles the forces received from the Amadeo device
+    private void HandleForcesUpdated(float[] forces)
+    {
+        // NOTE: this part runs only if Amadeo is connected.
+        // If Amadeo is not connected, then the code in PlayerMovement.cs is run.
+
+        // TODO: Test with real Amadeo.
+
+        // TODO: Merge both functions to a single, easy-to-read function.
+
+        Debug.Log(indexForce);
+
+        // Check if the player can move and if the intro text has been shown
+        if (pm.canMove && pm.afterText)
+        {
+            // Ensure the panel is not active and valid forces are received
+            if (!Panel.activeSelf && forces != null && forces.Length > 0)
+            {
+                pm.notGetForcesFromAmadeo = false;  // Enable force reception from Amadeo
+
+                Vector3 horizontalVelocity = pm.speed * transform.TransformDirection(Vector3.forward); // move along the z-axis (forward direction)
+
+                Debug.Log("factor_force: " + float.Parse(factor_force_inputField.text));
+
+                // Calculate the new vertical position based on finger force
+                float newVerticalPosition = forces[indexForce] * float.Parse(factor_force_inputField.text);
+                float currentVerticalPosition = transform.position.y;
+
+                // Calculate vertical speed based on the difference between current and target vertical positions
+                float verticalMovementSpeed = Mathf.Abs(newVerticalPosition - currentVerticalPosition) < verticalTolerance?
+                    pm.idleUpwardSpeed:                                                             // Apply idle upward speed if within tolerance
+                    Mathf.Sign(newVerticalPosition - currentVerticalPosition) * pm.verticalSpeed;   // Move up or down
+                Vector3 verticalVelocity = verticalMovementSpeed * transform.TransformDirection(Vector3.up);
+
+                rb.velocity = horizontalVelocity + verticalVelocity;
+                pm.notGetForcesFromAmadeo = true;  // Disable force reception after applying movement
+            }
+        }
+    }
+    */
+
+    // Handles the forces received from the Amadeo device
+    private void HandleForcesUpdated(float[] forces)
+    {
+        // NOTE: this part runs only if Amadeo is connected or in emulation mode.
+        // If Amadeo is not connected, then the code in PlayerMovement.cs is run.
+
+        Debug.Log(indexForce);
+
+        // Check if the player can move and if the intro text has been shown
+        if (pm.canMove && pm.afterText)
+        {
+            // Ensure the panel is not active and valid forces are received
+            if (!Panel.activeSelf && forces != null && forces.Length > 0 && indexForce >= 0 && indexForce < forces.Length)
+            {
+                pm.notGetForcesFromAmadeo = false;  // Disable keyboard input - using Amadeo forces
+
+                // Use factor_forces as default, override from input field if available
+                float factorForce = factor_forces;
+                if (factor_force_inputField != null && !string.IsNullOrEmpty(factor_force_inputField.text))
+                {
+                    if (float.TryParse(factor_force_inputField.text, out float parsedFactor))
+                    {
+                        factorForce = parsedFactor;
+                    }
+                }
+
+                // Calculate the target vertical position based on finger force
+                float fingerForce = forces[indexForce];
+                if (invertForceDirection) fingerForce = -fingerForce;  // Invert if needed (for negative force data)
+                
+                Debug.Log($"[Amadeo] finger {indexForce}: force={fingerForce:F3}, factor={factorForce:F2}");
+                
+                float targetVerticalPosition = fingerForce * factorForce;
+                float currentVerticalPosition = transform.position.y;
+                float positionDifference = targetVerticalPosition - currentVerticalPosition;
+
+                // Calculate vertical input based on position difference
+                // If difference is within tolerance, use 0 (will apply idle speed)
+                // Otherwise, use sign to indicate direction (-1 down, +1 up)
+                float verticalInput = 0f;
+                if (Mathf.Abs(positionDifference) >= verticalTolerance)
+                {
+                    verticalInput = Mathf.Sign(positionDifference); // -1, 0, or +1
+                }
+
+                Debug.Log($"[Amadeo] target={targetVerticalPosition:F2}, current={currentVerticalPosition:F2}, diff={positionDifference:F2}, input={verticalInput}");
+
+                // Use unified movement function from PlayerMovement
+                // Pass isAmadeoInput=true to use Amadeo behavior (exact sign direction, no idle speed when moving down)
+                pm.ApplyMovement(verticalInput, verticalTolerance, isAmadeoInput: true);
+
+                pm.notGetForcesFromAmadeo = true;  // Re-enable keyboard fallback after applying movement
+            }
+            else
+            {
+                // No valid finger selected or panel is active - allow keyboard input
+                pm.notGetForcesFromAmadeo = true;
+            }
+        }
+        else
+        {
+            // Player can't move yet - ensure keyboard fallback is available
+            pm.notGetForcesFromAmadeo = true;
+        }
+    }
+
+    /*
+     // Handles the forces received from the Amadeo device
     private void HandleForcesUpdated(float[] forces)
     {
         // NOTE: This part runs only if Amadeo is connected or in emulation mode.
@@ -140,4 +228,5 @@ public class getEventFromAmadeoClientDiver : MonoBehaviour
             pm.notGetForcesFromAmadeo = true;
         }
     }
+    */
 }

@@ -260,15 +260,16 @@ public static class RegressionUtilities
         var baseline = FeatureExtractor.GetPatientBaseline(trials, ranges, useMedian: true);
         baseline.IsAmadeoMode = 0f;
 
-        // Add small noise to baseline for optimization variability
-        float noise = 0.01f;  // 1% noise (balance: accuracy + variability)
-        baseline.speed += baseline.speed * Random.Range(-noise, noise);
-        baseline.verticalSpeed += baseline.verticalSpeed * Random.Range(-noise, noise);
-        baseline.lifeTime += baseline.lifeTime * Random.Range(-noise, noise);
-        baseline.RemoveHealthEveryLifeTime += baseline.RemoveHealthEveryLifeTime * Random.Range(-noise, noise);
-        baseline.removeHealthWithCollide += baseline.removeHealthWithCollide * Random.Range(-noise, noise);
-        baseline.timeBetweenCollides += baseline.timeBetweenCollides * Random.Range(-noise, noise);
-        baseline.healHealthPoint += baseline.healHealthPoint * Random.Range(-noise, noise);
+        // OPTIONAL: Add small noise for optimization variability (currently disabled for deterministic results)
+        // Uncomment to enable ±1% random variation on baseline parameters:
+        // float noise = 0.01f;
+        // baseline.speed += baseline.speed * Random.Range(-noise, noise);
+        // baseline.verticalSpeed += baseline.verticalSpeed * Random.Range(-noise, noise);
+        // baseline.lifeTime += baseline.lifeTime * Random.Range(-noise, noise);
+        // baseline.RemoveHealthEveryLifeTime += baseline.RemoveHealthEveryLifeTime * Random.Range(-noise, noise);
+        // baseline.removeHealthWithCollide += baseline.removeHealthWithCollide * Random.Range(-noise, noise);
+        // baseline.timeBetweenCollides += baseline.timeBetweenCollides * Random.Range(-noise, noise);
+        // baseline.healHealthPoint += baseline.healHealthPoint * Random.Range(-noise, noise);
 
         return (ranges, baseline);
     }

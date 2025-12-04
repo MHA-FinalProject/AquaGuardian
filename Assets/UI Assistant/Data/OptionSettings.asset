@@ -1,0 +1,235 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-6394862750018257696
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c480097681f41d44ca8e145d042fc65c, type: 3}
+  m_Name: OptionEntry4
+  m_EditorClassIdentifier: 
+  Name: Font Size
+  LocalizedName: {fileID: -6802535756299387987, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  AnimationSettings: {fileID: 11400000, guid: 0d1bdb99885d09d45a7501806f8e7367, type: 2}
+  ColorSettings: {fileID: 11400000, guid: 0ab7bcd6d7cbc1e4eb43d40dea0a6cfe, type: 2}
+  OptionSettings: {fileID: 11400000}
+  ScaleSettings: {fileID: 11400000, guid: 8997d46e24cbe0e4083ab22c98c40507, type: 2}
+  TextSettings: {fileID: 11400000, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  Type: 6
+  Prefab: {fileID: 5180183174924070609, guid: c1f5da1929561fb42a32ef07eb85b190, type: 3}
+  ValueFormat: 0%
+  Clamp: 1
+  ClampMin: 0
+  ClampMax: 1
+  Options: []
+  LocalizedOptions: []
+  DefaultFloatValue: 0.5
+  _FloatValue: 0.5
+  DefaultBoolValue: 0
+  _BoolValue: 0
+  DefaultIntValue: 0
+  _IntValue: 0
+  DefaultNamedAssetValue: {fileID: 0}
+--- !u!114 &-4112574332440676776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c480097681f41d44ca8e145d042fc65c, type: 3}
+  m_Name: OptionEntry1
+  m_EditorClassIdentifier: 
+  Name: Color Profile
+  LocalizedName: {fileID: 4119523719898117093, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  AnimationSettings: {fileID: 11400000, guid: 0d1bdb99885d09d45a7501806f8e7367, type: 2}
+  ColorSettings: {fileID: 11400000, guid: 0ab7bcd6d7cbc1e4eb43d40dea0a6cfe, type: 2}
+  OptionSettings: {fileID: 11400000}
+  ScaleSettings: {fileID: 11400000, guid: 8997d46e24cbe0e4083ab22c98c40507, type: 2}
+  TextSettings: {fileID: 11400000, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  Type: 3
+  Prefab: {fileID: 770463961813528423, guid: 9f2f5c07a7d42204581c07f7e311eb08, type: 3}
+  ValueFormat: 0.0%
+  Clamp: 1
+  ClampMin: 0
+  ClampMax: 1
+  Options:
+  - Grey
+  - Orange
+  LocalizedOptions:
+  - {fileID: -1089674792367625497, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  - {fileID: 3435044364233951981, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  DefaultFloatValue: 0
+  _FloatValue: 0
+  DefaultBoolValue: 0
+  _BoolValue: 0
+  DefaultIntValue: 0
+  _IntValue: 0
+  DefaultNamedAssetValue: {fileID: -489243582740921438, guid: 0ab7bcd6d7cbc1e4eb43d40dea0a6cfe, type: 2}
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37c1173e1515e894789aa0294c35091b, type: 3}
+  m_Name: OptionSettings
+  m_EditorClassIdentifier: 
+  OptionEntries:
+  - {fileID: -4112574332440676776}
+  - {fileID: 2938704068848890504}
+  - {fileID: 669156312001377310}
+  - {fileID: -6394862750018257696}
+  - {fileID: 3521820725441106737}
+  - {fileID: 5971174988944928404}
+  Localized: 1
+--- !u!114 &669156312001377310
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c480097681f41d44ca8e145d042fc65c, type: 3}
+  m_Name: OptionEntry3
+  m_EditorClassIdentifier: 
+  Name: UI Scale
+  LocalizedName: {fileID: 6125051367329919993, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  AnimationSettings: {fileID: 11400000, guid: 0d1bdb99885d09d45a7501806f8e7367, type: 2}
+  ColorSettings: {fileID: 11400000, guid: 0ab7bcd6d7cbc1e4eb43d40dea0a6cfe, type: 2}
+  OptionSettings: {fileID: 11400000}
+  ScaleSettings: {fileID: 11400000, guid: 8997d46e24cbe0e4083ab22c98c40507, type: 2}
+  TextSettings: {fileID: 11400000, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  Type: 5
+  Prefab: {fileID: 5180183174924070609, guid: c1f5da1929561fb42a32ef07eb85b190, type: 3}
+  ValueFormat: 0%
+  Clamp: 1
+  ClampMin: 0
+  ClampMax: 1
+  Options:
+  - asdasd
+  - jrwejrlkwer
+  - vmjlcxvljsdf
+  - weuorjlfds
+  - 5634
+  LocalizedOptions: []
+  DefaultFloatValue: 0.5
+  _FloatValue: 0.5
+  DefaultBoolValue: 0
+  _BoolValue: 0
+  DefaultIntValue: 0
+  _IntValue: 0
+  DefaultNamedAssetValue: {fileID: 0}
+--- !u!114 &2938704068848890504
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c480097681f41d44ca8e145d042fc65c, type: 3}
+  m_Name: OptionEntry2
+  m_EditorClassIdentifier: 
+  Name: Scale Profile
+  LocalizedName: {fileID: -994094867564924855, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  AnimationSettings: {fileID: 11400000, guid: 0d1bdb99885d09d45a7501806f8e7367, type: 2}
+  ColorSettings: {fileID: 11400000, guid: 0ab7bcd6d7cbc1e4eb43d40dea0a6cfe, type: 2}
+  OptionSettings: {fileID: 11400000}
+  ScaleSettings: {fileID: 11400000, guid: 8997d46e24cbe0e4083ab22c98c40507, type: 2}
+  TextSettings: {fileID: 11400000, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  Type: 4
+  Prefab: {fileID: 770463961813528423, guid: 9f2f5c07a7d42204581c07f7e311eb08, type: 3}
+  ValueFormat: 0.0%
+  Clamp: 1
+  ClampMin: 0
+  ClampMax: 100
+  Options: []
+  LocalizedOptions: []
+  DefaultFloatValue: 0
+  _FloatValue: 0
+  DefaultBoolValue: 0
+  _BoolValue: 0
+  DefaultIntValue: 1
+  _IntValue: 0
+  DefaultNamedAssetValue: {fileID: 784987750569717147, guid: 8997d46e24cbe0e4083ab22c98c40507, type: 2}
+--- !u!114 &3521820725441106737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c480097681f41d44ca8e145d042fc65c, type: 3}
+  m_Name: OptionEntry5
+  m_EditorClassIdentifier: 
+  Name: Language
+  LocalizedName: {fileID: 8248178523223428695, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  AnimationSettings: {fileID: 11400000, guid: 0d1bdb99885d09d45a7501806f8e7367, type: 2}
+  ColorSettings: {fileID: 11400000, guid: 0ab7bcd6d7cbc1e4eb43d40dea0a6cfe, type: 2}
+  OptionSettings: {fileID: 11400000}
+  ScaleSettings: {fileID: 11400000, guid: 8997d46e24cbe0e4083ab22c98c40507, type: 2}
+  TextSettings: {fileID: 11400000, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  Type: 7
+  Prefab: {fileID: 770463961813528423, guid: 9f2f5c07a7d42204581c07f7e311eb08, type: 3}
+  ValueFormat: 0.0%
+  Clamp: 1
+  ClampMin: 0
+  ClampMax: 100
+  Options: []
+  LocalizedOptions: []
+  DefaultFloatValue: 0
+  _FloatValue: 0
+  DefaultBoolValue: 0
+  _BoolValue: 0
+  DefaultIntValue: 0
+  _IntValue: 0
+  DefaultNamedAssetValue: {fileID: 3966114819974110793, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+--- !u!114 &5971174988944928404
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c480097681f41d44ca8e145d042fc65c, type: 3}
+  m_Name: OptionEntry6
+  m_EditorClassIdentifier: 
+  Name: Show Buttons
+  LocalizedName: {fileID: 540867095276768937, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  AnimationSettings: {fileID: 11400000, guid: 0d1bdb99885d09d45a7501806f8e7367, type: 2}
+  ColorSettings: {fileID: 11400000, guid: 0ab7bcd6d7cbc1e4eb43d40dea0a6cfe, type: 2}
+  OptionSettings: {fileID: 11400000}
+  ScaleSettings: {fileID: 11400000, guid: 8997d46e24cbe0e4083ab22c98c40507, type: 2}
+  TextSettings: {fileID: 11400000, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  Type: 1
+  Prefab: {fileID: 3798639602332288889, guid: d96d29ad13ac58d4fba9d36c4763668d, type: 3}
+  ValueFormat: 0.0%
+  Clamp: 1
+  ClampMin: 0
+  ClampMax: 100
+  Options: []
+  LocalizedOptions: []
+  DefaultFloatValue: 0
+  _FloatValue: 0
+  DefaultBoolValue: 1
+  _BoolValue: 0
+  DefaultIntValue: 0
+  _IntValue: 0
+  DefaultNamedAssetValue: {fileID: 0}

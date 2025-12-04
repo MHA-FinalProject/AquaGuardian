@@ -173,9 +173,17 @@ public class TrialUIController : MonoBehaviour
             Debug.LogError("Trial control panel NOT ASSIGNED in Inspector!");
         }
 
+        // Determine if trial failed by checking CurrentTrialData
+        bool trialFailed = false;
+        if (trialSystemManager != null && trialSystemManager.CurrentTrialData != null)
+        {
+            trialFailed = !trialSystemManager.CurrentTrialData.completed;
+        }
+        
         UpdateTrialControlText(trialSystemManager?.TrialsMode ?? false,
                               trialSystemManager?.CurrentTrialNumber ?? 0,
-                              trialSystemManager?.TotalTrials ?? 5);
+                              trialSystemManager?.TotalTrials ?? 5,
+                              trialFailed);
     }
 
 
@@ -218,6 +226,9 @@ public class TrialUIController : MonoBehaviour
 
     public void UpdateTrialControlText(bool trialsMode, int currentTrial, int totalTrials, bool trialFailed = false)
     {
+        // Check if we can retry the current trial
+        bool canRetry = trialSystemManager != null && trialSystemManager.CanRetryCurrentTrial;
+        
         // Switch between 3 status text objects based on state
         if (!trialsMode || currentTrial == 0)
         {
@@ -226,16 +237,17 @@ public class TrialUIController : MonoBehaviour
             if (duringTrialStatusText != null) duringTrialStatusText.SetActive(false);
             if (endStatusText != null) endStatusText.SetActive(false);
         }
-        else if (currentTrial >= totalTrials)
+        else if (currentTrial >= totalTrials && !(trialFailed && canRetry))
         {
-            // Show end status text
+            // Show end status text only if:
+            // - Last trial AND (completed OR no more retries)
             if (startStatusText != null) startStatusText.SetActive(false);
             if (duringTrialStatusText != null) duringTrialStatusText.SetActive(false);
             if (endStatusText != null) endStatusText.SetActive(true);
         }
         else
         {
-            // Show during trial status text
+            // Show during trial status text (also for last trial that failed but can retry)
             if (startStatusText != null) startStatusText.SetActive(false);
             if (duringTrialStatusText != null) duringTrialStatusText.SetActive(true);
             if (endStatusText != null) endStatusText.SetActive(false);
@@ -249,8 +261,13 @@ public class TrialUIController : MonoBehaviour
 
     public void UpdateTrialResults(float finalOxygen, bool completed, int currentTrial, int totalTrials)
     {
+        // Check if we can retry the current trial
+        bool canRetry = trialSystemManager != null && trialSystemManager.CanRetryCurrentTrial;
+        bool trialFailed = !completed;
+        
         // Switch status text objects
-        if (currentTrial >= totalTrials)
+        // Show end status only if: last trial AND (completed OR no more retries)
+        if (currentTrial >= totalTrials && !(trialFailed && canRetry))
         {
             // Show end status text
             if (startStatusText != null) startStatusText.SetActive(false);
@@ -259,7 +276,7 @@ public class TrialUIController : MonoBehaviour
         }
         else
         {
-            // Show during trial status text
+            // Show during trial status text (also for last trial that failed but can retry)
             if (startStatusText != null) startStatusText.SetActive(false);
             if (duringTrialStatusText != null) duringTrialStatusText.SetActive(true);
             if (endStatusText != null) endStatusText.SetActive(false);
@@ -271,7 +288,6 @@ public class TrialUIController : MonoBehaviour
             string resultText;
             if (!completed)
             {
-                bool canRetry = trialSystemManager != null && trialSystemManager.CanRetryCurrentTrial;
                 string message = canRetry ? "You have 1 more attempt" : "No more attempts";
                 resultText = $"Trial {currentTrial}/{totalTrials} - {message}\nOxygen: {finalOxygen:F1}%";
             }
@@ -284,7 +300,7 @@ public class TrialUIController : MonoBehaviour
             trialResultsText.text = resultText;
         }
 
-        UpdateTrialButtonsState(true, currentTrial, totalTrials, !completed);
+        UpdateTrialButtonsState(true, currentTrial, totalTrials, trialFailed);
     }
 
 
@@ -301,6 +317,9 @@ public class TrialUIController : MonoBehaviour
 
     private void UpdateTrialButtonsState(bool trialsMode, int currentTrial, int totalTrials, bool trialFailed = false)
     {
+        // Check if we can retry the current trial
+        bool canRetry = trialSystemManager != null && trialSystemManager.CanRetryCurrentTrial;
+        
         if (startTrialButton != null)
         {
             bool showStart = !trialsMode || currentTrial == 0;
@@ -315,13 +334,21 @@ public class TrialUIController : MonoBehaviour
 
         if (continueTrialButton != null)
         {
-            bool showContinue = trialsMode && currentTrial > 0 && currentTrial < totalTrials;
+            // Show continue button if:
+            // 1. Normal case: trial is not the last one (currentTrial < totalTrials)
+            // 2. Special case: Last trial failed AND we can still retry
+            bool isLastTrialWithRetryAvailable = currentTrial >= totalTrials && trialFailed && canRetry;
+            bool showContinue = trialsMode && currentTrial > 0 && (currentTrial < totalTrials || isLastTrialWithRetryAvailable);
             continueTrialButton.gameObject.SetActive(showContinue);
         }
 
         if (analyzeTrialsButton != null)
         {
-            bool showAnalyze = trialsMode && currentTrial >= totalTrials;
+            // Show analyze button only when:
+            // - We're on the last trial AND (trial completed OR no more retries available)
+            bool isLastTrialCompleted = currentTrial >= totalTrials && !trialFailed;
+            bool isLastTrialNoMoreRetries = currentTrial >= totalTrials && trialFailed && !canRetry;
+            bool showAnalyze = trialsMode && (isLastTrialCompleted || isLastTrialNoMoreRetries);
             analyzeTrialsButton.gameObject.SetActive(showAnalyze);
         }
     }

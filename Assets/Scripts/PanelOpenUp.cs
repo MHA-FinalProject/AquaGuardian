@@ -114,6 +114,9 @@ public class PanelOpenUp : MonoBehaviour
             Debug.LogError("No CSV file assigned!");
         }
 
+        // Load selected parameters to input fields (if file exists)
+        // This allows the user to see and modify the values before starting
+        LoadSelectedParametersToInputFields();
 
         // Check if panel is already closed (e.g., after scene restart)
         // If panel is closed, notify GameStateManager immediately
@@ -243,10 +246,96 @@ public class PanelOpenUp : MonoBehaviour
         playerLife.didntGetInputsYet = true;
         health.didntGetInputsYet = true;
 
-        if (!IsInTrialsMode && GameStateManager.Instance != null)
+        // If not in trials mode and we have selected parameters, apply them
+        if (!IsInTrialsMode)
+        {
+            ApplySelectedParametersToGame();
+            
+            if (GameStateManager.Instance != null)
         {
             GameStateManager.Instance.NotifyPanelClosed();
         }
+        }
+    }
+
+    /// <summary>
+    /// Applies selected parameters from the multi-target analysis to the main game.
+    /// Called when starting the main game (not trials).
+    /// Sets the input field values which are then read by the game components.
+    /// </summary>
+    private void ApplySelectedParametersToGame()
+    {
+        if (!SelectedParametersService.HasSelectedParameters())
+        {
+            Debug.Log("[PanelOpenUp] No selected parameters found - using defaults from UI");
+            return;
+        }
+
+        var selected = SelectedParametersService.LoadSelectedParameters();
+        if (selected == null)
+        {
+            Debug.LogWarning("[PanelOpenUp] Failed to load selected parameters");
+            return;
+        }
+
+        Debug.Log($"[PanelOpenUp] Applying selected parameters for target {selected.targetOxygen}%");
+
+        // Apply to PlayerMovement - has public fields AND input fields
+        if (playerMovement != null)
+        {
+            // Set the public fields directly
+            playerMovement.speed = selected.speed;
+            playerMovement.verticalSpeed = selected.verticalSpeed;
+            playerMovement.idleUpwardSpeed = selected.idleUpwardSpeed;
+            
+            // Also update the input fields so the UI reflects the values
+            if (playerMovement.speed_inputField != null)
+                playerMovement.speed_inputField.text = selected.speed.ToString("F2");
+            if (playerMovement.vertical_speed_inputField != null)
+                playerMovement.vertical_speed_inputField.text = selected.verticalSpeed.ToString("F2");
+            if (playerMovement.idle_upward_speed_inputField != null)
+                playerMovement.idle_upward_speed_inputField.text = selected.idleUpwardSpeed.ToString("F2");
+                
+            Debug.Log($"  PlayerMovement: speed={selected.speed}, vSpeed={selected.verticalSpeed}, idle={selected.idleUpwardSpeed}");
+        }
+
+        // Apply to Health - uses input fields (lifeTime, RemoveHealthEveryLifeTime)
+        if (health != null)
+        {
+            if (health.lifeTime_inputField != null)
+                health.lifeTime_inputField.text = selected.lifeTime.ToString("F2");
+            if (health.RemoveHealthEveryLifeTime_inputField != null)
+                health.RemoveHealthEveryLifeTime_inputField.text = selected.RemoveHealthEveryLifeTime.ToString("F2");
+                
+            Debug.Log($"  Health: lifeTime={selected.lifeTime}, drain={selected.RemoveHealthEveryLifeTime}");
+        }
+
+        // Apply to PlayerLife - uses input fields (removeHealthWithCollide, timeBetweenCollides, healHealthPoint)
+        if (playerLife != null)
+        {
+            if (playerLife.removeHealthWithCollide_inputField != null)
+                playerLife.removeHealthWithCollide_inputField.text = selected.removeHealthWithCollide.ToString("F2");
+            if (playerLife.timeBetweenCollides_inputField != null)
+                playerLife.timeBetweenCollides_inputField.text = selected.timeBetweenCollides.ToString("F2");
+            if (playerLife.healHealthPoints_inputField != null)
+                playerLife.healHealthPoints_inputField.text = selected.healHealthPoint.ToString("F2");
+                
+            Debug.Log($"  PlayerLife: collide={selected.removeHealthWithCollide}, timeBetween={selected.timeBetweenCollides}, heal={selected.healHealthPoint}");
+        }
+
+        // Apply to Amadeo component if in Amadeo mode
+        if (selected.IsAmadeoMode > 0.5f)
+        {
+            // Find getEventFromAmadeoClientDiver component (on Player object)
+            var amadeoHandler = FindObjectOfType<getEventFromAmadeoClientDiver>();
+            if (amadeoHandler != null && amadeoHandler.factor_force_inputField != null)
+            {
+                amadeoHandler.factor_force_inputField.text = selected.factorForce.ToString("F2");
+                Debug.Log($"  AmadeoHandler: factorForce={selected.factorForce}");
+            }
+        }
+
+        Debug.Log($"[PanelOpenUp] Successfully applied parameters for target {selected.targetOxygen}%");
     }
 
     private GameObject CreateEndObject(Vector3 position)
@@ -343,5 +432,95 @@ public class PanelOpenUp : MonoBehaviour
         {
             SetCaveFile(originalCaveFile);
         }
+    }
+
+    /// <summary>
+    /// Loads selected parameters from JSON file and populates input fields.
+    /// Called at Start() so user can see and modify the values before starting game.
+    /// </summary>
+    public void LoadSelectedParametersToInputFields()
+    {
+        if (!SelectedParametersService.HasSelectedParameters())
+        {
+            Debug.Log("[PanelOpenUp] No selected parameters file found - using current UI values");
+            return;
+        }
+
+        var selected = SelectedParametersService.LoadSelectedParameters();
+        if (selected == null)
+        {
+            Debug.LogWarning("[PanelOpenUp] Failed to load selected parameters from file");
+            return;
+        }
+
+        Debug.Log($"[PanelOpenUp] Loading parameters for target {selected.targetOxygen}% to input fields");
+
+        // Populate PlayerMovement input fields
+        if (playerMovement != null)
+        {
+            if (playerMovement.speed_inputField != null)
+                playerMovement.speed_inputField.text = selected.speed.ToString("F2");
+            if (playerMovement.vertical_speed_inputField != null)
+                playerMovement.vertical_speed_inputField.text = selected.verticalSpeed.ToString("F2");
+            if (playerMovement.idle_upward_speed_inputField != null)
+                playerMovement.idle_upward_speed_inputField.text = selected.idleUpwardSpeed.ToString("F2");
+        }
+
+        // Populate Health input fields
+        if (health != null)
+        {
+            if (health.lifeTime_inputField != null)
+                health.lifeTime_inputField.text = selected.lifeTime.ToString("F2");
+            if (health.RemoveHealthEveryLifeTime_inputField != null)
+                health.RemoveHealthEveryLifeTime_inputField.text = selected.RemoveHealthEveryLifeTime.ToString("F2");
+        }
+
+        // Populate PlayerLife input fields
+        if (playerLife != null)
+        {
+            if (playerLife.removeHealthWithCollide_inputField != null)
+                playerLife.removeHealthWithCollide_inputField.text = selected.removeHealthWithCollide.ToString("F2");
+            if (playerLife.timeBetweenCollides_inputField != null)
+                playerLife.timeBetweenCollides_inputField.text = selected.timeBetweenCollides.ToString("F2");
+            if (playerLife.healHealthPoints_inputField != null)
+                playerLife.healHealthPoints_inputField.text = selected.healHealthPoint.ToString("F2");
+        }
+
+        // Populate Amadeo input field if in Amadeo mode
+        if (selected.IsAmadeoMode > 0.5f)
+        {
+            var amadeoHandler = FindObjectOfType<getEventFromAmadeoClientDiver>();
+            if (amadeoHandler != null && amadeoHandler.factor_force_inputField != null)
+            {
+                amadeoHandler.factor_force_inputField.text = selected.factorForce.ToString("F2");
+            }
+        }
+
+        Debug.Log($"[PanelOpenUp] Loaded parameters: speed={selected.speed}, vSpeed={selected.verticalSpeed}, idle={selected.idleUpwardSpeed}, lifeTime={selected.lifeTime}, drain={selected.RemoveHealthEveryLifeTime}, collide={selected.removeHealthWithCollide}, heal={selected.healHealthPoint}");
+    }
+
+    /// <summary>
+    /// Clears the selected parameters file and resets to default values.
+    /// </summary>
+    public void ClearSelectedParameters()
+    {
+        SelectedParametersService.ClearSelectedParameters();
+        Debug.Log("[PanelOpenUp] Cleared selected parameters");
+    }
+
+    /// <summary>
+    /// Returns the current target oxygen value if selected parameters exist.
+    /// </summary>
+    public float GetSelectedTargetOxygen()
+    {
+        return SelectedParametersService.GetSelectedTargetOxygen();
+    }
+
+    /// <summary>
+    /// Checks if selected parameters file exists.
+    /// </summary>
+    public bool HasSelectedParameters()
+    {
+        return SelectedParametersService.HasSelectedParameters();
     }
 }

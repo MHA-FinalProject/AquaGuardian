@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d335429dca4da9f40bd967b22ff76a44, type: 3}
+  m_Name: ContentLibrary
+  m_EditorClassIdentifier: 
+  Logo: {fileID: 2800000, guid: 7bd3ce82473a3554c9334db0aa00da2b, type: 3}
+  WarnIcon: {fileID: 2800000, guid: b4e041488ac67a94a9f6a4bde97b1045, type: 3}
+  EditIcon: {fileID: 2800000, guid: c2e5019b61ffc3247a4202d08d3c00fc, type: 3}
+  DeleteIcon: {fileID: 2800000, guid: 1d86783b7e62ecf4da20f7c5bb5a1a25, type: 3}
+  UpIcon: {fileID: 2800000, guid: 28a9753b38a6c354f90a299281dd21fe, type: 3}
+  DownIcon: {fileID: 2800000, guid: ccb249fbc2567514cafbe9f11e7fc770, type: 3}
+  LeftIcon: {fileID: 2800000, guid: 2537f1aae3d7aa343aceba35ae08c4ef, type: 3}
+  RightIcon: {fileID: 2800000, guid: 7648a6e556a51bd4db8355d97466e71f, type: 3}
+  NormalIcon: {fileID: 2800000, guid: cac787e85ff8a1d4bab6216833994330, type: 3}
+  HighlightedIcon: {fileID: 2800000, guid: 108003675de29b045b714005d7e5dfcf, type: 3}
+  PressedIcon: {fileID: 2800000, guid: c62858d02c9ddea409f8e4794dbfaa09, type: 3}
+  SelectedIcon: {fileID: 2800000, guid: 61f504f0ee9567140a346cda535c6ded, type: 3}
+  DisabledIcon: {fileID: 2800000, guid: 815700048f0b01046b543c0a32acac4c, type: 3}

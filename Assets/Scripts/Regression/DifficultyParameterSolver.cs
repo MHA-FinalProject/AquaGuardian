@@ -61,7 +61,7 @@ public static class DifficultyParameterSolver
     public static TrialDataModels.TrialData SolveForTargetOxygen(MultipleLinearRegression model, TrialDataModels.TrialData baseParams,
         int[] topFeatureIndices, float targetO2, TrialDataModels.ParameterRanges ranges, System.Func<TrialDataModels.TrialData, float> predictO2, out float finalError)
     {
-        string[] fullFeatureNames = FeatureExtractor.FeatureNames;
+        string[] fullFeatureNames = FeatureExtractor.FeatureNames; 
         string[] modelFeatureNames = model.featureNames ?? fullFeatureNames;
 
        
@@ -146,8 +146,14 @@ public static class DifficultyParameterSolver
         if (predictFunc == null || ranges == null || samples <= 0)
             return (null, float.MaxValue);
 
-        // Use time-based seed for variability in results
-        var random = new System.Random((int)System.DateTime.Now.Ticks);
+        // Seed based on target oxygen only
+        // var random = new System.Random((int)System.DateTime.Now.Ticks);
+        // Results are PERSONALIZED because:
+        // - Model is trained on patient's specific trial data
+        // - Different patients → different model -> different predictions -> different "best" selection
+        // Same patient clicking multiple times -> same results (deterministic)
+        int seed = (int)(targetOxygen * 1000);
+        var random = new System.Random(seed);
         TrialDataModels.TrialData bestCandidate = null;
         float bestError = float.MaxValue;
 

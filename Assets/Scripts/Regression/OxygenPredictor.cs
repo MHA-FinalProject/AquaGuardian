@@ -45,8 +45,8 @@ public class OxygenPredictor
         useFeatureSelection = false;
         selectedFeatureIndices = null;
         selectedFeatureNames = null;
-
-        var (X_full, Y) = FeatureExtractor.ExtractFeaturesAndTargets(trials);
+        
+        var (X_full, Y) = FeatureExtractor.ExtractFeaturesAndTargets(trials); 
         float adaptiveRidgeLambda = Mathf.Clamp(0.5f + (10f - trials.Count) * 0.2f, 0.5f, 2.0f);
 
         if (enableFeatureSelection && trials.Count < 10)
@@ -105,7 +105,7 @@ public class OxygenPredictor
     //  Returns the underlying MultipleLinearRegression model.
     //  Used to access model coefficients, R^2, and other internal properties.
     public MultipleLinearRegression GetModel(){
-        return model;
+        return model; 
     }
 
     //  Trains a MultipleLinearRegression model with given features and Ridge regularization.

@@ -52,6 +52,18 @@ public class TrialRegressionAlgorithm
         return TrialReportGenerator.SaveToFile(result.fullDetailsText, saveFolder, isPythonModel);
     }
 
+    /**
+     * Performs multi-target optimization (10%-90% oxygen targets).
+     * Saves results to Assets/Data/MultiTargets/target.csv
+     * 
+     * @param allTrialData Patient trial data (minimum 3 trials required)
+     * @return Text report for display
+     */
+    public static string GetMultiTargetReport(List<TrialDataModels.TrialData> allTrialData)
+    {
+        return MultiTargetOptimizer.RunMultiTargetAnalysis(allTrialData);
+    }
+
     #endregion
 
     #region Helper Functions

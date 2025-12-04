@@ -1,4 +1,6 @@
 using UnityEngine;
+using System.Collections.Generic;
+using UnityEngine.UI;
 
 /**
  * MuteController is a script that is used to mute all audio sources in the game object.
@@ -6,12 +8,22 @@ using UnityEngine;
 
 public class MuteController : MonoBehaviour
 {
+    [SerializeField] private Sprite soundOnSprite;
+    [SerializeField] private Sprite soundOffSprite;
+    [SerializeField] private Button button;
+
     private AudioSource[] audioSources;
     
     void Start()
     {
         // Find all AudioSource components in this GameObject and all children
         audioSources = GetComponentsInChildren<AudioSource>();
+        
+        // If button is not assigned, try to get it from this GameObject
+        if (button == null)
+        {
+            button = GetComponent<Button>();
+        }
         
         if (audioSources.Length == 0)
         {
@@ -21,6 +33,9 @@ public class MuteController : MonoBehaviour
         {
             Debug.Log($"Found {audioSources.Length} AudioSource components (including children)");
         }
+        
+        // Initialize button image based on current mute state
+        UpdateButtonImage();
     }
     
     public void MuteAndUnMute() 
@@ -40,6 +55,9 @@ public class MuteController : MonoBehaviour
             
             Debug.Log($"All audio sources {(newMuteState ? "muted" : "unmuted")}");
         }
+        
+        // Update button image
+        UpdateButtonImage();
     }
     
     public void UnMute() 
@@ -57,6 +75,9 @@ public class MuteController : MonoBehaviour
             
             Debug.Log("All audio sources unmuted");
         }
+        
+        // Update button image
+        UpdateButtonImage();
     }
     
     public void Mute()
@@ -73,6 +94,27 @@ public class MuteController : MonoBehaviour
             }
             
            // Debug.Log("All audio sources muted");
+        }
+        
+        // Update button image
+        UpdateButtonImage();
+    }
+    
+    private void UpdateButtonImage()
+    {
+        if (button == null || button.image == null) return;
+        
+        // Determine current mute state
+        bool isMuted = audioSources != null && audioSources.Length > 0 && audioSources[0].mute;
+        
+        // Update sprite based on mute state
+        if (isMuted)
+        {
+            button.image.sprite = soundOffSprite;
+        }
+        else
+        {
+            button.image.sprite = soundOnSprite;
         }
     }
 }

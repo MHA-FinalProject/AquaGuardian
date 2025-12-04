@@ -1,0 +1,273 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-5630973617280110173
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68e19cba163d7c74b889e463645b456e, type: 3}
+  m_Name: ColorCategory1
+  m_EditorClassIdentifier: 
+  Name: Light
+  LocalizedName: {fileID: 0}
+  AnimationSettings: {fileID: 11400000, guid: 0d1bdb99885d09d45a7501806f8e7367, type: 2}
+  ColorSettings: {fileID: 11400000}
+  OptionSettings: {fileID: 11400000, guid: 2dcd8cbd47f2fff4e96388c5fc7e6155, type: 2}
+  ScaleSettings: {fileID: 11400000, guid: 8997d46e24cbe0e4083ab22c98c40507, type: 2}
+  TextSettings: {fileID: 11400000, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  Colors:
+  - ColorProfile: {fileID: -489243582740921438}
+    NormalColor: {r: 1, g: 0.6862745, b: 0.37254903, a: 1}
+    HighlightedColor: {r: 1, g: 0.7801887, b: 0.56037736, a: 1}
+    PressedColor: {r: 0.8301887, g: 0.600712, b: 0.37123528, a: 1}
+    SelectedColor: {r: 1, g: 0.78039217, b: 0.56078434, a: 1}
+    DisabledColor: {r: 0.8301887, g: 0.67119974, b: 0.5122107, a: 1}
+  - ColorProfile: {fileID: 8107707831676640302}
+    NormalColor: {r: 0.7803922, g: 0.7803922, b: 0.7803922, a: 1}
+    HighlightedColor: {r: 0.8980393, g: 0.8980393, b: 0.8980393, a: 1}
+    PressedColor: {r: 0.6392157, g: 0.6392157, b: 0.6392157, a: 1}
+    SelectedColor: {r: 0.8980393, g: 0.8980393, b: 0.8980393, a: 1}
+    DisabledColor: {r: 0.7568628, g: 0.7568628, b: 0.7568628, a: 1}
+--- !u!114 &-5416280178554940862
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68e19cba163d7c74b889e463645b456e, type: 3}
+  m_Name: ColorCategory4
+  m_EditorClassIdentifier: 
+  Name: Text
+  LocalizedName: {fileID: 0}
+  AnimationSettings: {fileID: 11400000, guid: 0d1bdb99885d09d45a7501806f8e7367, type: 2}
+  ColorSettings: {fileID: 11400000}
+  OptionSettings: {fileID: 11400000, guid: 2dcd8cbd47f2fff4e96388c5fc7e6155, type: 2}
+  ScaleSettings: {fileID: 11400000, guid: 8997d46e24cbe0e4083ab22c98c40507, type: 2}
+  TextSettings: {fileID: 11400000, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  Colors:
+  - ColorProfile: {fileID: -489243582740921438}
+    NormalColor: {r: 0.3018868, g: 0.21473834, b: 0.23979738, a: 1}
+    HighlightedColor: {r: 0.4528302, g: 0.34773943, b: 0.37640056, a: 1}
+    PressedColor: {r: 0.1509434, g: 0.11876113, b: 0.12753811, a: 1}
+    SelectedColor: {r: 0.4509804, g: 0.34901962, b: 0.3764706, a: 1}
+    DisabledColor: {r: 0.5660378, g: 0.52011395, b: 0.53446513, a: 1}
+  - ColorProfile: {fileID: 8107707831676640302}
+    NormalColor: {r: 0.098039225, g: 0.098039225, b: 0.098039225, a: 1}
+    HighlightedColor: {r: 0.2901961, g: 0.2901961, b: 0.2901961, a: 1}
+    PressedColor: {r: 0.015686275, g: 0.015686275, b: 0.015686275, a: 1}
+    SelectedColor: {r: 0.2901961, g: 0.2901961, b: 0.2901961, a: 1}
+    DisabledColor: {r: 0.5372549, g: 0.5372549, b: 0.5372549, a: 1}
+--- !u!114 &-960666758558687456
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68e19cba163d7c74b889e463645b456e, type: 3}
+  m_Name: ColorCategory2
+  m_EditorClassIdentifier: 
+  Name: Medium
+  LocalizedName: {fileID: 0}
+  AnimationSettings: {fileID: 11400000, guid: 0d1bdb99885d09d45a7501806f8e7367, type: 2}
+  ColorSettings: {fileID: 11400000}
+  OptionSettings: {fileID: 11400000, guid: 2dcd8cbd47f2fff4e96388c5fc7e6155, type: 2}
+  ScaleSettings: {fileID: 11400000, guid: 8997d46e24cbe0e4083ab22c98c40507, type: 2}
+  TextSettings: {fileID: 11400000, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  Colors:
+  - ColorProfile: {fileID: -489243582740921438}
+    NormalColor: {r: 0.909804, g: 0.4901961, b: 0.3647059, a: 1}
+    HighlightedColor: {r: 0.9607843, g: 0.5803922, b: 0.46666667, a: 1}
+    PressedColor: {r: 0.745283, g: 0.40564832, b: 0.30514416, a: 1}
+    SelectedColor: {r: 0.9607843, g: 0.5803922, b: 0.46666667, a: 1}
+    DisabledColor: {r: 0.7830189, g: 0.54077935, b: 0.46833393, a: 1}
+  - ColorProfile: {fileID: 8107707831676640302}
+    NormalColor: {r: 0.69803923, g: 0.69803923, b: 0.69803923, a: 1}
+    HighlightedColor: {r: 0.8196079, g: 0.8196079, b: 0.8196079, a: 1}
+    PressedColor: {r: 0.50980395, g: 0.50980395, b: 0.50980395, a: 1}
+    SelectedColor: {r: 0.8196079, g: 0.8196079, b: 0.8196079, a: 1}
+    DisabledColor: {r: 0.6784314, g: 0.6784314, b: 0.6784314, a: 1}
+--- !u!114 &-489243582740921438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df6d6cf73611812498d12122f701db9e, type: 3}
+  m_Name: ColorProfile1
+  m_EditorClassIdentifier: 
+  Name: Orange
+  LocalizedName: {fileID: 3435044364233951981, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  AnimationSettings: {fileID: 11400000, guid: 0d1bdb99885d09d45a7501806f8e7367, type: 2}
+  ColorSettings: {fileID: 11400000}
+  OptionSettings: {fileID: 11400000, guid: 2dcd8cbd47f2fff4e96388c5fc7e6155, type: 2}
+  ScaleSettings: {fileID: 11400000, guid: 8997d46e24cbe0e4083ab22c98c40507, type: 2}
+  TextSettings: {fileID: 11400000, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  FadeTime: 0.15
+  FadeCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd68ce589e4373a4f940394c5c997970, type: 3}
+  m_Name: ColorSettings
+  m_EditorClassIdentifier: 
+  ColorCategories:
+  - {fileID: -5630973617280110173}
+  - {fileID: -960666758558687456}
+  - {fileID: 4428395368998407153}
+  - {fileID: -5416280178554940862}
+  - {fileID: 7406671748762164184}
+  ColorProfiles:
+  - {fileID: -489243582740921438}
+  - {fileID: 8107707831676640302}
+  _ActiveColorProfile: {fileID: -489243582740921438}
+  _ActiveColorProfileIndex: 0
+--- !u!114 &4428395368998407153
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68e19cba163d7c74b889e463645b456e, type: 3}
+  m_Name: ColorCategory3
+  m_EditorClassIdentifier: 
+  Name: Dark
+  LocalizedName: {fileID: 0}
+  AnimationSettings: {fileID: 11400000, guid: 0d1bdb99885d09d45a7501806f8e7367, type: 2}
+  ColorSettings: {fileID: 11400000}
+  OptionSettings: {fileID: 11400000, guid: 2dcd8cbd47f2fff4e96388c5fc7e6155, type: 2}
+  ScaleSettings: {fileID: 11400000, guid: 8997d46e24cbe0e4083ab22c98c40507, type: 2}
+  TextSettings: {fileID: 11400000, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  Colors:
+  - ColorProfile: {fileID: -489243582740921438}
+    NormalColor: {r: 0.6313726, g: 0.37647063, b: 0.427451, a: 1}
+    HighlightedColor: {r: 0.735849, g: 0.4956568, b: 0.5436952, a: 1}
+    PressedColor: {r: 0.49056602, g: 0.26564613, b: 0.31063005, a: 1}
+    SelectedColor: {r: 0.7372549, g: 0.49411768, b: 0.54509807, a: 1}
+    DisabledColor: {r: 0.6415094, g: 0.52894264, b: 0.5525454, a: 1}
+  - ColorProfile: {fileID: 8107707831676640302}
+    NormalColor: {r: 0.4666667, g: 0.4666667, b: 0.4666667, a: 1}
+    HighlightedColor: {r: 0.6666667, g: 0.6666667, b: 0.6666667, a: 1}
+    PressedColor: {r: 0.25490198, g: 0.25490198, b: 0.25490198, a: 1}
+    SelectedColor: {r: 0.6666667, g: 0.6666667, b: 0.6666667, a: 1}
+    DisabledColor: {r: 0.6117647, g: 0.6117647, b: 0.6117647, a: 1}
+--- !u!114 &7406671748762164184
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68e19cba163d7c74b889e463645b456e, type: 3}
+  m_Name: ColorCategory5
+  m_EditorClassIdentifier: 
+  Name: Background
+  LocalizedName: {fileID: 0}
+  AnimationSettings: {fileID: 11400000, guid: 0d1bdb99885d09d45a7501806f8e7367, type: 2}
+  ColorSettings: {fileID: 11400000}
+  OptionSettings: {fileID: 11400000, guid: 2dcd8cbd47f2fff4e96388c5fc7e6155, type: 2}
+  ScaleSettings: {fileID: 11400000, guid: 8997d46e24cbe0e4083ab22c98c40507, type: 2}
+  TextSettings: {fileID: 11400000, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  Colors:
+  - ColorProfile: {fileID: -489243582740921438}
+    NormalColor: {r: 0.3019608, g: 0.21568629, b: 0.2392157, a: 1}
+    HighlightedColor: {r: 1, g: 1, b: 1, a: 1}
+    PressedColor: {r: 1, g: 1, b: 1, a: 1}
+    SelectedColor: {r: 1, g: 1, b: 1, a: 1}
+    DisabledColor: {r: 1, g: 1, b: 1, a: 1}
+  - ColorProfile: {fileID: 8107707831676640302}
+    NormalColor: {r: 0.19215688, g: 0.19215688, b: 0.19215688, a: 1}
+    HighlightedColor: {r: 1, g: 1, b: 1, a: 1}
+    PressedColor: {r: 1, g: 1, b: 1, a: 1}
+    SelectedColor: {r: 1, g: 1, b: 1, a: 1}
+    DisabledColor: {r: 1, g: 1, b: 1, a: 1}
+--- !u!114 &8107707831676640302
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df6d6cf73611812498d12122f701db9e, type: 3}
+  m_Name: ColorProfile2
+  m_EditorClassIdentifier: 
+  Name: Grey
+  LocalizedName: {fileID: -1089674792367625497, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  AnimationSettings: {fileID: 11400000, guid: 0d1bdb99885d09d45a7501806f8e7367, type: 2}
+  ColorSettings: {fileID: 11400000}
+  OptionSettings: {fileID: 11400000, guid: 2dcd8cbd47f2fff4e96388c5fc7e6155, type: 2}
+  ScaleSettings: {fileID: 11400000, guid: 8997d46e24cbe0e4083ab22c98c40507, type: 2}
+  TextSettings: {fileID: 11400000, guid: a73c01a01f7352f47bbff334024fde27, type: 2}
+  FadeTime: 0.15
+  FadeCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4

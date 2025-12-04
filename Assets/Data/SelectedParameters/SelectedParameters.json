@@ -1,0 +1,15 @@
+{
+    "targetOxygen": 80.0,
+    "predictedOxygen": 79.680908203125,
+    "speed": 21.882129669189454,
+    "verticalSpeed": 28.494810104370118,
+    "idleUpwardSpeed": 0.3120174705982208,
+    "lifeTime": 1.7857156991958619,
+    "RemoveHealthEveryLifeTime": 2.427062749862671,
+    "removeHealthWithCollide": 8.840188026428223,
+    "timeBetweenCollides": 2.0182888507843019,
+    "healHealthPoint": 5.323692798614502,
+    "factorForce": 0.0,
+    "IsAmadeoMode": 0.0,
+    "savedAt": "2025-12-04 16:50:55"
+}
