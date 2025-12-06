@@ -20,6 +20,7 @@ public static class PythonRegressionHandler
     // Flag to enable optimization comparison (Python Gradient vs C# RandomSweep)
     // If false, only C# RandomSweep is used (more reliable)
     public static bool enableOptimizationComparison = false;
+    private const float CONVERGENCE_THRESHOLD = 0.2f;
 
     // Check if Python model is loaded and active
     public static bool IsModelReady => usePythonModel && pythonModel != null && pythonModel.IsLoaded;
@@ -250,10 +251,10 @@ public static class PythonRegressionHandler
         if (sumSquaredCoeffs < 1e-9f || nonZeroCount < 2)
             return null; // Not enough meaningful coefficients for gradient descent
         
-        for (int iter = 0; iter < maxIterations && error > 0.2f; iter++)
+        for (int iter = 0; iter < maxIterations && error > CONVERGENCE_THRESHOLD; iter++)
         {
             float delta = currentO2 - targetOxygen;
-            if (Mathf.Abs(delta) < 0.2f)
+            if (Mathf.Abs(delta) < CONVERGENCE_THRESHOLD)
                 break;
 
             // Adaptive learning rate decay

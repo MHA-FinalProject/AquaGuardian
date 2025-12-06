@@ -65,18 +65,18 @@ public static class SelectedParametersService
 
             var selected = new SelectedParameters
             {
-                targetOxygen = targetOxygen,
-                predictedOxygen = predictedOxygen,
-                speed = parameters.speed,
-                verticalSpeed = parameters.verticalSpeed,
-                idleUpwardSpeed = parameters.idleUpwardSpeed,
-                lifeTime = parameters.lifeTime,
-                RemoveHealthEveryLifeTime = parameters.RemoveHealthEveryLifeTime,
-                removeHealthWithCollide = parameters.removeHealthWithCollide,
-                timeBetweenCollides = parameters.timeBetweenCollides,
-                healHealthPoint = parameters.healHealthPoint,
-                factorForce = parameters.factorForce,
-                IsAmadeoMode = parameters.IsAmadeoMode,
+                targetOxygen = Round1(targetOxygen),
+                predictedOxygen = Round1(predictedOxygen),
+                speed = Round1(parameters.speed),
+                verticalSpeed = Round1(parameters.verticalSpeed),
+                idleUpwardSpeed = Round1(parameters.idleUpwardSpeed),
+                lifeTime = Round1(parameters.lifeTime),
+                RemoveHealthEveryLifeTime = Round1(parameters.RemoveHealthEveryLifeTime),
+                removeHealthWithCollide = Round1(parameters.removeHealthWithCollide),
+                timeBetweenCollides = Round1(parameters.timeBetweenCollides),
+                healHealthPoint = Round1(parameters.healHealthPoint),
+                factorForce = Round1(parameters.factorForce),
+                IsAmadeoMode = Round1(parameters.IsAmadeoMode),
                 savedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             };
 
@@ -155,6 +155,14 @@ public static class SelectedParametersService
             factorForce = selected.factorForce,
             IsAmadeoMode = selected.IsAmadeoMode
         };
+    }
+
+    /// <summary>
+    /// Rounds a float to 1 decimal place for cleaner JSON output
+    /// </summary>
+    private static float Round1(float value)
+    {
+        return Mathf.Round(value * 10f) / 10f;
     }
 
     /// <summary>

@@ -14,6 +14,17 @@ using System.IO;
    * Uses TrialRegressionAlgorithm for the core regression logic.
    */
 
+/// <summary>
+/// Buffer calculation mode for parameter range constraints.
+/// Conservative: Smaller buffer (10%-25%) - stays closer to observed data.
+/// Expanded: Larger buffer (25%-50%) - allows more extrapolation.
+/// </summary>
+public enum BufferMode
+{
+    Conservative,  // Original: 10%-25% buffer
+    Expanded       // Increased: 25%-50% buffer
+}
+
 public class TrialRegressionUI : MonoBehaviour
 {
     [Header("UI References")]
@@ -41,6 +52,10 @@ public class TrialRegressionUI : MonoBehaviour
 
     [Header("Python Server Settings")]
     [SerializeField] private bool usePythonServer = false;  // Default: Unity model
+
+    [Header("Optimization Settings")]
+    [Tooltip("Conservative: Smaller buffer (10%-25%) - stays closer to observed data.\nExpanded: Larger buffer (25%-50%) - allows more extrapolation for extreme targets.")]
+    [SerializeField] private BufferMode bufferMode = BufferMode.Conservative;
 
     private TrialDataModels.RegressionResult lastResult;
     private TrialUIController trialUIController;
@@ -126,6 +141,9 @@ public class TrialRegressionUI : MonoBehaviour
             return;
         }
 
+        // Apply selected buffer mode before running analysis
+        RegressionUtilities.CurrentBufferMode = bufferMode;
+
         // Check if Python server is enabled and available
         if (usePythonServer)
         {
@@ -204,14 +222,15 @@ public class TrialRegressionUI : MonoBehaviour
         if (regressionPanel != null)
             regressionPanel.SetActive(false);
 
-        // Return to trial control panel - it handles Time.timeScale = 0 and cursor
         if (trialUIController == null)
             trialUIController = FindObjectOfType<TrialUIController>();
             
         if (trialUIController != null)
             trialUIController.OpenTrialControlPanel();
 
-        // Don't set Time.timeScale here! OpenTrialControlPanel() already sets it to 0
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     public void ForceCloseRegressionPanel()
@@ -273,6 +292,10 @@ public class TrialRegressionUI : MonoBehaviour
             ShowError("Need at least 3 trials for multi-target analysis!");
             return;
         }
+
+        // Apply selected buffer mode before running analysis
+        RegressionUtilities.CurrentBufferMode = bufferMode;
+        Debug.Log($"[MultiTarget] Using buffer mode: {bufferMode}");
 
         // Run multi-target analysis and get results
         var results = RunMultiTargetAndGetResults(trialData);
@@ -448,14 +471,12 @@ public class TrialRegressionUI : MonoBehaviour
 
     /// <summary>
     /// Closes the multi-target panel and returns to trial control panel.
-    /// OpenTrialControlPanel() handles Time.timeScale = 0 and cursor settings.
     /// </summary>
     public void CloseMultiTargetPanel()
     {
         if (multiTargetPanel != null)
             multiTargetPanel.SetActive(false);
 
-        // Return to trial control panel - it handles Time.timeScale = 0
         if (trialUIController == null)
             trialUIController = FindObjectOfType<TrialUIController>();
             

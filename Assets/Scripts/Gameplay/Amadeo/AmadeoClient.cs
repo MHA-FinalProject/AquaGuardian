@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+// Enum to determine the input type: either emulation mode or actual Amadeo device.
 public enum InputType
 {
     EmulationMode,  // Reads the forces from the file Assets/AmadeoRecords/force_data.txt. The five right numbers in each row represent the forces in the five fingers (of the right hand).
@@ -22,8 +23,9 @@ public class AmadeoClient : MonoBehaviour
 
     // Input type to determine if we're in EmulationMode or using the actual Amadeo device.
     [SerializeField] InputType inputType = InputType.Amadeo;
-    // LEGACY: No public access to inputType
-    public InputType CurrentInputType => inputType; // expose current input type for reports/UI
+    
+    // Expose current input type for reports/UI
+    public InputType CurrentInputType => inputType;
 
     // The port number used for the Amadeo connection, typically 4444.
     [SerializeField, Tooltip("Port should be 4444 for Amadeo connection"), Range(1024, 49151)]
@@ -36,7 +38,9 @@ public class AmadeoClient : MonoBehaviour
     private bool _isReceiving = false;                         // Flag to check if data reception is active.
     private UdpClient _udpClient;
     private const string EmulationDataFile = "Assets/AmadeoRecords/force_data.txt"; // Path to file where each row represents a sample of 10 forces (one per finger).
+
     private IPEndPoint _remoteEndPoint; // End point for the UDP connection.
+
     private float[] _forces = new float[5]; // Array to store the force values for five fingers.
     private readonly float[] _zeroForces = new float[5]; // Array to store zeroed force values for five fingers.
     private bool _isLeftHand = false; // Flag to check if we're handling data for the left hand.
@@ -46,7 +50,7 @@ public class AmadeoClient : MonoBehaviour
 
     public GameObject Panel;
 
-       /* Singleton implementation; commented out because it did not work just before the experiment.
+    /* Singleton implementation; commented out because it did not work just before the experiment.
     // private void Awake()
     {
         Debug.Log("AmadeoClient Awake called");
@@ -58,6 +62,7 @@ public class AmadeoClient : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
     }*/
+
 
     private void Start()
     {
@@ -90,7 +95,6 @@ public class AmadeoClient : MonoBehaviour
     // We call it after the PanelOpenUp is closed.
     public void StartReceiveData()
     {
-        /* LEGACY CODE (before changes):
         if (_cancellationTokenSource.IsCancellationRequested)
         {
             _cancellationTokenSource.Dispose();
@@ -107,78 +111,22 @@ public class AmadeoClient : MonoBehaviour
             Debug.Log("StartReceiveData :: Amadeo mode is true. Starting Amadeo data.");
             ReceiveDataAmadeo(_cancellationTokenSource.Token);
         }
-        */
-        
-        // IMPORTANT: First stop any existing data reception to prevent multiple loops
-        StopReceiveData();
-        
-        // Create a fresh CancellationTokenSource
-        if (_cancellationTokenSource != null)
-        {
-            _cancellationTokenSource.Dispose();
-        }
-        _cancellationTokenSource = new CancellationTokenSource();
-        
-        _isReceiving = true;
-        
-        if (inputType == InputType.EmulationMode)
-        {
-            Debug.Log("StartReceiveData :: Emulation mode. Starting emulation data.");
-            HandleIncomingDataEmu(_cancellationTokenSource.Token);
-        }
-        else
-        {
-            Debug.Log("StartReceiveData :: Amadeo mode. Starting Amadeo data.");
-            ReceiveDataAmadeo(_cancellationTokenSource.Token);
-        }
     }
 
     // Method to stop receiving data.
     public void StopReceiveData()
     {
-    
-        
         _isReceiving = false;
-        
-        // Cancel the token to stop any running async tasks
-        if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
-        {
-            _cancellationTokenSource.Cancel();
-        }
     }
 
     // Asynchronous method to receive data from the Amadeo device.
     private async void ReceiveDataAmadeo(CancellationToken cancellationToken)
     {
-        /* 
         while (_isReceiving && !cancellationToken.IsCancellationRequested)
         {
             try
             {
-                // Receiving data from UDP and converting it to a string.
-                UdpReceiveResult result = await _udpClient.ReceiveAsync();
-                string receivedData = Encoding.ASCII.GetString(result.Buffer);
-                // Parsing and processing the received data.
-                HandleReceivedData(ParseDataFromAmadeo(receivedData));
-            }
-            catch (OperationCanceledException)
-            {
-                Debug.Log("Data reception was canceled.");
-                break;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Exception in ReceiveData: {ex.Message}");
-                break;
-            }
-        }
-        */
-        
-        while (_isReceiving && !cancellationToken.IsCancellationRequested)
-        {
-            try
-            {
-                // Check if UDP client is still valid before receiving
+                // FIX: Check if UDP client is still valid before receiving
                 if (_udpClient == null)
                 {
                     Debug.LogWarning("UDP client is null, stopping data reception");
@@ -198,6 +146,7 @@ public class AmadeoClient : MonoBehaviour
             }
             catch (ObjectDisposedException)
             {
+                // FIX: Handle case when UDP client is disposed during receive
                 Debug.LogWarning("UDP client was disposed during receive operation");
                 break;
             }
@@ -212,7 +161,6 @@ public class AmadeoClient : MonoBehaviour
     // Asynchronous method to handle incoming data from the emulation file.
     private async void HandleIncomingDataEmu(CancellationToken cancellationToken)
     {
-        /* LEGACY CODE (before changes):
         try
         {
             // Reading all lines from the emulation data file.
@@ -238,51 +186,6 @@ public class AmadeoClient : MonoBehaviour
         {
             Debug.Log($"Task was canceled: {e.Message}");
             throw;
-        }
-        */
-        
-        try
-        {
-            // Reading all lines from the emulation data file.
-            string[] lines = await File.ReadAllLinesAsync(EmulationDataFile, cancellationToken);
-
-            int index = 0;
-
-            // Check both _isReceiving AND cancellationToken for clean shutdown
-            while (_isReceiving && !cancellationToken.IsCancellationRequested)
-            {
-                string line = lines[index];
-                if (!string.IsNullOrWhiteSpace(line))
-                {
-                    HandleReceivedData(ParseDataFromAmadeo(line));
-                }
-
-                index = (index + 1) % lines.Length;
-                
-                try
-                {
-                    await Task.Delay(10, cancellationToken);
-                }
-                catch (TaskCanceledException)
-                {
-                    // Graceful exit on cancellation
-                    break;
-                }
-            }
-
-            Debug.Log("HandleIncomingDataEmu: Stopped receiving data.");
-        }
-        catch (TaskCanceledException)
-        {
-            Debug.Log("HandleIncomingDataEmu: Task was canceled.");
-        }
-        catch (OperationCanceledException)
-        {
-            Debug.Log("HandleIncomingDataEmu: Operation was canceled.");
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError($"HandleIncomingDataEmu: Exception: {ex.Message}");
         }
     }
 
@@ -384,36 +287,16 @@ public class AmadeoClient : MonoBehaviour
             }
             else
             {
-                /* LEGACY CODE (before changes):
                 int i = 0;
                 while (i < numOfLinesToRead && !cancellationToken.IsCancellationRequested)
                 {
-                    UdpReceiveResult result = await _udpClient.ReceiveAsync();
-                    string receivedData = Encoding.ASCII.GetString(result.Buffer);
-                    Debug.Log(receivedData);
-
-                    HandleReceivedData(ParseDataFromAmadeo(receivedData));
-
-                    lines[i] = receivedData;
-                    i++;
-                }
-
-                if (i < numOfLinesToRead)
-                {
-                    Debug.LogError("Not enough data received from Amadeo device.");
-                }
-                */
-                
-                int i = 0;
-                while (i < numOfLinesToRead && !cancellationToken.IsCancellationRequested)
-                {
-                    // Check if UDP client is still valid before receiving
+                    // FIX: Check if UDP client is still valid before receiving
                     if (_udpClient == null)
                     {
-                        Debug.LogWarning("UDP client is null, stopping data reception");
+                        Debug.LogWarning("UDP client is null, stopping zeroing");
                         break;
                     }
-                    
+
                     try
                     {
                         UdpReceiveResult result = await _udpClient.ReceiveAsync();
@@ -427,34 +310,26 @@ public class AmadeoClient : MonoBehaviour
                     }
                     catch (ObjectDisposedException)
                     {
-                        Debug.LogWarning("UDP client was disposed during receive operation");
+                        // FIX: Handle case when UDP client is disposed during receive
+                        Debug.LogWarning("UDP client was disposed during zeroing");
                         break;
                     }
                 }
 
                 if (i < numOfLinesToRead)
                 {
-                    Debug.LogWarning("Not enough data received from Amadeo device.");
+                    Debug.LogError("Not enough data received from Amadeo device.");
                 }
             }
 
             // Calculate the average zeroing forces based on the received data.
-            /* LEGACY CODE (before changes):
-            string[] parsedData = lines.Select(ParseDataFromAmadeo).ToArray();
-            CalculateZeroingForces(parsedData);
-            */
-            
-            // Filter out null/empty lines before processing
+            // FIX: Filter out null lines before processing
             string[] validLines = lines.Where(line => !string.IsNullOrWhiteSpace(line)).ToArray();
-            
-            if (validLines.Length == 0)
+            if (validLines.Length > 0)
             {
-                Debug.LogWarning("No valid data lines received for zeroing forces");
-                return;
+                string[] parsedData = validLines.Select(ParseDataFromAmadeo).ToArray();
+                CalculateZeroingForces(parsedData);
             }
-            
-            string[] parsedData = validLines.Select(ParseDataFromAmadeo).ToArray();
-            CalculateZeroingForces(parsedData);
 
         }
         catch (OperationCanceledException)

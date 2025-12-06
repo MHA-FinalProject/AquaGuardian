@@ -175,11 +175,17 @@ public class PlayerMovement : MonoBehaviour
 
     void OnCollisionStay(Collision collision)
     {
-        // Check if the player collides with a wall
+        // Check if the player collides with a wall or cave (floor/sides) - push upward
         if (collision.gameObject.CompareTag("Wall") || collision.gameObject.CompareTag("Cave"))
         {
             // Move the player upward
             rb.velocity = new Vector3(rb.velocity.x, verticalSpeed * GetIdleUpwardFactor(), rb.velocity.z);
+        }
+        // Check if player hits cave ceiling - push downward (prevent getting stuck)
+        else if (collision.gameObject.CompareTag("CaveCeiling"))
+        {
+            // Move the player downward
+            rb.velocity = new Vector3(rb.velocity.x, -verticalSpeed * GetIdleUpwardFactor(), rb.velocity.z);
         }
     }
 

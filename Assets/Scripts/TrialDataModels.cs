@@ -124,7 +124,7 @@ public static class TrialDataModels
         public Vector2 healHealthPointRange = new Vector2(3f, 15f);
         public Vector2 timeBetweenCollidesRange = new Vector2(1f, 5f);
         public Vector2 removeHealthWithCollideRange = new Vector2(5f, 20f);  // Changed: 15->20 (more damage for difficulty)
-        public Vector2 RemoveHealthEveryLifeTimeRange = new Vector2(0.5f, 7f);  // Health removed every lifeTime cycle
+        public Vector2 RemoveHealthEveryLifeTimeRange = new Vector2(1f, 7f);  // Health removed every lifeTime cycle
         public Vector2 lifeTimeRange = new Vector2(0.5f, 4f);
         
         [Header("Force Multiplication")]

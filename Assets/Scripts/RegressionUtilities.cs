@@ -14,6 +14,9 @@ using System.Linq;
 public static class RegressionUtilities
 {
     private const float RANDOM_SWEEP_THRESHOLD = 5.0f;
+    
+    // Buffer mode can be set from UI (TrialRegressionUI)
+    public static BufferMode CurrentBufferMode { get; set; } = BufferMode.Conservative;
 
     #region Public API - Main Functions
 
@@ -296,12 +299,29 @@ public static class RegressionUtilities
 
     private static float CalculateBuffer(bool isConstantData, float deltaFromTarget)
     {
+        // Choose buffer calculation based on mode
+        if (CurrentBufferMode == BufferMode.Conservative)
+        {
+            return CalculateBufferConservative(isConstantData, deltaFromTarget);
+        }
+        else
+        {
+            return CalculateBufferExpanded(isConstantData, deltaFromTarget);
+        }
+    }
+
+    /// <summary>
+    /// Conservative buffer: 10%-25% - stays closer to observed data.
+    /// Best when observed data is representative of target range.
+    /// </summary>
+    private static float CalculateBufferConservative(bool isConstantData, float deltaFromTarget)
+    {
         if (isConstantData)
         {
             if (deltaFromTarget < 20f)
                 return 0.10f;
             if (deltaFromTarget < 40f)
-                return 0.10f + (deltaFromTarget - 20f) / 20f * 0.15f;
+                return 0.10f + (deltaFromTarget - 20f) / 20f * 0.15f;  // 10% to 25%
             return 0.25f;
         }
         else
@@ -309,8 +329,32 @@ public static class RegressionUtilities
             if (deltaFromTarget < 15f)
                 return 0.15f;
             if (deltaFromTarget < 40f)
-                return 0.15f + (deltaFromTarget - 15f) / 25f * 0.35f;
-            return 0.50f + Mathf.Min((deltaFromTarget - 40f) / 60f * 0.50f, 0.50f);
+                return 0.15f + (deltaFromTarget - 15f) / 25f * 0.10f;  // 15% to 25%
+            return 0.25f;
+        }
+    }
+
+    /// <summary>
+    /// Expanded buffer: 25%-50% - allows more extrapolation.
+    /// Best for extreme targets (10%, 90%) far from observed data.
+    /// </summary>
+    private static float CalculateBufferExpanded(bool isConstantData, float deltaFromTarget)
+    {
+        if (isConstantData)
+        {
+            if (deltaFromTarget < 20f)
+                return 0.25f;
+            if (deltaFromTarget < 40f)
+                return 0.25f + (deltaFromTarget - 20f) / 20f * 0.15f;  // 25% to 40%
+            return 0.40f;
+        }
+        else
+        {
+            if (deltaFromTarget < 15f)
+                return 0.25f;
+            if (deltaFromTarget < 40f)
+                return 0.25f + (deltaFromTarget - 15f) / 25f * 0.25f;  // 25% to 50%
+            return 0.50f;
         }
     }
 

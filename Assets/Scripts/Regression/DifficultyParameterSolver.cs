@@ -29,7 +29,7 @@ public static class DifficultyParameterSolver
     private const float AGGRESSIVE_LEARNING_RATE = 0.3f;   // For errors > 30%
 
     // Convergence threshold: stop when error is below this value
-    private const float CONVERGENCE_THRESHOLD = 0.2f;
+    private const float CONVERGENCE_THRESHOLD = 0.1f;
 
     // Maximum iterations to prevent infinite loops - more iterations for larger initial errors
     private const int DEFAULT_MAX_ITERATIONS = 150;        // For errors < 15%
@@ -102,7 +102,7 @@ public static class DifficultyParameterSolver
         // - Otherwise: 50 steps, learning rate 0.2
         int maxSteps = initialError > 40f ? 250 : (initialError > 20f ? 150 : (initialError > 10f ? 100 : 50));
         float learningRate = initialError > 40f ? 0.7f : (initialError > 20f ? 0.5f : (initialError > 10f ? 0.3f : 0.2f));
-        float tolerance = 0.2f;  // Accept 0.2% error (balance: accuracy + variability)
+        float tolerance = CONVERGENCE_THRESHOLD;  // Use the constant for consistency
 
         // ========== PHASE 2: Gradient Descent Refinement ==========
         // Projected gradient refinement - iteratively adjusts parameters
@@ -566,7 +566,7 @@ public static class DifficultyParameterSolver
                 bestParams = ParameterHelper.Clone(cur);
             }
 
-            if (absError <= 0.2f) break;
+            if (absError <= CONVERGENCE_THRESHOLD) break;
 
             // Adaptive learning rate: baseLR (0.5 or 0.7) scaled by error/10
             float baseLR = absError > 30f ? 0.7f : 0.5f;
