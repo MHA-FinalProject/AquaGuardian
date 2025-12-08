@@ -62,7 +62,7 @@ public class getEventFromAmadeoClientDiver : MonoBehaviour
         Debug.Log($"[getEventFromAmadeoClientDiver] Selected finger index: {fingerIndex}");
     }
 
-    /* LEGACY CODE (original version):
+    
     // Handles the forces received from the Amadeo device
     private void HandleForcesUpdated(float[] forces)
     {
@@ -102,8 +102,8 @@ public class getEventFromAmadeoClientDiver : MonoBehaviour
             }
         }
     }
-    */
-
+    
+/*
     // Handles the forces received from the Amadeo device
     private void HandleForcesUpdated(float[] forces)
     {
@@ -169,6 +169,7 @@ public class getEventFromAmadeoClientDiver : MonoBehaviour
             pm.notGetForcesFromAmadeo = true;
         }
     }
+    */
 
     /*
      // Handles the forces received from the Amadeo device

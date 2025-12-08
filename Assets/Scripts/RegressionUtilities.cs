@@ -14,7 +14,7 @@ using System.Linq;
 public static class RegressionUtilities
 {
     private const float RANDOM_SWEEP_THRESHOLD = 5.0f;
-    
+
     // Buffer mode can be set from UI (TrialRegressionUI)
     public static BufferMode CurrentBufferMode { get; set; } = BufferMode.Conservative;
 

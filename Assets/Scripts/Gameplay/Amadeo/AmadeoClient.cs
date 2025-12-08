@@ -50,7 +50,7 @@ public class AmadeoClient : MonoBehaviour
 
     public GameObject Panel;
 
-    /* Singleton implementation; commented out because it did not work just before the experiment.
+       /* Singleton implementation; commented out because it did not work just before the experiment.
     // private void Awake()
     {
         Debug.Log("AmadeoClient Awake called");
@@ -296,7 +296,7 @@ public class AmadeoClient : MonoBehaviour
                         Debug.LogWarning("UDP client is null, stopping zeroing");
                         break;
                     }
-
+                    
                     try
                     {
                         UdpReceiveResult result = await _udpClient.ReceiveAsync();

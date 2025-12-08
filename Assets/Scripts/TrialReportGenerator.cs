@@ -141,11 +141,12 @@ public static class TrialReportGenerator
         string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
         string report = $"Regression | {timestamp} | {trials.Count} trials\n";
         
-        // Line 2: "Avg : 57.6%  | Data Source: Constant Parameters CSV | Trials: [1,2,3,4,5] (5R+0Rand)"
+        // Line 2: "Avg : 57.6%  | Data Source: Random Parameters CSV" (no trial indices for random)
         bool isRandom = randomCount > 0;
         string dataSource = isRandom ? "Random Parameters CSV" : "Constant Parameters CSV";
-        string trialList = $"[{string.Join(",", selectedTrialIds)}]";
-        report += $"Avg : {avgOxygen.ToString("F1", CI)}%  | Data Source: {dataSource} | Trials: {trialList} \n";
+        // Only show trial indices for constant parameters (where order matters)
+        string trialInfo = isRandom ? "" : $" | Trials: [{string.Join(",", selectedTrialIds)}]";
+        report += $"Avg : {avgOxygen.ToString("F1", CI)}%  | Data Source: {dataSource}{trialInfo}\n";
         
         // Line 3: Model metrics in one line
         var model = predictor?.GetModel();

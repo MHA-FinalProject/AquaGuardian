@@ -322,7 +322,7 @@ public class TrialRegressionUI : MonoBehaviour
             
             // Clear feedback text
             if (selectedRowFeedbackText != null)
-                selectedRowFeedbackText.text = "Click a button to select parameters";
+                selectedRowFeedbackText.text = "Click on Target Oxygen to select parameters";
         }
     }
 
