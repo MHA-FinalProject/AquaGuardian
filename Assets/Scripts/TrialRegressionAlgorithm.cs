@@ -22,6 +22,9 @@ public class TrialRegressionAlgorithm
     /**
      * Main entry point for Unity Ridge regression analysis.
      * Validates input (requires at least 3 trials), then calls PerformUnityRegressionAnalysis.
+     * 
+     * Note: This method is kept for potential future use, but single-target analysis
+     * is no longer used in the UI. Multi-target analysis is now the primary method.
      */
     public static TrialDataModels.RegressionResult PerformRegressionAnalysis(List<TrialDataModels.TrialData> allTrialData, float targetOxygen = DEFAULT_TARGET_O2)
     {

@@ -454,118 +454,17 @@ public class TrialRegressionUI : MonoBehaviour
     #region Row Click Handlers
 
     /// <summary>
-    /// Sets up click handlers for each table row.
-    /// Uses EventTrigger for more reliable click detection.
-    /// </summary>
-    private void SetupTableRowClickHandlers()
-    {
-        if (multiTargetTable == null) return;
-
-        Debug.Log($"[TrialRegressionUI] Setting up click handlers for {multiTargetTable.Rows} rows, {multiTargetTable.Columns} columns");
-
-        // Only setup first column of each row (Target Oxygen column) for clicking
-        for (int row = 1; row < multiTargetTable.Rows; row++)
-        {
-            int rowIndex = row; // Capture for closure
-            
-            // Setup click on first column only (simpler and more reliable)
-            try
-            {
-                var cell = multiTargetTable.GetCell(row, 0); // First column (Target Oxygen)
-                if (cell != null)
-                {
-                    // Make sure raycast target is enabled
-                    cell.raycastTarget = true;
-                    
-                    // Remove any existing EventTrigger
-                    var existingTrigger = cell.gameObject.GetComponent<EventTrigger>();
-                    if (existingTrigger != null)
-                    {
-                        Object.Destroy(existingTrigger);
-                    }
-                    
-                    // Add EventTrigger component
-                    var eventTrigger = cell.gameObject.AddComponent<EventTrigger>();
-                    
-                    // Create PointerClick entry
-                    var clickEntry = new EventTrigger.Entry();
-                    clickEntry.eventID = EventTriggerType.PointerClick;
-                    clickEntry.callback.AddListener((data) => { OnTableRowClicked(rowIndex); });
-                    eventTrigger.triggers.Add(clickEntry);
-                    
-                    // Create PointerEnter entry (for hover effect)
-                    var enterEntry = new EventTrigger.Entry();
-                    enterEntry.eventID = EventTriggerType.PointerEnter;
-                    enterEntry.callback.AddListener((data) => { OnRowHoverEnter(rowIndex); });
-                    eventTrigger.triggers.Add(enterEntry);
-                    
-                    // Create PointerExit entry
-                    var exitEntry = new EventTrigger.Entry();
-                    exitEntry.eventID = EventTriggerType.PointerExit;
-                    exitEntry.callback.AddListener((data) => { OnRowHoverExit(rowIndex); });
-                    eventTrigger.triggers.Add(exitEntry);
-                    
-                    Debug.Log($"[TrialRegressionUI] Added EventTrigger to row {row}");
-                }
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"[TrialRegressionUI] Failed to add click handler to row {row}: {e.Message}");
-            }
-        }
-
-        Debug.Log("[TrialRegressionUI] Row click handlers setup complete");
-    }
-    
-    /// <summary>
-    /// Called when mouse enters a row - shows hover effect
-    /// </summary>
-    private void OnRowHoverEnter(int rowIndex)
-    {
-        if (multiTargetTable == null) return;
-        
-        // Change background color for all cells in the row
-        for (int col = 0; col < multiTargetTable.Columns; col++)
-        {
-            var cell = multiTargetTable.GetCell(rowIndex, col);
-            if (cell != null)
-            {
-                cell.color = new Color(0.8f, 0.9f, 1f); // Light blue
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Called when mouse exits a row - removes hover effect
-    /// </summary>
-    private void OnRowHoverExit(int rowIndex)
-    {
-        if (multiTargetTable == null) return;
-        
-        // Reset to normal color (white for text)
-        for (int col = 0; col < multiTargetTable.Columns; col++)
-        {
-            var cell = multiTargetTable.GetCell(rowIndex, col);
-            if (cell != null)
-            {
-                cell.color = Color.black; // Reset to black text
-            }
-        }
-    }
-
-   
-
-    /// <summary>
     /// PUBLIC method to be called from Button OnClick in Inspector.
     /// Pass the target oxygen percentage (10, 20, 30... 90).
+    /// 
     /// </summary>
     public void OnTargetButtonClicked(int targetOxygenPercent)
     {
-        Debug.Log($"[TrialRegressionUI] Button clicked for target {targetOxygenPercent}%");
+        Debug.Log($" Button clicked for target {targetOxygenPercent}%");
         
         // Convert target percent to row index (10% = row 1, 20% = row 2, etc.)
         int rowIndex = targetOxygenPercent / 10;
-        Debug.Log($"[TrialRegressionUI] Row index: {rowIndex}");
+        Debug.Log($" Row index: {rowIndex}");
         
         OnTableRowClicked(rowIndex);
     }

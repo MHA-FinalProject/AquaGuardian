@@ -377,11 +377,11 @@ TrialRegressionAlgorithm.SaveRegressionResultsToFile()
 | 10 | RandomSweep | `DifficultyParameterSolver.cs` | `RandomSweepOptimizer()` :530 | RegressionUtilities |
 | 11 | Reporting | `TrialReportGenerator.cs` | `GenerateFullReport()` | TrialRegressionAlgorithm |
 | 12 | Save | `TrialRegressionAlgorithm.cs` | `SaveRegressionResultsToFile()` :42 | TrialRegressionUI |
-| 13 | Export | `Assets/Data/RegressionResults/` | `UnityRegression_*.txt` | Auto-saved |
-| 14 | Multi-Target | `MultiTargetOptimizer.cs` | `RunMultiTargetAnalysis()` :67 / `OptimizeForAllTargets()` :115 | TrialRegressionUI |
-| 15 | Multi-Target UI | `TrialRegressionUI.cs` | `CalculateMultiTargetAnalysis()` :315 / `OnTargetButtonClicked()` :582 | Button onClick |
-| 16 | Param Selection | `SelectedParametersService.cs` | `SaveSelectedParameters()` / `LoadSelectedParameters()` | TrialRegressionUI, PanelOpenUp |
-| 17 | Param Loading | `PanelOpenUp.cs` | `LoadSelectedParametersToInputFields()` | Start() |
+| 13 | Export | `Assets/Data/RegressionResults/` | `UnityRegression_*.txt` | Auto-saved (Single Target) |
+| 14 | **Multi-Target** | `MultiTargetOptimizer.cs` | `RunMultiTargetAnalysis()` :67 / `OptimizeForAllTargets()` :115 | TrialRegressionUI |
+| 15 | **Multi-Target UI** | `TrialRegressionUI.cs` | `CalculateMultiTargetAnalysis()` :315 / `OnTargetButtonClicked()` :582 | Button onClick |
+| 16 | **Param Selection** | `SelectedParametersService.cs` | `SaveSelectedParameters()` / `LoadSelectedParameters()` | TrialRegressionUI, PanelOpenUp |
+| 17 | **Param Loading** | `PanelOpenUp.cs` | `LoadSelectedParametersToInputFields()` | Start() |
 
 ---
 
@@ -488,11 +488,37 @@ python PythonScripts/regression_server.py
 
 ### Basic Usage (C# Mode)
 
+#### Multi-Target Analysis
+
+Multi-target analysis optimizes parameters for 9 difficulty levels (10%-90%) in a single analysis.
+
 ```csharp
 // 1. Load trial data (minimum 3 trials required)
 var trials = TrialDataService.LoadAllTrials(useRandomParameters: false);
 
-// 2. Run regression analysis
+// 2. Run multi-target analysis (optimizes for 9 targets: 10%-90%)
+var results = MultiTargetOptimizer.RunMultiTargetAnalysis(trials);
+// Results saved to: Assets/Data/MultiTargets/target.csv
+
+// 3. Get parameters for specific target
+var params50 = MultiTargetOptimizer.GetParametersForTarget(50f);
+
+// 4. Check if user selected parameters
+if (SelectedParametersService.HasSelectedParameters()) {
+    var selected = SelectedParametersService.LoadSelectedParameters();
+    ApplyParameters(selected);
+}
+```
+
+#### Single Target Analysis
+
+Single-target analysis optimizes parameters for one specific oxygen level. This approach was used in earlier versions of the system.
+
+```csharp
+// 1. Load trial data (minimum 3 trials required)
+var trials = TrialDataService.LoadAllTrials(useRandomParameters: false);
+
+// 2. Run regression analysis for single target
 var result = TrialRegressionAlgorithm.PerformRegressionAnalysis(
     trials, 
     targetOxygen: 10f
@@ -510,18 +536,7 @@ if (result.optimizedSolution != null) {
 
 ### Using the UI
 
-#### Single Target Analysis (Original)
-1. Complete 5+ trials in the game
-2. Click **"Calculate Regression"** (or **"ANALYZE"**) button in the UI
-3. System automatically:
-   - Loads trial data from CSV
-   - Trains regression model
-   - Optimizes parameters for target oxygen (default: 10%)
-   - Generates detailed report
-4. Review results in the regression panel
-5. Reports are auto-saved to `Assets/Data/RegressionResults/UnityRegression_*.txt`
-
-#### Multi-Target Analysis (NEW)
+#### Multi-Target Analysis
 1. Complete 5+ trials in the game
 2. Click **"MULTI TARGET"** button (appears when analysis is available)
 3. System automatically:
@@ -534,13 +549,21 @@ if (result.optimizedSolution != null) {
 7. **Next session**: Selected parameters auto-load into main game input fields
 8. **Modify/Start**: Review parameters in main panel, modify if needed, then start game
 
-### Output Files
+#### Single Target Analysis
 
-- **Regression Reports**: `Assets/Data/RegressionResults/UnityRegression_YYYY-MM-DD_HH-MM-SS.txt`
-  - Contains model metrics (R^2, RMSE, MAE)
-  - Shows optimized parameters for single target
-  - Includes feature importance analysis
-  - Comparison between optimization methods (if Python mode enabled)
+Single-target analysis was used in earlier versions. It optimizes parameters for one specific oxygen level.
+
+1. Complete 5+ trials in the game
+2. Click **"Calculate Regression"** (or **"ANALYZE"**) button in the UI
+3. System automatically:
+   - Loads trial data from CSV
+   - Trains regression model
+   - Optimizes parameters for target oxygen (default: 10%)
+   - Generates detailed report
+4. Review results in the regression panel
+5. Reports are auto-saved to `Assets/Data/RegressionResults/UnityRegression_*.txt`
+
+### Output Files
 
 - **Multi-Target CSV (Game Loading)**: `Assets/Data/MultiTargets/target.csv`
   - Optimized parameters for 9 difficulty levels (10%-90%)
@@ -558,6 +581,13 @@ if (result.optimizedSolution != null) {
   - Stores user-selected parameters from multi-target table
   - Auto-loads into main game input fields on next session
   - Includes target oxygen and predicted outcome
+
+- **Regression Reports** (Single Target): `Assets/Data/RegressionResults/UnityRegression_YYYY-MM-DD_HH-MM-SS.txt`
+  - Contains model metrics (R^2, RMSE, MAE)
+  - Shows optimized parameters for single target
+  - Includes feature importance analysis
+  - Comparison between optimization methods (if Python mode enabled)
+  - Generated when using single-target analysis (used in earlier versions)
 
 - **Trial Data CSV**: `Assets/Data/Trials/Trial_5_runs_.csv` or `Trial_Random_Parameters.csv`
   - Stores all trial parameters and outcomes
@@ -764,7 +794,7 @@ Report shows: [Selected: method_name]
 
 ### Introduction
 
-The **Multi-Target Optimization** feature generates optimized game parameters for a range of difficulty levels (10%-90% target oxygen) in a single analysis. This creates a lookup table of parameters for different difficulty levels, allowing quick adaptation to patient needs.
+The **Multi-Target Optimization** generates optimized game parameters for a range of difficulty levels (10%-90% target oxygen) in a single analysis. This creates a lookup table of parameters for different difficulty levels, allowing quick adaptation to patient needs.
 
 ### How It Works
 
@@ -860,18 +890,11 @@ if (SelectedParametersService.HasSelectedParameters()) {
 }
 ```
 
-### Key Features
 
-- ✅ **Deterministic Results**: Same patient data produces identical optimization results
-- ✅ **Patient-Specific**: Different patients get different optimized parameters
-- ✅ **Excel Compatible**: CSV reports open directly in Excel with proper formatting
-- ✅ **Auto-Load**: Selected parameters automatically populate main game input fields
-- ✅ **Visual Feedback**: Selected row highlighted in table, confirmation message shown
-- ✅ **Robust Optimization**: Uses same 3-solver cascade as single-target optimization
 
 ### Technical Details
 
-**Optimization Method**: Same as single-target (Gradient 3-Phase → RandomSweep → Multi-Gradient fallback)
+**Optimization Method**: Gradient 3-Phase → RandomSweep → Multi-Gradient fallback (same optimization pipeline as single-target analysis)
 
 **Deterministic Seeding**: Uses fixed seed based on target oxygen to ensure reproducibility:
 ```csharp
