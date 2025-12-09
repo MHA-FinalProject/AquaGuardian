@@ -399603,6 +399603,8 @@ MonoBehaviour:
   gameDataOverride: {fileID: 11400000, guid: 4332c6d7b4492dd4fa1cb9b8a8097707, type: 2}
   canMove: 1
   afterText: 0
+  autoMoveDownwardFromCaveCeiling: 0
+  autoMoveUpwardFromCaveFloor: 1
   sceneName: Game_Over
   surface: {fileID: 24339024}
   ground: {fileID: 1250872035}
