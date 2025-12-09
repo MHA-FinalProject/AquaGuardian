@@ -31,6 +31,10 @@ public class PlayerMovement : MonoBehaviour
     [Header("Game State")]
     public bool canMove = true;  // Flag to control if the player can move
     public bool afterText = false;  // Flag to check if the intro text has been shown
+
+    public bool autoMoveDownwardFromCaveCeiling = true;
+    public bool autoMoveUpwardFromCaveFloor = true;
+
     private bool _debugLoggedOnce = false;  // Flag to log state once after intro
 
     // Helper method to get GameDataSO
@@ -178,14 +182,20 @@ public class PlayerMovement : MonoBehaviour
         // Check if the player collides with a wall or cave (floor/sides) - push upward
         if (collision.gameObject.CompareTag("Wall") || collision.gameObject.CompareTag("Cave"))
         {
-            // Move the player upward
-            rb.velocity = new Vector3(rb.velocity.x, verticalSpeed * GetIdleUpwardFactor(), rb.velocity.z);
+            if (autoMoveUpwardFromCaveFloor)
+            {
+                // Move the player upward
+                rb.velocity = new Vector3(rb.velocity.x, verticalSpeed * GetIdleUpwardFactor(), rb.velocity.z);
+            }
         }
         // Check if player hits cave ceiling - push downward (prevent getting stuck)
         else if (collision.gameObject.CompareTag("CaveCeiling"))
         {
-            // Move the player downward
-            rb.velocity = new Vector3(rb.velocity.x, -verticalSpeed * GetIdleUpwardFactor(), rb.velocity.z);
+            if (autoMoveDownwardFromCaveCeiling)
+            {
+                // Move the player downward
+                rb.velocity = new Vector3(rb.velocity.x, -verticalSpeed * GetIdleUpwardFactor(), rb.velocity.z);
+            }
         }
     }
 
