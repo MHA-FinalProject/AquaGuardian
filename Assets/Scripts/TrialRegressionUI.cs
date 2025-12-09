@@ -602,7 +602,7 @@ public class TrialRegressionUI : MonoBehaviour
     /// </summary>
     public void OnTargetButtonClicked(int targetOxygenPercent)
     {
-        Debug.LogError($"Button clicked for target {targetOxygenPercent}%");
+        Debug.Log($"Button clicked for target {targetOxygenPercent}%");
         Debug.Log($"[TrialRegressionUI] Button clicked for target {targetOxygenPercent}%");
         
         // Convert target percent to row index (10% = row 1, 20% = row 2, etc.)
