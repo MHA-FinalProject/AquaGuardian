@@ -25,7 +25,7 @@ public class TrialUIController : MonoBehaviour
     [Header("UI Buttons")]
     [SerializeField] private Button startTrialButton;
     [SerializeField] private Button continueTrialButton;
-    [SerializeField] private Button analyzeTrialsButton;
+    [SerializeField] private Button multiTargetButton;
     [SerializeField] private Button closeTrialButton;
 
     [Header("Parameter Mode Toggle")]
@@ -121,15 +121,15 @@ public class TrialUIController : MonoBehaviour
             // Label text is static in UI, only toggle checkbox changes
         }
 
-        // Analyze button
-        if (analyzeTrialsButton != null)
+        // Multi-Target button
+        if (multiTargetButton != null)
         {
-            analyzeTrialsButton.onClick.RemoveAllListeners();
-            analyzeTrialsButton.onClick.AddListener(AnalyzeTrialResults);
+            multiTargetButton.onClick.RemoveAllListeners();
+            multiTargetButton.onClick.AddListener(OpenMultiTargetAnalysis);
         }
         else
         {
-            Debug.LogError("analyzeTrialsButton is NULL! Not assigned in Inspector!");
+            Debug.LogError("multiTargetButton is NULL! Not assigned in Inspector!");
         }
 
         // Close button - Restart game (same as ScenesManager.RestartGame)
@@ -342,14 +342,14 @@ public class TrialUIController : MonoBehaviour
             continueTrialButton.gameObject.SetActive(showContinue);
         }
 
-        if (analyzeTrialsButton != null)
+        if (multiTargetButton != null)
         {
-            // Show analyze button only when:
+            // Show multi-target button only when:
             // - We're on the last trial AND (trial completed OR no more retries available)
             bool isLastTrialCompleted = currentTrial >= totalTrials && !trialFailed;
             bool isLastTrialNoMoreRetries = currentTrial >= totalTrials && trialFailed && !canRetry;
-            bool showAnalyze = trialsMode && (isLastTrialCompleted || isLastTrialNoMoreRetries);
-            analyzeTrialsButton.gameObject.SetActive(showAnalyze);
+            bool showMultiTarget = trialsMode && (isLastTrialCompleted || isLastTrialNoMoreRetries);
+            multiTargetButton.gameObject.SetActive(showMultiTarget);
         }
     }
 
@@ -367,11 +367,9 @@ public class TrialUIController : MonoBehaviour
     }
 
 
-    public void AnalyzeTrialResults()
+    public void OpenMultiTargetAnalysis()
     {
-
-
-        // Close trial panel without showing main (regression panel will appear)
+        // Close trial panel without showing main (multi-target panel will appear)
         CloseTrialControlPanel(false);
 
         // Keep game paused for analysis
@@ -381,13 +379,15 @@ public class TrialUIController : MonoBehaviour
 
         if (regressionUI != null)
         {
-            regressionUI.CalculateAndShowRegression();
+            regressionUI.CalculateMultiTargetAnalysis();
         }
         else
         {
             Debug.LogError("ERROR: regressionUI is NULL! Not assigned in Inspector!");
         }
     }
+
+
 
 
     public void UpdateCompletionUI()

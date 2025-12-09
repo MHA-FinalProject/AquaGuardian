@@ -30,9 +30,7 @@ public class TrialRegressionUI : MonoBehaviour
     [Header("UI References")]
     [SerializeField] private GameObject regressionPanel;
     [SerializeField] private TMP_Text regressionResultsText;
-    [SerializeField] private Button calculateRegressionButton;
     [SerializeField] private Button closeRegressionButton;
-    [SerializeField] private Button multiTargetButton; // Button for multi-target analysis (10%-90%)
 
     [Header("Multi-Target Table Panel")]
     [SerializeField] private GameObject multiTargetPanel;
@@ -64,15 +62,9 @@ public class TrialRegressionUI : MonoBehaviour
     void Start()
     {
         trialUIController = FindObjectOfType<TrialUIController>();
-        
-        if (calculateRegressionButton != null)
-            calculateRegressionButton.onClick.AddListener(CalculateRegression);
 
         if (closeRegressionButton != null)
             closeRegressionButton.onClick.AddListener(CloseRegressionPanel);
-
-        if (multiTargetButton != null)
-            multiTargetButton.onClick.AddListener(CalculateMultiTargetAnalysis);
 
         if (closeMultiTargetButton != null)
             closeMultiTargetButton.onClick.AddListener(CloseMultiTargetPanel);
@@ -83,38 +75,11 @@ public class TrialRegressionUI : MonoBehaviour
         if (multiTargetPanel != null)
             multiTargetPanel.SetActive(false);
 
-        // Hide MULTI button initially
-        UpdateMultiButtonVisibility();
-
         // Check if Python server is enabled in editor
         if (usePythonServer)
         {
             CheckServerAvailability();
         }
-    }
-
-    void Update()
-    {
-        // Sync MULTI button visibility with ANALYSE button
-        UpdateMultiButtonVisibility();
-    }
-
-    /// <summary>
-    /// Shows MULTI button only when ANALYSE button is available (enough trials)
-    /// </summary>
-    private void UpdateMultiButtonVisibility()
-    {
-        if (multiTargetButton == null) return;
-
-        // MULTI requires at least 3 trials (same as ANALYSE requires 2)
-        bool canAnalyze = CanCalculateRegression();
-        
-        // Check if ANALYSE button is visible/active
-        bool analyseVisible = calculateRegressionButton != null && 
-                              calculateRegressionButton.gameObject.activeInHierarchy;
-
-        // Show MULTI only if ANALYSE is visible and we have enough trials
-        multiTargetButton.gameObject.SetActive(canAnalyze && analyseVisible);
     }
     
     private void CheckServerAvailability()
@@ -588,13 +553,7 @@ public class TrialRegressionUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// TEST method - call this first to verify buttons work at all
-    /// </summary>
-    public void TestButtonClick()
-    {
-        Debug.LogError("Test button clicked");
-    }
+   
 
     /// <summary>
     /// PUBLIC method to be called from Button OnClick in Inspector.
@@ -602,8 +561,8 @@ public class TrialRegressionUI : MonoBehaviour
     /// </summary>
     public void OnTargetButtonClicked(int targetOxygenPercent)
     {
-        Debug.LogError($"Button clicked for target {targetOxygenPercent}%");
-        Debug.Log($"[TrialRegressionUI] Button clicked for target {targetOxygenPercent}%");
+       
+        Debug.Log($" Button clicked for target {targetOxygenPercent}%");
         
         // Convert target percent to row index (10% = row 1, 20% = row 2, etc.)
         int rowIndex = targetOxygenPercent / 10;
