@@ -104,6 +104,9 @@ public class getEventFromAmadeoClientDiver : MonoBehaviour
     }
     
 /*
+
+//previous code Receives forces from Amadeo or emulation , translates them into "vertical movement intent" (up / down / don't move), and passes the decision
+// to PlayerMovement to perform the actual movement
     // Handles the forces received from the Amadeo device
     private void HandleForcesUpdated(float[] forces)
     {
