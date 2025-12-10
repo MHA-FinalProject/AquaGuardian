@@ -437,6 +437,13 @@ def download_model():
     
     return send_file(temp_file.name, mimetype='application/json', as_attachment=True, download_name='regression_model.json')
 
+
 if __name__ == '__main__':
     print("Python Regression Server running on http://localhost:5000")
+    print("Endpoints:")
+    print("  /health - Health check")
+    print("  /train - Train model (full dataset)")
+    print("  /train_small - Train model (small dataset, 5-10 samples)")
+    print("  /model - Get trained model")
+    print("  /predict - Predict oxygen from features")
     app.run(host='0.0.0.0', port=5000, debug=True)
