@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Text;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.Networking;
 
 /// <summary>
@@ -18,9 +19,6 @@ public class PythonRegressionServerClient : MonoBehaviour
     [SerializeField] private string csvPath = "Assets/Data/Trials/Trial_5_runs_.csv";
     [SerializeField] private string modelType = "ElasticNet";
     [SerializeField] private bool useSmallDatasetMethod = true;  // Use /train_small for small datasets (5-10 samples)
-    
-    [Header("Optimization Settings")]
-    [SerializeField] private bool enableOptimizationComparison = false;  // Compare Python Gradient vs C# RandomSweep
 
     private bool isServerAvailable = false;
 
@@ -53,6 +51,7 @@ public class PythonRegressionServerClient : MonoBehaviour
         public float prediction_clamped;
 #pragma warning restore 0649
     }
+
 
     [System.Serializable]
     private class ModelResponse
@@ -345,9 +344,6 @@ public class PythonRegressionServerClient : MonoBehaviour
     /// </summary>
     public IEnumerator TrainAndAnalyze(List<TrialDataModels.TrialData> allTrialData, float targetOxygen, Action<TrialDataModels.RegressionResult> onComplete)
     {
-        // Sync optimization comparison setting
-        PythonRegressionHandler.enableOptimizationComparison = enableOptimizationComparison;
-        
         if (!isServerAvailable)
         {
             Debug.LogError("[PythonServer] Server not available for training.");
@@ -433,6 +429,7 @@ public class PythonRegressionServerClient : MonoBehaviour
         string cleanModelType = string.IsNullOrWhiteSpace(modelType) ? "ElasticNet" : modelType.Trim();
         StartCoroutine(TrainModel(csvPath, cleanModelType));
     }
+
 
     public bool IsServerAvailable => isServerAvailable;
 

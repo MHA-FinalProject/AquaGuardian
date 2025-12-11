@@ -2,50 +2,128 @@
 
 ## Overview
 
-**AquaGuardian** is a rehabilitation game system that uses machine learning to adaptively adjust game difficulty based on patient performance. The system analyzes player trial data and automatically optimizes game parameters to achieve target performance levels.
+**AquaGuardian** is an advanced rehabilitation game system that extends the previous version of the game. This version focuses on creating a **dynamic difficulty calculation algorithm** to adapt game parameters to individual patients.
 
->**Goal**: Run trials, perform regression analysis, and tune game parameters to achieve desired oxygen levels (10%-90%).
+**How It Works:**
 
-**Process**:
+The patient completes **5 trial runs** (each trial: 2 caves, ~20 seconds). The system learns a patient-specific **multiple linear regression model** over engineered features extracted from gameplay trials, and then uses a hierarchy of optimization algorithms to generate parameter sets that achieve prescribed target oxygen levels.
 
-- Player completes trials with different parameters from CSV files (`Trial_5_runs_.csv` or `Trial_Random_Parameters.csv`)
-- ML model learns how parameters affect oxygen consumption
-- System calculates parameters for target oxygen levels (single target or multi-target)
-- Optimized settings can be selected and used for next session (adaptive difficulty)
+**Evolution from Single-Target to Multi-Target:**
 
-**Entry Points:**
+Initially, we attempted to model for a **single target of 10% oxygen**. However, we realized this approach was insufficient due to the mismatch between trial scope (short 20-second evaluations) and full game scope (21 caves, significantly longer). 
 
-- Single Target: `TrialRegressionAlgorithm.PerformRegressionAnalysis()`
-- Multi-Target: `MultiTargetOptimizer.RunMultiTargetAnalysis()`
+To address this fundamental limitation, the system evolved to generate a **complete difficulty spectrum from 10% to 90% oxygen targets** in a single analysis. This empowers therapists to select the appropriate difficulty level for each patient based on their specific rehabilitation needs. The system now:
+
+1. Analyzes trial performance once (5 trials)
+2. Generates a **complete difficulty spectrum** (10%-90% oxygen targets)
+3. Presents an **interactive lookup table** of optimized parameters
+4. Allows patients/therapists to **select the appropriate challenge level** for the full game (21 caves)
+
+This approach provides **adaptive difficulty selection** without requiring multiple optimization runs, making the system more practical and patient-centered.
+
+>**Goal**: Run 5 trials, perform regression analysis, and generate optimized parameters for 9 difficulty levels (10%-90% oxygen targets).
+
+**Main Entry Point:**
+
+- `MultiTargetOptimizer.RunMultiTargetAnalysis()` - Primary workflow for generating 10%-90% difficulty spectrum
+- `TrialRegressionAlgorithm.PerformRegressionAnalysis()` - Legacy single-target optimization (used in earlier versions)
+
+---
+
+## Key Files & Data Flow
+
+### Trial Data Files
+
+#### **`Trial_5_runs_.csv`** - Patient Trial History
+- **Location**: `Assets/Data/Trials/Trial_5_runs_.csv`
+- **Purpose**: Stores results from all patient trial runs
+- **Structure Example**:
+  ```csv
+  trialId,speed,verticalSpeed,idleUpwardSpeed,lifeTime,RemoveHealthEveryLifeTime,...,o2_run1,o2_run2,o2_run3
+  1,20.00,25.00,3.50,2.00,3.00,...,45.2,52.1,48.7
+  2,25.00,30.00,4.00,1.80,3.50,...,38.9,42.3,40.1
+  ```
+- **Dynamic Columns**:
+  - **Base Parameters**: `trialId`, `speed`, `verticalSpeed`, `idleUpwardSpeed`, etc. (9 parameters)
+  - **Oxygen Results**: `o2_run1`, `o2_run2`, `o2_run3`, ... (one column added per successful run)
+  - **Automatic Retry Handling**:
+    - Failed attempts (0% oxygen) are **overwritten** in the same column
+    - Successful retries create **new columns** (`o2_run2`, `o2_run3`, etc.)
+
+#### **`Trial_Random_Parameters.csv`** - Random Parameter Generation
+- **Purpose**: Stores randomly generated parameters for trials (alternative to constant parameters)
+- **Structure**: Same as `Trial_5_runs_.csv` but with `o2_result` column instead of multiple runs
+
+### Output Files
+
+#### **`target.csv`** - Game Loading (Primary File) ⭐
+- **Location**: `Assets/Data/MultiTargets/target.csv`
+- **Purpose**: Optimized parameters for all difficulty levels (10%-90%)
+- **Structure**:
+  ```csv
+  oygenTarget,predicted_oygen,error,speed,verticalSpeed,idleUpwardSpeed,lifeTime,RemoveHealthEveryLifeTime,removeHealthWithCollide,timeBetweenCollides,healHealthPoint,factorForce
+  10%,9.81,0.190,18.481,28.910,0.500,0.735,4.183,9.826,1.156,5.687,0.000
+  20%,20.15,0.152,18.630,29.045,0.500,0.812,4.250,9.761,1.198,5.712,0.000
+  ```
+- **Usage**: Field names match code properties for direct loading
+
+#### **`SelectedParameters.json`** - Current Selection
+- **Location**: `Assets/Data/SelectedParameters/SelectedParameters.json`
+- **Created by**: Clicking a row in the Multi-Target table
+- **Applied by**: `PanelOpenUp.cs` auto-loads into input fields
+- **Contains**: Target oxygen, predicted outcome, all 11 parameters, timestamp
+
+#### **`MultiTarget_Report_[timestamp].csv`** - Excel Analysis
+- **Location**: `Assets/Data/MultiTargets/MultiTarget_Report_[timestamp].csv`
+- **Purpose**: Detailed analysis report with metadata, 12 parameters (includes `EffectiveDrainRate`), and summary statistics
+- **Features**: Timestamped history, Excel-friendly formatting
+
+#### **`UnityRegression_[timestamp].txt`** - Single Target Reports (Legacy)
+- **Location**: `Assets/Data/RegressionResults/`
+- **Purpose**: Single-target analysis reports (legacy feature)
 
 ---
 
 ## System Architecture
 
 ```mermaid
-flowchart LR
-    A[5 Trials] --> B[Feature Extraction]
-    B --> C[Regression Model]
-    C --> D[Cross-Validation]
-    D --> E[3-Solver Optimization]
-    E --> F[Optimized Parameters]
-    F --> G[Reports]
-
-    subgraph "Input"
-        A
+flowchart TB
+    subgraph Trial["Trial Phase"]
+        A[Patient completes 5 Trials<br/>2 caves each, ~20s]
+        B[Save to Trial_5_runs_.csv]
     end
 
-    subgraph "ML Pipeline"
-        B
-        C
-        D
-        E
+    subgraph ML["Machine Learning Pipeline"]
+        C[Feature Extraction<br/>10 features C# / 9 features Python]
+        D[Train Regression Model<br/>Ridge C# / ElasticNet Python]
+        E[Cross-Validation<br/>Evaluate model quality]
     end
 
-    subgraph "Output"
-        F
-        G
+    subgraph MultiTarget["Multi-Target Optimization"]
+        F[Optimize for 9 Targets<br/>10%, 20%...90% oxygen]
+        G[3-Solver Cascade per target<br/>Gradient 3-Phase → RandomSweep → Multi-Gradient]
     end
+
+    subgraph Output["Output & Selection"]
+        H[Save target.csv<br/>11 params × 9 targets]
+        I[Save MultiTarget_Report_*.csv<br/>Detailed analysis]
+        J[Display Interactive Table<br/>Therapist selects difficulty]
+        K[Save SelectedParameters.json]
+    end
+
+    subgraph Game["Main Game"]
+        L[Load selected parameters<br/>PanelOpenUp.cs]
+        M[Play 21 caves<br/>with selected difficulty]
+    end
+
+    A --> B --> C --> D --> E --> F --> G --> H
+    G --> I
+    H --> J --> K --> L --> M
+
+    style A fill:#4CAF50,color:#fff
+    style F fill:#FF9800,color:#fff
+    style J fill:#2196F3,color:#fff
+    style M fill:#9C27B0,color:#fff
 ```
 
 ### Pipeline Flow
@@ -60,122 +138,6 @@ flowchart LR
 6. **Reporting** - Analysis summary generation in `TrialReportGenerator`
 
 *(See [Key Components](#key-components) section below for detailed component descriptions)*
-
----
-
-## Workflow: Complete System Flow
-
-### Workflow Overview
-
-The regression system follows a clear pipeline from user interaction to final report generation. Understanding this flow is crucial for debugging, extending, or modifying the system.
-
-### Key Decision Points
-
-1. **Mode Selection**: Unity (C#) vs Python Server
-   - Determined by `TrialRegressionUI.usePythonServer` flag
-   - Python mode requires `PythonRegressionServerClient` in scene and server running
-
-2. **Optimization Strategy**: Sequential (C#) vs Parallel (Python)
-   - C# Mode: Tries Gradient 3-Phase first, falls back to RandomSweep if error > 5%
-   - Python Mode: Runs both Python Gradient and RandomSweep in parallel, selects best
-
-3. **Baseline Calculation**: Patient history vs defaults
-   - If ≥ 3 trials: uses median of patient history
-   - If < 3 trials: uses mid-range defaults
-
----
-
-## Code Flow Diagrams
-
-### Complete System Flow
-
-```mermaid
-flowchart TD
-
-    subgraph UI["1. USER INTERFACE"]
-        A[User clicks 'Calculate Regression' button]
-    end
-
-    subgraph Controller["2. TRIAL UI CONTROLLER"]
-        B["TrialUIController.ShowRegression()<br/>TrialUIController.cs line 357"]
-    end
-
-    subgraph RegressionUI["3. TRIAL REGRESSION UI"]
-        C["TrialRegressionUI.CalculateRegression()<br/>TrialRegressionUI.cs lines 64-112"]
-    end
-
-    A --> B --> C
-
-    C -->|"usePythonServer = false"| D
-    C -->|"usePythonServer = true"| E
-
-    subgraph UnityPath["4A. UNITY BUILT-IN PATH"]
-        D["TrialRegressionAlgorithm<br/>.PerformRegressionAnalysis()<br/>TrialRegressionAlgorithm.cs"]
-        D1["TrialDataService<br/>.LoadAllTrials()<br/>Load CSV data"]
-        D2["OxygenPredictor.TrainModel()<br/>Ridge regression"]
-        D3["RegressionUtilities<br/>.OptimizeParameters()<br/>Gradient 3-Phase → RandomSweep"]
-        D --> D1 --> D2 --> D3
-    end
-
-    subgraph PythonPath["4B. PYTHON SERVER PATH"]
-        E["PythonRegressionServerClient<br/>.TrainAndAnalyze()<br/>PythonRegressionServerClient.cs line 346"]
-        F["TrialDataService<br/>.SaveAllTrialsToCSV()<br/>Save trial data to temp CSV"]
-        G["HTTP POST to localhost:5000<br/>/train_small (5-10 samples)<br/>OR /train (>10 samples)"]
-        H["regression_server.py<br/>• Load CSV<br/>• Train Ridge/ElasticNet<br/>• Return coefficients (betas)"]
-        I["PythonRegressionHandler<br/>.LoadModelFromServer()<br/>Load model into Unity"]
-        J["PythonRegressionHandler<br/>.PerformPythonRegressionAnalysis()"]
-    end
-
-    E --> F --> G --> H --> I --> J
-
-    J -->|"enableOptimizationComparison = false"| K
-    J -->|"enableOptimizationComparison = true"| L
-
-    subgraph Optimization["10. OPTIMIZATION"]
-        K["C# ONLY<br/>RandomSweepOptimizer<br/>(300 samples)"]
-        L["COMPARISON MODE<br/>Python Gradient +<br/>C# RandomSweep<br/>Choose best result<br/>(300-800 samples)"]
-    end
-
-    K --> M
-    L --> M
-    D3 --> M
-
-    subgraph Report["11. REPORT GENERATION"]
-        M["TrialReportGenerator<br/>.GenerateSummaryReport()<br/>.GenerateFullReport()<br/>.GeneratePythonModelFullReport()"]
-    end
-
-    subgraph Output["12. OUTPUT"]
-        N["• Display in UI panel<br/>• Auto-save to TXT file<br/>Assets/Data/RegressionResults/"]
-    end
-
-    M --> N
-
-    style A fill:#4CAF50,color:#fff
-    style H fill:#3F51B5,color:#fff
-    style K fill:#FF9800,color:#fff
-    style L fill:#9C27B0,color:#fff
-    style N fill:#2196F3,color:#fff
-```
-
-**Flow Explanation:**
-
-1. **User Interface**: User clicks the "Calculate Regression" button
-2. **Trial UI Controller**: Routes to regression panel via `TrialUIController.ShowRegression()`
-3. **Trial Regression UI**: Main entry point `TrialRegressionUI.CalculateRegression()`, checks Python server flag
-4. **Path Selection**:
-   - **Unity Path (4A)**: Uses built-in Ridge regression, trains locally, optimizes with Gradient 3-Phase to RandomSweep fallback
-   - **Python Path (4B)**: Sends data to Python server via HTTP, receives trained model, loads into Unity
-5. **Optimization**:
-   - Unity path: Gradient 3-Phase (primary) to RandomSweep (fallback if error > 5%)
-   - Python path: Comparison mode (both Python Gradient and C# RandomSweep) or C# only
-6. **Report Generation**: Creates summary and full reports with optimization results
-7. **Output**: Displays in UI panel and auto-saves to `Assets/Data/RegressionResults/`
-
-**Key Decision Points:**
-
-- **`usePythonServer`**: Determines Unity vs Python path (set in `TrialRegressionUI` Inspector)
-- **`enableOptimizationComparison`**: Controls whether to compare Python Gradient vs C# RandomSweep (set in `PythonRegressionHandler`)
-- **Error thresholds**: Gradient 3-Phase falls back to RandomSweep if error > 5% or solution is null
 
 ---
 
@@ -230,158 +192,17 @@ flowchart LR
 
 ---
 
-### Optimization Strategy Comparison
+### Mode Comparison: C# vs Python
 
-```mermaid
-flowchart TD
-    S["RegressionUtilities<br/>.OptimizeParameters()"] --> M{Mode?}
-    
-    M -->|C# Mode| C1["DifficultyParameterSolver<br/>.SolveForTargetOxygen()<br/>Gradient 3-Phase"]
-    M -->|Python Mode| P1["PythonRegressionHandler<br/>.OptimizeWithPythonModel()<br/>Python Gradient"]
-    M -->|Python Mode| P2["DifficultyParameterSolver<br/>.RandomSweepOptimizer()<br/>C# RandomSweep"]
-    
-    C1 --> C2{Error > 5%<br/>or null?}
-    C2 -->|Yes| C3["DifficultyParameterSolver<br/>.RandomSweepOptimizer()<br/>Fallback"]
-    C2 -->|No| C4["✅ Use Gradient 3-Phase"]
-    C3 --> C5["✅ Use RandomSweep"]
-    
-    P1 --> P3{Compare Errors}
-    P2 --> P3
-    P3 --> P4["✅ Select Best Solution"]
-    
-    C4 --> R["Return Solution"]
-    C5 --> R
-    P4 --> R
-```
+**C# Mode (Sequential)**:
+- Tries Gradient 3-Phase first (fast, accurate for dense coefficients)
+- Falls back to RandomSweep if error > 5% or null/NaN
+- Falls back to Multi-Gradient as last resort
 
-**Key Differences:**
-
-- **C# Mode (Sequential)**: Tries Gradient 3-Phase first (fast, accurate for dense coefficients), only uses RandomSweep if needed
-- **Python Mode (Parallel)**: Runs both optimizers simultaneously, compares results, selects best (more robust for sparse coefficients)
-
----
-
-## Component Call Hierarchy
-
-### C# Mode Call Chain
-
-```text
-TrialRegressionUI.CalculateRegression()
-  calls
-TrialDataService.LoadAllTrials()
-  calls
-TrialRegressionAlgorithm.PerformRegressionAnalysis()
-  calls
-TrialRegressionAlgorithm.PerformUnityRegressionAnalysis()
-  calls RegressionUtilities.CalculateTrialStatistics()
-  calls OxygenPredictor.TrainModel()
-        calls FeatureExtractor.ExtractFeaturesAndTargets()
-        calls MultipleLinearRegression.Train()
-  calls RegressionUtilities.PerformCrossValidationAndErrorCalculation()
-  calls RegressionUtilities.PrepareOptimizationFeatures()
-  calls RegressionUtilities.OptimizeParameters()
-        calls RegressionUtilities.BuildOptimizationIndices()
-        calls RegressionUtilities.PrepareOptimizationBaseline()
-              calls FeatureExtractor.GetPatientBaseline()
-              calls RegressionUtilities.ConstrainRangesToObserved()
-        calls DifficultyParameterSolver.SolveForTargetOxygen() [PRIMARY]
-              calls DifficultyParameterSolver.SolveMinimalChange() [Phase 1]
-              calls DifficultyParameterSolver.RefineProjectedGradient() [Phase 2]
-              calls DifficultyParameterSolver.RefineProjectedGradientIterative() [Phase 3]
-        calls DifficultyParameterSolver.RandomSweepOptimizer() [FALLBACK if error > 5% or null/NaN]
-        calls DifficultyParameterSolver.SolveForTargetDifficultyMulti() [LAST RESORT if solution is null or error is NaN]
-  calls TrialReportGenerator.GenerateSummaryReport()
-  calls TrialReportGenerator.GenerateFullReport()
-  calls
-TrialRegressionAlgorithm.SaveRegressionResultsToFile()
-```
-
-### Python Mode Call Chain
-
-```text
-TrialRegressionUI.CalculateRegression()
-  calls
-PythonRegressionServerClient.TrainAndAnalyze() [Coroutine]
-  calls PythonRegressionServerClient.SaveAllTrialsToCSV()
-  calls HTTP POST to localhost:5000/train
-  calls PythonRegressionServerClient.LoadModelFromResponse()
-  calls PythonRegressionHandler.PerformPythonRegressionAnalysis()
-        calls RegressionUtilities.CalculateTrialStatistics()
-        calls PythonRegressionHandler.OptimizeWithPythonModel() [Python Gradient]
-        calls DifficultyParameterSolver.RandomSweepOptimizer() [C# RandomSweep]
-        calls TrialReportGenerator.GeneratePythonModelFullReport()
-  calls
-TrialRegressionAlgorithm.SaveRegressionResultsToFile()
-```
-
----
-
-## Important Details to Know
-
-### 1. Data Loading
-
-- **Source**: CSV files in `Assets/Data/Trials/`
-- **Files**: `Trial_5_runs_.csv` (fixed parameters) or `Trial_Random_Parameters.csv` (random mode)
-- **Minimum**: 3 trials required for analysis (validated in `TrialRegressionAlgorithm.PerformRegressionAnalysis`)
-- **Function**: `TrialDataService.LoadAllTrials(bool useRandomParameters)`
-
-### 2. Feature Extraction
-
-- **C# Mode**: 10 features (includes `EffectiveDrainRate` derived feature)
-- **Python Mode**: 9 features (excludes `EffectiveDrainRate` to prevent multicollinearity)
-- **Adjustments**:
-  - Amadeo mode: `idleUpwardSpeed *= 0.5`, `factorForce` active
-  - Keyboard mode: `factorForce = 0`
-- **Function**: `FeatureExtractor.ExtractFeatures(TrialData)`
-
-### 3. Model Training
-
-- **C# Mode**: Ridge regression with adaptive regularization $$\lambda = \text{Clamp}(0.5 + (10 - n) \times 0.2, 0.5, 2.0)$$
-- **Python Mode**: ElasticNet/Ridge/Huber/PLS (configurable via server)
-- **Function**: `OxygenPredictor.TrainModel()` or Python server `/train` endpoint
-
-### 4. Optimization
-
-- **Baseline**: Personalized from patient history (median if ≥ 3 trials, mid-range if < 3)
-- **Ranges**: Constrained to observed data with adaptive buffer (prevents unrealistic parameters)
-- **3 Solvers**: The system uses 3 different solvers in cascade:
-  - **Solver 1**: `SolveForTargetOxygen` (contains 3 internal phases: Analytical → Gradient → Iterative)
-  - **Solver 2**: `RandomSweepOptimizer` (fallback if Solver 1 fails)
-  - **Solver 3**: `SolveForTargetDifficultyMulti` (last resort fallback)
-- **Primary Method**: Solver 1 (Gradient 3-Phase) for C# mode, or Python Gradient for Python mode
-- **Fallback**: Solver 2 (RandomSweep) - always works, doesn't depend on coefficients
-- **Function**: `RegressionUtilities.OptimizeParameters()`
-
-### 5. Report Generation
-
-- **Summary**: Brief metrics (R², RMSE, MAE, optimized parameters)
-- **Full Report**: Detailed analysis including feature importance, optimization comparison (Python mode)
-- **Auto-save**: Enabled by default, saved to `Assets/Data/RegressionResults/`
-- **Function**: `TrialReportGenerator.GenerateSummaryReport()` / `GenerateFullReport()`
-
----
-
-## Component Reference
-
-| Step | Component | File | Key Function | Called From |
-|------|-----------|------|--------------|-------------|
-| 1 | UI Entry | `TrialUIController.cs` / `TrialRegressionUI.cs` | `ShowRegression()` :357 / `CalculateRegression()` :64 | Button onClick |
-| 2 | Data Load | `TrialDataService.cs` | `LoadAllTrials()` :98 | TrialRegressionUI |
-| 3 | Orchestrator | `TrialRegressionAlgorithm.cs` | `PerformRegressionAnalysis()` :26 | TrialRegressionUI |
-| 4 | Statistics | `RegressionUtilities.cs` | `CalculateTrialStatistics()` :21 | TrialRegressionAlgorithm |
-| 5 | Training | `OxygenPredictor.cs` | `TrainModel()` :25 | TrialRegressionAlgorithm |
-| 6 | Features | `FeatureExtractor.cs` | `ExtractFeaturesAndTargets()` :126 / `ExtractFeatures()` :27 | OxygenPredictor, RegressionUtilities |
-| 7 | CV | `RegressionUtilities.cs` | `PerformCrossValidationAndErrorCalculation()` :38 | TrialRegressionAlgorithm |
-| 8 | Optimization | `RegressionUtilities.cs` | `OptimizeParameters()` :147 | TrialRegressionAlgorithm |
-| 9 | Gradient 3-Phase | `DifficultyParameterSolver.cs` | `SolveForTargetOxygen()` :179 | RegressionUtilities |
-| 10 | RandomSweep | `DifficultyParameterSolver.cs` | `RandomSweepOptimizer()` :530 | RegressionUtilities |
-| 11 | Reporting | `TrialReportGenerator.cs` | `GenerateFullReport()` | TrialRegressionAlgorithm |
-| 12 | Save | `TrialRegressionAlgorithm.cs` | `SaveRegressionResultsToFile()` :42 | TrialRegressionUI |
-| 13 | Export | `Assets/Data/RegressionResults/` | `UnityRegression_*.txt` | Auto-saved (Single Target) |
-| 14 | **Multi-Target** | `MultiTargetOptimizer.cs` | `RunMultiTargetAnalysis()` :67 / `OptimizeForAllTargets()` :115 | TrialRegressionUI |
-| 15 | **Multi-Target UI** | `TrialRegressionUI.cs` | `CalculateMultiTargetAnalysis()` :315 / `OnTargetButtonClicked()` :582 | Button onClick |
-| 16 | **Param Selection** | `SelectedParametersService.cs` | `SaveSelectedParameters()` / `LoadSelectedParameters()` | TrialRegressionUI, PanelOpenUp |
-| 17 | **Param Loading** | `PanelOpenUp.cs` | `LoadSelectedParametersToInputFields()` | Start() |
+**Python Mode (Parallel)**:
+- Runs Python Gradient + RandomSweep simultaneously
+- Compares results, selects best solution
+- More robust for sparse coefficients (ElasticNet/Lasso)
 
 ---
 
@@ -389,25 +210,50 @@ TrialRegressionAlgorithm.SaveRegressionResultsToFile()
 
 **C# uses 10 features**, **Python uses 9 features** (excludes `EffectiveDrainRate` to prevent multicollinearity).
 
-### 9 Base Features (Both C# and Python)
+### 9 Core Game Parameters (Independent Variables)
 
-1. **speed** - Forward movement speed
-2. **verticalSpeed** - Up/down movement speed
-3. **idleUpwardSpeed** - Passive upward drift
-4. **lifeTime** - Seconds between oxygen drain cycles
-5. **RemoveHealthEveryLifeTime** - Oxygen lost per cycle
-6. **removeHealthWithCollide** - Collision damage
-7. **timeBetweenCollides** - Collision cooldown
-8. **healHealthPoint** - Health pack restoration
-9. **factorForce** - Amadeo device force multiplier
+These parameters control the game's difficulty and are optimized by the regression system:
 
-### 10th Feature (C# Only)
+1. **`speed`** - Forward horizontal speed (range: 10-40)
+2. **`verticalSpeed`** - Vertical movement speed for up/down control (range: 15-45)
+3. **`idleUpwardSpeed`** - Passive upward drift when no input (range: 0.01-8)
+4. **`lifeTime`** - Duration of each oxygen depletion cycle in seconds (range: 0.5-4)
+5. **`RemoveHealthEveryLifeTime`** - Oxygen removed per life cycle (range: 1-7)
+6. **`removeHealthWithCollide`** - Oxygen damage per cave collision (range: 5-20)
+7. **`timeBetweenCollides`** - Cooldown between collision damage (range: 1-5 seconds)
+8. **`healHealthPoint`** - Oxygen restored by collecting oxygen tanks (range: 3-15)
+9. **`factorForce`** - Amadeo device force multiplier (range: 0.5-15, 0 for keyboard mode)
 
-1. **EffectiveDrainRate** = $$\frac{\text{RemoveHealthEveryLifeTime}}{\text{lifeTime}}$$
-    - Actual drain rate per second
-    - Cannot be optimized directly (calculated from others)
+### 10th Feature (C# Only) - Derived Variable
+
+10. **`EffectiveDrainRate`** = $$\frac{\text{RemoveHealthEveryLifeTime}}{\text{lifeTime}}$$
+    - Represents oxygen loss per second
+    - **Used in regression** to improve model accuracy (captures the combined effect)
+    - **Banned from optimization** to prevent multicollinearity (cannot directly optimize a variable that depends on two other optimized variables)
     - **C#:** Included in regression, banned from optimization
     - **Python:** Excluded entirely (multicollinearity with source features)
+
+### Target Variable
+
+- **`finalOxygenRemaining`** - Final oxygen percentage at end of trial (0-100%)
+  - This is what the regression model predicts
+  - This is what we optimize parameters to achieve
+
+**Chain Rule Handling:** The optimizer uses calculus (chain rule) to account for how `lifeTime` and `RemoveHealthEveryLifeTime` changes affect the derived `EffectiveDrainRate` feature during gradient descent.
+
+---
+
+## Parameter Ranges & Constraints
+
+The system uses **adaptive range constraints** based on observed trial data to balance interpolation and extrapolation.
+
+**Two Buffer Modes:**
+- **Conservative** (10%-25% buffer): Stays closer to observed data, best for interpolation
+- **Expanded** (25%-50% buffer): Allows more extrapolation, best for extreme targets (10%, 90%)
+
+**Adaptive Logic:**
+- Buffer increases with distance from observed data (`deltaFromTarget`)
+- **Range Override**: If gap > 35-40%, ignores observed ranges entirely and uses full parameter ranges
 
 ---
 
@@ -427,195 +273,106 @@ The system automatically adapts features based on input device:
 
 ## Regression Modes
 
-The system supports **two regression modes**:
+### Mode 1: C# Built-in (Default)
+- Pure C# Ridge regression with adaptive regularization
+- Fast, integrated, **no setup required**
 
-### Mode 1: C# Built-in Regression (Default)
-
-- Pure C# implementation (no external dependencies)
-- Uses Ridge regression with adaptive regularization
-- Fast and integrated directly into Unity
-- **No setup required** - works out of the box
-
-### Mode 2: Python Regression Server (Advanced)
-
-- External Python server with advanced ML models
-- Supports ElasticNet, Ridge, Huber, PLS algorithms
-- Better for complex optimization scenarios
+### Mode 2: Python Server
+- External Python server with ElasticNet, Ridge, Huber, PLS
 - Requires Python 3.9+
 
-**Python Dependencies** (`requirements.txt`):
+**Enable Python Mode in Editor:**
+1. Enable the `PythonRegressionServerClient` GameObject
+2. Check "Use Python Server" checkbox in `TrialRegressionUI` GameObject
+3. Run the server:
+   ```bash
+   pip install numpy pandas scikit-learn flask flask-cors
+   python PythonScripts/regression_server.py  # localhost:5000
+   ```
 
-```txt
-# Core ML dependencies
-numpy>=1.21.0
-pandas>=1.3.0
-scikit-learn>=1.0.0
-
-# Server dependencies (optional - only for server mode)
-flask>=2.0.0
-flask-cors>=3.0.0
-```
-
-**Installation:**
-
-```bash
-pip install -r requirements.txt
-```
-
-**Usage:**
-
-**Real-time Server** (Unity connects via HTTP)
-
-```bash
-python PythonScripts/regression_server.py
-# Server runs on localhost:5000
-```
-
-**Unity Setup:**
-
-1. Enable the **"python model"** GameObject in the scene
-2. In **RegressionAnalyzer** component, check ✅ **"Auto Load Python"**
-
-**How it works:**
-
-- Unity sends trial data via HTTP POST to `/train`, receives coefficients
-- Unity uses the Python model for predictions and optimization
-- Optimization algorithms still run in Unity (C# side)
-
-**For offline model training, see PythonScripts/train_regression_model.py**
+**How it works:** Unity sends trial data to Python (`/train`), receives coefficients, runs optimization with Python model
 
 ## Quick Start
 
-### Basic Usage (C# Mode)
-
-#### Multi-Target Analysis
-
-Multi-target analysis optimizes parameters for 9 difficulty levels (10%-90%) in a single analysis.
+### Code Usage Example
 
 ```csharp
-// 1. Load trial data (minimum 3 trials required)
+// Multi-Target Analysis (Primary Workflow)
 var trials = TrialDataService.LoadAllTrials(useRandomParameters: false);
-
-// 2. Run multi-target analysis (optimizes for 9 targets: 10%-90%)
 var results = MultiTargetOptimizer.RunMultiTargetAnalysis(trials);
-// Results saved to: Assets/Data/MultiTargets/target.csv
 
-// 3. Get parameters for specific target
-var params50 = MultiTargetOptimizer.GetParametersForTarget(50f);
-
-// 4. Check if user selected parameters
+// Check if user selected parameters from UI table
 if (SelectedParametersService.HasSelectedParameters()) {
     var selected = SelectedParametersService.LoadSelectedParameters();
+    float targetOxygen = SelectedParametersService.GetSelectedTargetOxygen();
     ApplyParameters(selected);
 }
 ```
 
-#### Single Target Analysis
-
-Single-target analysis optimizes parameters for one specific oxygen level. This approach was used in earlier versions of the system.
-
 ```csharp
-// 1. Load trial data (minimum 3 trials required)
-var trials = TrialDataService.LoadAllTrials(useRandomParameters: false);
-
-// 2. Run regression analysis for single target
-var result = TrialRegressionAlgorithm.PerformRegressionAnalysis(
-    trials, 
-    targetOxygen: 10f
-);
-
-// 3. View results
-Debug.Log(result.summaryText);
-Debug.Log($"Error: {result.optimizedSolutionError:F2}%");
-
-// 4. Apply optimized parameters
+// Single Target Analysis (Legacy)
+var result = TrialRegressionAlgorithm.PerformRegressionAnalysis(trials, targetOxygen: 10f);
 if (result.optimizedSolution != null) {
     ApplyParameters(result.optimizedSolution);
 }
 ```
 
-### Using the UI
-
-#### Multi-Target Analysis
-1. Complete 5+ trials in the game
-2. Click **"MULTI TARGET"** button (appears when analysis is available)
-3. System automatically:
-   - Optimizes for 9 target levels (10%-90%)
-   - Displays interactive table with results
-   - Saves to `target.csv` and `MultiTarget_Report_*.csv`
-4. **Select parameters**: Click a button next to any target row
-5. **Confirmation**: Message shows "Selected parameters for target X%"
-6. **Auto-close**: Panel closes after 2 seconds
-7. **Next session**: Selected parameters auto-load into main game input fields
-8. **Modify/Start**: Review parameters in main panel, modify if needed, then start game
-
-#### Single Target Analysis
-
-Single-target analysis was used in earlier versions. It optimizes parameters for one specific oxygen level.
-
-1. Complete 5+ trials in the game
-2. Click **"Calculate Regression"** (or **"ANALYZE"**) button in the UI
-3. System automatically:
-   - Loads trial data from CSV
-   - Trains regression model
-   - Optimizes parameters for target oxygen (default: 10%)
-   - Generates detailed report
-4. Review results in the regression panel
-5. Reports are auto-saved to `Assets/Data/RegressionResults/UnityRegression_*.txt`
-
-### Output Files
-
-- **Multi-Target CSV (Game Loading)**: `Assets/Data/MultiTargets/target.csv`
-  - Optimized parameters for 9 difficulty levels (10%-90%)
-  - Field names match code properties for easy loading
-  - 11 parameters per target (no metadata)
-  - Updated each time multi-target analysis runs
-
-- **Multi-Target Reports (Excel)**: `Assets/Data/MultiTargets/MultiTarget_Report_YYYY-MM-DD_HH-MM-SS.csv`
-  - Detailed analysis with metadata (timestamp, trial count, model R^2, RMSE)
-  - 12 parameters including `EffectiveDrainRate` derived feature
-  - Summary statistics (success rate, error ranges)
-  - Excel-friendly formatting with proper headers
-
-- **Selected Parameters**: `Assets/Data/SelectedParameters/SelectedParameters.json`
-  - Stores user-selected parameters from multi-target table
-  - Auto-loads into main game input fields on next session
-  - Includes target oxygen and predicted outcome
-
-- **Regression Reports** (Single Target): `Assets/Data/RegressionResults/UnityRegression_YYYY-MM-DD_HH-MM-SS.txt`
-  - Contains model metrics (R^2, RMSE, MAE)
-  - Shows optimized parameters for single target
-  - Includes feature importance analysis
-  - Comparison between optimization methods (if Python mode enabled)
-  - Generated when using single-target analysis (used in earlier versions)
-
-- **Trial Data CSV**: `Assets/Data/Trials/Trial_5_runs_.csv` or `Trial_Random_Parameters.csv`
-  - Stores all trial parameters and outcomes
-  - Used for model training
-
 ## Key Components
 
-> For Python mode, components 3-8 are replaced by external Python server. See [Regression Modes](#regression-modes) section above for setup instructions.
+> For Python mode, ML components (3-8) are replaced by external Python server. See [Regression Modes](#regression-modes).
 
-| # | Component | Location | Role |
-|---|-----------|----------|------|
-| 1 | `TrialRegressionAlgorithm` | `Assets/Scripts/` | Main orchestrator, entry point |
-| 2 | `FeatureExtractor` | `Assets/Scripts/Regression/Features/` | Converts trial data to feature vectors |
-| 3 | `MultipleLinearRegression` | `Assets/Scripts/Linear regression/` | Ridge regression with L2 regularization |
-| 4 | `OxygenPredictor` | `Assets/Scripts/Linear regression/` | Training/prediction interface |
-| 5 | `DifficultyParameterSolver` | `Assets/Scripts/Linear regression/` | Optimization algorithms (3-solver cascade) |
-| 6 | `RegressionUtilities` | `Assets/Scripts/` | Cross-validation, optimization coordination |
-| 7 | `RegressionMath` | `Assets/Scripts/Linear regression/` | Chain rule for derived features |
-| 8 | `FeatureNormalizer` | `Assets/Scripts/Linear regression/` | Z-score normalization |
-| 9 | `TrialSystemManager` | `Assets/Scripts/` | Trial lifecycle management |
-| 10 | `TrialDataService` | `Assets/Scripts/Trial/` | CSV I/O operations |
-| 11 | `TrialDataCache` | `Assets/Scripts/` | Runtime data caching |
-| 12 | `TrialReportGenerator` | `Assets/Scripts/` | Summary + full report generation |
-| 13 | `TrialDataModels` | `Assets/Scripts/` | Data structures (`TrialData`, `RegressionResult`) |
-| 14 | `MultiTargetOptimizer` | `Assets/Scripts/Regression/` | Multi-target optimization (10%-90%) |
-| 15 | `SelectedParametersService` | `Assets/Scripts/` | Save/load selected parameters to JSON |
-| 16 | `PanelOpenUp` | `Assets/Scripts/` | Main panel, loads selected params to input fields |
-| 17 | `TrialRegressionUI` | `Assets/Scripts/` | UI integration, displays results and tables |
+**Core Workflow:**
+
+- `TrialSystemManager` - Trial lifecycle orchestration
+- `MultiTargetOptimizer` - Multi-target optimization (10%-90% spectrum)
+- `TrialRegressionAlgorithm` - Single-target optimization (legacy)
+- `SelectedParametersService` - Save/load selected parameters
+- `PanelOpenUp` - Main panel, loads parameters to input fields
+- `TrialRegressionUI` - UI integration, table display
+
+**ML Pipeline:**
+
+- `FeatureExtractor` - Trial data -> feature vectors
+- `OxygenPredictor` - Model training/prediction (Ridge regression)
+- `DifficultyParameterSolver` - 3-solver cascade (Gradient 3-Phase, RandomSweep, Multi-Gradient)
+- `RegressionUtilities` - Cross-validation, optimization coordination
+- `MultipleLinearRegression` - Ridge regression with L2 regularization
+- `FeatureNormalizer` - Z-score normalization
+
+**Data & I/O:**
+- `TrialDataService` - CSV I/O operations
+- `TrialDataModels` - Data structures (`TrialData`, `RegressionResult`)
+- `TrialReportGenerator` - Report generation
+
+**Python Integration (Optional):**
+- `PythonRegressionServerClient` - HTTP client for Python API
+- `PythonRegressionHandler` - Model loading, optimization with Python models
+- `PythonRegressionModel` - JSON deserialization, predictions
+
+### Regression Model Details
+
+#### **Unity Built-in: Ridge Regression**
+- **Algorithm**: Multiple Linear Regression with L2 regularization
+- **Solver**: Cholesky decomposition for solving normal equations
+- **Regularization**: Adaptive lambda (0.5-2.0 based on sample count)
+- **Normalization**: Z-score (mean=0, std=1) using sample standard deviation (n-1)
+- **Feature Selection**: Optional for <10 trials (selects top K features by importance)
+
+#### **Model Equation**
+
+```
+oxygen = b0 + b1*speed + b2*verticalSpeed + b3*idleUpwardSpeed + b4*lifeTime + 
+         b5*RemoveHealthEveryLifeTime + b6*removeHealthWithCollide + 
+         b7*timeBetweenCollides + b8*healHealthPoint + b9*factorForce + 
+         b10*EffectiveDrainRate
+```
+
+#### **Evaluation Metrics**
+
+- **R-squared**: Proportion of variance explained (0-1, higher = better, >0.7 recommended)
+- **RMSE (Root Mean Squared Error)**: Average prediction error magnitude
+- **MAE (Mean Absolute Error)**: Average absolute prediction error
+- **Cross-Validation**: K-fold (2-5 folds) for datasets with >10 trials
 
 ### Key Equations
 
@@ -629,299 +386,116 @@ Single-target analysis was used in earlier versions. It optimizes parameters for
 
 ---
 
-## How It Works
 
-### Step-by-Step Execution
+## Optimization Algorithm Details
 
-1. **Data Collection**: Player completes 5 trials with varying parameters
-2. **Feature Extraction**: Raw trial data converted to 10 feature vectors (C#) or 9 (Python)
-3. **Model Training**: Ridge regression (C#) or ElasticNet/Huber/PLS (Python) learns parameter to oxygen relationship
-4. **Cross-Validation**: K-fold CV evaluates model quality (if >= 10 trials)
-5. **Optimization**: System finds parameter combination that predicts 10\% oxygen
-6. **Reporting**: Detailed analysis generated with metrics and optimized parameters
+### Solver Comparison
 
-### Optimization Strategy
+| Solver | Type | Best For | Typical Error |
+|--------|------|----------|---------------|
+| **Solver 1: Gradient 3-Phase** | Analytical + Gradient | Dense coefficients | < 0.5% |
+| **Solver 2: RandomSweep** | Monte Carlo | Universal fallback | < 2% |
+| **Solver 3: Multi-Gradient** | Gradient descent | Last resort | Varies |
 
-The system uses a **dual optimization approach**:
-
-- **C# Mode**: Sequential - tries Gradient 3-Phase first, falls back to RandomSweep if error > 5%
-- **Python Mode**: Parallel - runs both Python Gradient and RandomSweep, selects best result
-
-This ensures robust optimization across different scenarios (dense vs sparse coefficients, small vs large datasets).
-
-### Baseline Personalization
-
-Before optimization, the system calculates a **personalized baseline** from patient history:
-
-- If patient has ≥ 3 trials: uses **median** of historical parameters (robust to outliers)
-- If patient has < 3 trials: uses **mid-range** defaults from parameter ranges
-- Adds 1% random noise to baseline for result variability
-
-This ensures optimization starts from patient-specific ranges rather than generic defaults.
-
----
-
-## Optimization Algorithm
-
-**Goal:** Find parameters where predicted oxygen = 10%
-
-### Optimization Methods by Mode
-
-| Mode | Primary Method | Fallback | Strategy |
-|------|----------------|----------|----------|
-| **C# (Unity)** | Gradient 3-Phase | RandomSweep (if error > 5\% or null/NaN) -> SolveForTargetDifficultyMulti (if null/NaN) | Sequential |
-| **Python** | Python Gradient + RandomSweep | Baseline Fallback (if both fail) | Parallel (best wins) |
-
----
-
-### Method 1A: Solver 1 - SolveForTargetOxygen (Gradient 3-Phase)
-
-**Note:** This is **Solver 1** of the 3-solver cascade. It contains **3 internal phases** that progressively refine the solution.
-
-**Best for:** Dense coefficients (all features have non-zero weights)
+### Solver 1: Gradient 3-Phase (C# Primary)
 
 **3 internal phases:**
 
-| Phase | Function | What it does |
-|-------|----------|--------------|
-| 1 | `SolveMinimalChange()` | Analytical solution |
-| 2 | `RefineProjectedGradient()` | Gradient descent with adaptive LR |
-| 3 | `RefineProjectedGradientIterative()` | Extended polish, tracks best solution |
+1. `SolveMinimalChange()` - Analytical solution
+2. `RefineProjectedGradient()` - Gradient descent with adaptive LR
+3. `RefineProjectedGradientIterative()` - Extended polish
 
-**Typical error:** < 0.5%
+### Solver 2: RandomSweep (Universal Fallback)
+
+Monte Carlo random search with **biased sampling**:
+
+- **C# Mode**: 300 random combinations
+- **Python Mode**: 300-800 adaptive combinations
+- **Biased for extreme targets**: Hard parameters for low oxygen (<30%), easy for high oxygen (>70%)
+- **Deterministic**: Seed based on target oxygen for reproducibility
+
+### Python Mode Differences
+
+- **Python Gradient**: Optimized for sparse coefficients (ElasticNet/Lasso with many zero weights)
+- **Strategy**: Runs Python Gradient + RandomSweep in parallel, selects best result
 
 ---
 
-### Method 1B: Python Gradient (Python Mode)
+## Multi-Target User Workflow
 
-**Best for:** Sparse coefficients (many features = 0 from ElasticNet/Lasso)
+**Phase 1: Trial Collection**
+1. Complete **5 trials** in the trial system (each: 2 caves, ~20 seconds)
+2. System saves results to `Trial_5_runs_.csv`
 
-Simple gradient descent optimized for sparse models:
+**Phase 2: Multi-Target Analysis**
+3. Click **"MULTI TARGET"** button
+4. System trains regression model and optimizes for **9 target levels** (10%-90%)
+5. Results saved to `target.csv` and `MultiTarget_Report_[timestamp].csv`
 
-- Checks if enough non-zero coefficients exist (>= 2)
-- Returns `null` if too sparse, then fallback to RandomSweep
-- Smaller learning rates (0.02-0.1) for stability
-- Early stopping if error increases
+**Phase 3: Parameter Selection**
+6. View interactive table with 9 rows (10%-90% oxygen targets)
+7. Click button next to desired difficulty row
+8. Parameters saved to `SelectedParameters.json`
 
-**Why not use Gradient 3-Phase for Python?**
+**Phase 4: Main Game**
+9. Selected parameters auto-load into main game input fields via `PanelOpenUp.cs`
+10. Play full game (**21 caves**) with selected difficulty
 
-```text
-Python coefficients example:
-  speed: 0.0000          ← zero!
-  verticalSpeed: 0.0000  ← zero!
-  collisionDamage: -6.67 ← non-zero
-  healHealth: 5.14       ← non-zero
-  drainRate: -7.29       ← non-zero
+**Key Insight**: Short trials (2 caves) → Full analysis spectrum (10%-90%) → Patient chooses difficulty → Full game (21 caves) uses selected parameters
+
+---
+
+## Debug & Logging
+
+### Console Output Examples
+
+#### Multi-Target Analysis Start:
 ```
-
-With 6/9 coefficients = 0, Gradient 3-Phase can't compute direction properly.
-
----
-
-### Method 2: Solver 2 - RandomSweepOptimizer (Both Modes)
-
-**Note:** This is **Solver 2** of the 3-solver cascade. Used as fallback when Solver 1 fails.
-
-**Best for:** Any situation - doesn't depend on coefficients
-
-Monte Carlo random search:
-
-- **C# Mode**: Generates 300 random parameter combinations (fixed)
-- **Python Mode**: Generates 300-800 random parameter combinations (adaptive: 300 if error ≤ 5%, 500 if error ≤ 10%, 800 if error > 10%)
-- Evaluates each with the prediction model
-- Returns the combination with lowest error
-- Dynamic seed for result variability
-
-**Typical error:** < 2%
-
-**Why it always works:**
-
-- Doesn't use coefficients for direction
-- Just samples and picks the best
-- Robust to noise and edge cases
-
----
-
-### Method 3: Solver 3 - SolveForTargetDifficultyMulti (Last Resort)
-
-**Note:** This is **Solver 3** of the 3-solver cascade. Used as last resort fallback when both Solver 1 and Solver 2 fail.
-
-**Best for:** Edge cases where both previous solvers fail
-
-Multi-gradient descent optimizer:
-
-- Updates top-K most important features
-- Uses gradient descent with adaptive learning rate
-- Iterates until convergence or max iterations
-- Returns optimized parameters or null if still fails
-
-**When used:** Only when both Solver 1 (error > 5% or null/NaN) and Solver 2 (null or NaN) fail
-
----
-
-### Selection Logic
-
-**C# Mode (Sequential - 3 Solver Cascade):**
-
-```text
-Solver 1: SolveForTargetOxygen (3 internal phases)
-  then
-If error > 5% or null or NaN: try Solver 2 (RandomSweep, 300 samples)
-  then
-If solution is null or error is NaN: try Solver 3 (SolveForTargetDifficultyMulti)
-  then
-Use whichever succeeds first
-```
-
-**Python Mode (Parallel):**
-
-```text
-Run Python Gradient AND RandomSweep in parallel
-  (RandomSweep uses 300-800 samples based on Python Gradient error)
-  then
-Compare errors
-  then
-Select the one with lowest error
-  then
-If both fail: use Baseline Fallback
-  then
-Report shows: [Selected: method_name]
-```
-
----
-
-## Multi-Target Optimization System
-
-### Introduction
-
-The **Multi-Target Optimization** generates optimized game parameters for a range of difficulty levels (10%-90% target oxygen) in a single analysis. This creates a lookup table of parameters for different difficulty levels, allowing quick adaptation to patient needs.
-
-### How It Works
-
-1. **Analysis**: Click the **"MULTI TARGET"** button (appears when enough trials are available)
-2. **Optimization**: System optimizes for 9 target levels (10%, 20%, 30%... 90%)
-3. **Table Display**: Results shown in an interactive table with predicted outcomes
-4. **Selection**: Click a button next to any row to select those parameters
-5. **Auto-Load**: Selected parameters automatically load into the main game panel for review/modification
-
-### Files Generated
-
-#### 1. `target.csv` (Game Loading)
-```csv
-oygenTarget,predicted_oygen,error,speed,verticalSpeed,idleUpwardSpeed,lifeTime,RemoveHealthEveryLifeTime,removeHealthWithCollide,timeBetweenCollides,healHealthPoint,factorForce
-10%,9.81,0.190,18.481,28.910,0.500,0.735,4.183,9.826,1.156,5.687,0.000
-20%,20.15,0.152,18.630,29.045,0.500,0.812,4.250,9.761,1.198,5.712,0.000
+[MultiTargetOptimizer] Starting optimization for 9 targets...
+[MultiTarget] Using buffer mode: Conservative
+[Optimization] Target 10%: Predicted=10.2%, Error=0.15%
+[Optimization] Target 20%: Predicted=20.1%, Error=0.08%
 ...
+[MultiTargetOptimizer] Completed 9 optimizations
+[MultiTargetOptimizer] Saved to: Assets/Data/MultiTargets/target.csv
 ```
 
-- **Purpose**: Quick parameter loading for games
-- **Location**: `Assets/Data/MultiTargets/target.csv`
-- **Format**: Field names match code properties
-- **Columns**: 11 parameters (no metadata, no derived features)
-
-#### 2. `MultiTarget_Report_*.csv` (Excel Analysis)
-```csv
-Report Type,MULTI-TARGET ANALYSIS
-Generated,2025-12-04 13:26:24
-Trials,150
-Model R^2,0.9845
-Model RMSE,2.34%
-Input Type,Keyboard
-
-Target,Predicted,Error,Speed,VerticalSpeed,IdleUpwardSpeed,LifeTime,Drain,Collide,TimeBetweenCollides,Heal,FactorForce,EffectiveDrainRate
-10%,9.81%,0.190%,18.481,28.910,0.500,0.735,4.183,9.826,1.156,5.687,0.000,5.692
-...
-
-Summary
-Successful,9/9
-Avg Error,0.36%
-Min Error,0.19%
-Max Error,0.46%
+#### Solver Selection:
+```
+[Optimization] Gradient 3-Phase error=2.3%, using as solution
+[Optimization] Target 30%: Gradient 3-Phase selected (error=2.3%)
 ```
 
-- **Purpose**: Detailed analysis in Excel
-- **Location**: `Assets/Data/MultiTargets/MultiTarget_Report_YYYY-MM-DD_HH-MM-SS.csv`
-- **Features**:
-  - Metadata (timestamp, trial count, model quality)
-  - 12 parameters (includes `EffectiveDrainRate` derived feature)
-  - Summary statistics (success rate, error ranges)
-  - Excel-friendly formatting
-
-### Parameter Selection Flow
-
-```mermaid
-flowchart LR
-    A[Click MULTI TARGET] --> B[Generate Table<br/>9 targets × params]
-    B --> C[Display Table<br/>with Buttons]
-    C --> D[User Clicks<br/>Target Button]
-    D --> E[Save to JSON<br/>SelectedParameters.json]
-    E --> F[Show Confirmation<br/>'Selected target X%']
-    F --> G[Auto-close after 2s]
-    G --> H[Next Game Opens]
-    H --> I[Load Parameters<br/>to Input Fields]
-    I --> J[User can Review/<br/>Modify/Start]
+OR (if fallback needed):
+```
+[Optimization] Gradient 3-Phase error=6.8%, trying RandomSweep fallback
+[Optimization] RandomSweep error=1.2%, using RandomSweep
+[Optimization] Target 40%: RandomSweep selected (error=1.2%)
 ```
 
-### Components
-
-| Component | File | Role |
-|-----------|------|------|
-| **MultiTargetOptimizer** | `Assets/Scripts/Regression/MultiTargetOptimizer.cs` | Core optimization logic for 10%-90% targets |
-| **SelectedParametersService** | `Assets/Scripts/SelectedParametersService.cs` | Save/load selected parameters to JSON |
-| **TrialRegressionUI** | `Assets/Scripts/TrialRegressionUI.cs` | UI integration, table display, button handlers |
-| **PanelOpenUp** | `Assets/Scripts/PanelOpenUp.cs` | Load selected parameters to input fields |
-
-### Usage Example
-
-```csharp
-// 1. Generate multi-target analysis
-string report = MultiTargetOptimizer.RunMultiTargetAnalysis(trials);
-// Saves to: Assets/Data/MultiTargets/target.csv
-//           Assets/Data/MultiTargets/MultiTarget_Report_*.csv
-
-// 2. Load parameters for a specific target
-var params50 = MultiTargetOptimizer.GetParametersForTarget(50f);
-
-// 3. Check if user has selected parameters
-if (SelectedParametersService.HasSelectedParameters()) {
-    var selected = SelectedParametersService.LoadSelectedParameters();
-    float targetOxygen = SelectedParametersService.GetSelectedTargetOxygen();
-    Debug.Log($"Using parameters for {targetOxygen}% target");
-}
+#### Parameter Selection:
+```
+[PanelOpenUp] Loaded parameters for target 30% to input fields
+[PanelOpenUp] Speed=29.8, vSpeed=35.2, idle=2.9, lifeTime=1.5, drain=5.6
 ```
 
+## Configuration & Settings
 
+### GameDataSO (Scriptable Object)
 
-### Technical Details
-
-**Optimization Method**: Gradient 3-Phase → RandomSweep → Multi-Gradient fallback (same optimization pipeline as single-target analysis)
-
-**Deterministic Seeding**: Uses fixed seed based on target oxygen to ensure reproducibility:
-```csharp
-int seed = (int)(targetO2 * 1000); // 10% = 10000, 50% = 50000
-var random = new System.Random(seed);
-```
-
-**Feature Set**: 10 features for C# mode (includes `EffectiveDrainRate`, but it's banned from optimization to prevent multicollinearity)
-
-**Performance**: Typically < 0.5% error per target, completes 9 optimizations in seconds
+- **Location**: `Assets/Resources/GameDataSO.asset`
+- **Purpose**: Centralized game configuration
+- **Key Settings**:
+  ```csharp
+  // Trial System
+  public int totalTrials = 5;                  // Number of trials to complete
+  public string trialParametersPath = "Data/Trials/Trial_5_runs_.csv";
+  public TextAsset[] caveFiles = new TextAsset[5]; // Cave definitions per trial
+  
+  // Difficulty Settings (default ranges)
+  public float oxygenPerBalloon = 5f;          // Health restored by oxygen tanks
+  public float oxygenDropPerSec = 1.0f;        // Passive oxygen drain rate
+  public float oxygenDropOnCollision = 8f;     // Collision damage
+  ```
 
 ---
-
-# Screenshots
-
-![Screenshot 1](<docs/images/צילום מסך 2025-12-01 124550-1.png>)
-
-![Screenshot 2](<docs/images/צילום מסך 2025-12-01 213208.png>)
-
-![Screenshot 3](<docs/images/צילום מסך 2025-12-01 213254.png>)
-
-![Screenshot 4](<docs/images/צילום מסך 2025-12-01 213327.png>)
-
-![Screenshot 5](<docs/images/צילום מסך 2025-12-01 213345.png>)
-
-![Screenshot 6](<docs/images/צילום מסך 2025-12-01 213547.png>)
-
-![Screenshot 7](<docs/images/צילום מסך 2025-12-01 143048-1.png>)
-
-![Screenshot 8](<docs/images/צילום מסך 2025-12-01 165038-1.png>)

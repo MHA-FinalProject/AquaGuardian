@@ -262,7 +262,24 @@ public class TrialRegressionUI : MonoBehaviour
         RegressionUtilities.CurrentBufferMode = bufferMode;
         Debug.Log($"[MultiTarget] Using buffer mode: {bufferMode}");
 
-        // Run multi-target analysis and get results
+        // Check if Python server is enabled and available
+        if (usePythonServer)
+        {
+            var serverClient = FindObjectOfType<PythonRegressionServerClient>();
+            if (serverClient != null && serverClient.IsServerAvailable)
+            {
+                // Python trains model, Unity does optimization
+                ShowLoadingMessage("Training model with Python...\n\nThen Unity will optimize 9 targets...");
+                StartCoroutine(TrainWithPythonThenOptimizeInUnity(trialData));
+                return;
+            }
+            else
+            {
+                Debug.LogWarning("[MultiTarget] Python server not available, falling back to Unity mode");
+            }
+        }
+
+        // Use Unity built-in multi-target optimization
         var results = RunMultiTargetAndGetResults(trialData);
         
         if (results != null && multiTargetPanel != null)
@@ -289,6 +306,68 @@ public class TrialRegressionUI : MonoBehaviour
             if (selectedRowFeedbackText != null)
                 selectedRowFeedbackText.text = "Click on Target Oxygen to select parameters";
         }
+    }
+
+    /// <summary>
+    /// Option A: Train with Python, then optimize in Unity (RECOMMENDED)
+    /// Python trains ElasticNet/Ridge model, Unity runs 9 optimizations using Python coefficients
+    /// </summary>
+    private System.Collections.IEnumerator TrainWithPythonThenOptimizeInUnity(List<TrialDataModels.TrialData> trialData)
+    {
+        var serverClient = FindObjectOfType<PythonRegressionServerClient>();
+        if (serverClient == null)
+        {
+            ShowError("Python server client not found!");
+            yield break;
+        }
+
+        // Step 1: Train model on Python server
+        bool trainingSuccess = false;
+        yield return StartCoroutine(serverClient.TrainAndAnalyze(trialData, 10f, (result) =>
+        {
+            trainingSuccess = result != null && !string.IsNullOrEmpty(result.summaryText) && !result.summaryText.Contains("ERROR");
+        }));
+
+        if (!trainingSuccess)
+        {
+            ShowError("Python server training failed!");
+            yield break;
+        }
+
+        // Step 2: Use Python model coefficients with Unity optimization
+        var results = PythonRegressionHandler.PerformPythonMultiTargetAnalysis(trialData);
+
+        if (results == null)
+        {
+            ShowError("Multi-target optimization with Python model failed!");
+            yield break;
+        }
+
+        // Save results to CSV files
+        MultiTargetOptimizer.SaveToTargetCSV(results);
+        string timestamp = results.timestamp.ToString("yyyy-MM-dd_HH-mm-ss");
+        MultiTargetOptimizer.SaveReportCSV(results, $"MultiTarget_Report_PythonModel_{timestamp}.csv");
+
+        // Store and display results
+        lastMultiTargetResults = results;
+        
+        // Open the multi-target panel
+        multiTargetPreviousTimeScale = Time.timeScale;
+        Time.timeScale = 0f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        multiTargetPanel.SetActive(true);
+        multiTargetPanel.transform.SetAsLastSibling();
+        
+        // Fill the table with results
+        FillMultiTargetTable(results);
+        
+        // Clear feedback text
+        if (selectedRowFeedbackText != null)
+            selectedRowFeedbackText.text = "Click on Target Oxygen to select parameters";
+
+        Debug.Log("[MultiTarget] Python model + Unity optimization completed successfully");
     }
 
     /// <summary>
@@ -497,16 +576,21 @@ public class TrialRegressionUI : MonoBehaviour
             return;
         }
 
-        // Save the selected parameters
+        // Save the selected parameters with model source info
+        string modelSource = lastMultiTargetResults?.modelSource ?? "Unity Model";
         bool saved = SelectedParametersService.SaveSelectedParameters(
             result.parameters, 
             result.targetOxygen, 
-            result.predictedOxygen);
+            result.predictedOxygen,
+            modelSource);
 
         if (saved)
         {
             if (selectedRowFeedbackText != null)
-                selectedRowFeedbackText.text = $"Selected parameters for target {result.targetOxygen:F0}% (Predicted: {result.predictedOxygen:F1}%)";
+            {
+                string sourceText = modelSource != "Unity Model" ? $" [{modelSource}]" : "";
+                selectedRowFeedbackText.text = $"Selected parameters for target {result.targetOxygen:F0}% (Predicted: {result.predictedOxygen:F1}%){sourceText}";
+            }
             
             // Highlight the selected row
             HighlightRow(rowIndex);

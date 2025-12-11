@@ -20,6 +20,7 @@ public class TrialUIController : MonoBehaviour
     [SerializeField] private GameObject endStatusText;         // Status text when complete
 
     [Header("UI Texts")]
+    [SerializeField] private GameObject trialResultsPanel;  // Panel for results (parent of trialResultsText)
     [SerializeField] private TMP_Text trialResultsText;  // Text for results only
 
     [Header("UI Buttons")]
@@ -61,7 +62,9 @@ public class TrialUIController : MonoBehaviour
         if (duringTrialStatusText != null) duringTrialStatusText.SetActive(false);
         if (endStatusText != null) endStatusText.SetActive(false);
 
-        if (trialResultsText != null) trialResultsText.text = ""; // Clean results, no mutual overwriting
+        // Hide results panel and clean text
+        if (trialResultsPanel != null) trialResultsPanel.SetActive(false);
+        if (trialResultsText != null) trialResultsText.text = "";
     }
 
     private void SetupTrialButtons()
@@ -283,18 +286,21 @@ public class TrialUIController : MonoBehaviour
         }
 
         // Results - don't touch instructions!
+        if (trialResultsPanel != null) trialResultsPanel.SetActive(true);
+        
         if (trialResultsText != null)
         {
             string resultText;
             if (!completed)
             {
                 string message = canRetry ? "You have 1 more attempt" : "No more attempts";
-                resultText = $"Trial {currentTrial}/{totalTrials} - {message}\nOxygen: {finalOxygen:F1}%";
+                resultText = $"<b>Trial {currentTrial}/{totalTrials}</b> - {message}\n<mark=#FFFF0055>Oxygen: {finalOxygen:F1}%</mark>";
             }
             else
             {
-                resultText = $"Trial {currentTrial}/{totalTrials} completed\nOxygen remaining: {finalOxygen:F1}%";
-                if (currentTrial >= totalTrials) resultText += "\nAll trials completed!";
+                resultText = $"<b>Trial {currentTrial}/{totalTrials} completed</b>\n<mark=#FFFF0055>Oxygen remaining: {finalOxygen:F1}%</mark>";
+              /* if (currentTrial >= totalTrials) resultText += "\nAll trials completed!";
+              */
             }
 
             trialResultsText.text = resultText;
@@ -310,6 +316,9 @@ public class TrialUIController : MonoBehaviour
         if (startStatusText != null) startStatusText.SetActive(false);
         if (duringTrialStatusText != null) duringTrialStatusText.SetActive(true);
         if (endStatusText != null) endStatusText.SetActive(false);
+
+        // Hide results panel during trial
+        if (trialResultsPanel != null) trialResultsPanel.SetActive(false);
 
         UpdateTrialButtonsState(true, currentTrial, totalTrials);
     }
@@ -408,7 +417,8 @@ public class TrialUIController : MonoBehaviour
 
         int totalTrials = trialSystemManager?.TotalTrials ?? 5;
 
-        if (trialResultsText != null) trialResultsText.text = $"All {totalTrials} trials completed!";
+        if (trialResultsPanel != null) trialResultsPanel.SetActive(true);
+        if (trialResultsText != null) trialResultsText.text = $"<b>All {totalTrials} trials completed!</b>";
 
         UpdateTrialButtonsState(true, totalTrials, totalTrials);
     }

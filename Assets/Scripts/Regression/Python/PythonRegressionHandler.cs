@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -17,13 +18,166 @@ public static class PythonRegressionHandler
     // Flag to control whether to use Python model or Unity model
     public static bool usePythonModel = false;
     
-    // Flag to enable optimization comparison (Python Gradient vs C# RandomSweep)
-    // If false, only C# RandomSweep is used (more reliable)
-    public static bool enableOptimizationComparison = false;
     private const float CONVERGENCE_THRESHOLD = 0.2f;
 
     // Check if Python model is loaded and active
     public static bool IsModelReady => usePythonModel && pythonModel != null && pythonModel.IsLoaded;
+
+    /// <summary>
+    /// Multi-target optimization using Python-trained model coefficients with Unity-side optimization.
+    /// Python trains the model, Unity performs 9 optimizations (10%-90%) using Python coefficients.
+    /// </summary>
+    public static MultiTargetOptimizer.MultiTargetResult PerformPythonMultiTargetAnalysis(
+        List<TrialDataModels.TrialData> allTrialData)
+    {
+        if (!IsModelReady)
+        {
+            Debug.LogError("[PythonHandler] Cannot perform multi-target analysis - model not ready!");
+            return null;
+        }
+
+        // Create result structure
+        var result = new MultiTargetOptimizer.MultiTargetResult
+        {
+            timestamp = DateTime.Now,
+            trialCount = allTrialData.Count,
+            modelR2 = pythonModel.Model.train_r2,
+            modelRMSE = pythonModel.Model.train_rmse,
+            inputType = allTrialData.Any(t => t.IsAmadeoMode > 0.5f) ? "amadeo" : "keyboard",
+            modelSource = "Python Model",
+            results = new List<MultiTargetOptimizer.TargetResult>()
+        };
+
+        // Prepare optimization features
+        var allImportance = pythonModel.GetFeatureImportance();
+        bool anyAmadeoTrials = allTrialData.Any(t => t.IsAmadeoMode > 0.5f);
+        
+        var bannedFeatures = new HashSet<string> { "EffectiveDrainRate" };
+        if (!anyAmadeoTrials)
+            bannedFeatures.Add("factorForce");
+
+        var filteredImportance = allImportance
+            .Where(t => !bannedFeatures.Contains(t.feature))
+            .ToArray();
+
+        string[] featureNames = FeatureExtractor.FeatureNames;
+
+        // Optimize for each target (10%-90%)
+        float[] targets = MultiTargetOptimizer.DefaultTargets;
+        
+        Debug.Log($"[PythonMultiTarget] Starting optimization for {targets.Length} targets using Python model coefficients...");
+
+        foreach (float targetO2 in targets)
+        {
+            try
+            {
+                // Optimize using Unity's optimization with Python model coefficients
+                var (solution, error, selectedMethod) = OptimizeWithPythonModelForTarget(
+                    allTrialData, filteredImportance, featureNames, targetO2, anyAmadeoTrials);
+
+                float predicted = solution != null ? pythonModel.PredictOxygen(solution) : float.NaN;
+
+                var targetResult = new MultiTargetOptimizer.TargetResult
+                {
+                    targetOxygen = targetO2,
+                    predictedOxygen = predicted,
+                    error = error,
+                    method = $"Python Model + {selectedMethod}",
+                    parameters = solution
+                };
+
+                result.results.Add(targetResult);
+                Debug.Log($"[PythonMultiTarget] Target {targetO2}%: Predicted={predicted:F2}%, Error={error:F2}%, Method={selectedMethod}");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[PythonMultiTarget] Failed for target {targetO2}%: {e.Message}");
+                result.results.Add(new MultiTargetOptimizer.TargetResult
+                {
+                    targetOxygen = targetO2,
+                    predictedOxygen = float.NaN,
+                    error = float.NaN,
+                    method = "FAILED",
+                    parameters = null
+                });
+            }
+        }
+
+        Debug.Log($"[PythonMultiTarget] Completed {result.results.Count} optimizations using Python model coefficients");
+        return result;
+    }
+
+    /// <summary>
+    /// Optimize for a single target using Python model coefficients with Unity optimization.
+    /// </summary>
+    private static (TrialDataModels.TrialData solution, float error, string method) 
+        OptimizeWithPythonModelForTarget(
+            List<TrialDataModels.TrialData> trials,
+            (string feature, float importance)[] filteredImportance,
+            string[] featureNames,
+            float targetOxygen,
+            bool anyAmadeoTrials)
+    {
+        int[] topIndices = RegressionUtilities.BuildOptimizationIndices(filteredImportance, featureNames);
+        var (ranges, baseline) = PrepareOptimizationBaseline(trials, targetOxygen);
+
+        TrialDataModels.TrialData solution;
+        float error;
+        string selectedMethod;
+
+        // Try Python Gradient first
+        TrialDataModels.TrialData pythonGradientSolution = OptimizeWithPythonModel(
+            baseline, topIndices, targetOxygen, ranges, anyAmadeoTrials);
+        float pythonGradientError = pythonGradientSolution != null 
+            ? Mathf.Abs(pythonModel.PredictOxygen(pythonGradientSolution) - targetOxygen)
+            : float.MaxValue;
+
+        // Try RandomSweep as fallback/comparison
+        int sweepSamples = pythonGradientError > 10f ? 800 : (pythonGradientError > 5f ? 500 : 300);
+        var (sweepSolution, sweepError) = DifficultyParameterSolver.RandomSweepOptimizer(
+            d => pythonModel.PredictOxygenUnclamped(d),
+            ranges, targetOxygen, anyAmadeoTrials, samples: sweepSamples);
+
+        // Choose best solution
+        bool gradientValid = pythonGradientSolution != null && !float.IsNaN(pythonGradientError);
+        bool sweepValid = sweepSolution != null && !float.IsNaN(sweepError);
+
+        if (gradientValid && sweepValid)
+        {
+            if (pythonGradientError <= sweepError)
+            {
+                solution = pythonGradientSolution;
+                error = pythonGradientError;
+                selectedMethod = "Python Gradient";
+            }
+            else
+            {
+                solution = sweepSolution;
+                error = sweepError;
+                selectedMethod = "RandomSweep";
+            }
+        }
+        else if (gradientValid)
+        {
+            solution = pythonGradientSolution;
+            error = pythonGradientError;
+            selectedMethod = "Python Gradient";
+        }
+        else if (sweepValid)
+        {
+            solution = sweepSolution;
+            error = sweepError;
+            selectedMethod = "RandomSweep";
+        }
+        else
+        {
+            solution = baseline;
+            error = Mathf.Abs(pythonModel.PredictOxygenUnclamped(baseline) - targetOxygen);
+            selectedMethod = "Baseline Fallback";
+        }
+
+        return (solution, error, selectedMethod);
+    }
 
     // Load Python-trained model from JSON
     // Enables hybrid mode - can use either Unity or Python model
@@ -171,27 +325,13 @@ public static class PythonRegressionHandler
         result.optimizedSolution = solution;
         result.optimizedSolutionError = error;
 
-        // Generate reports - always pass selectedMethod
-        if (enableOptimizationComparison && pythonGradientSolution != null && sweepSolution != null)
-        {
-            result.summaryText = TrialReportGenerator.GeneratePythonModelSummary(
-                allTrialData, avgError, pythonModel, solution, error, targetOxygen, allImportance,
-                pythonGradientSolution, pythonGradientError, sweepSolution, sweepError);
-            result.fullDetailsText = TrialReportGenerator.GeneratePythonModelFullReport(
-                allTrialData, avgError, result.averageOxygen, pythonModel,
-                allImportance, solution, error, targetOxygen,
-                pythonGradientSolution, pythonGradientError, sweepSolution, sweepError, selectedMethod);
-        }
-        else
-        {
-            // No comparison details, but still pass the selected method
-            result.summaryText = TrialReportGenerator.GeneratePythonModelSummary(
-                allTrialData, avgError, pythonModel, solution, error, targetOxygen, allImportance);
-            result.fullDetailsText = TrialReportGenerator.GeneratePythonModelFullReport(
-                allTrialData, avgError, result.averageOxygen, pythonModel,
-                allImportance, solution, error, targetOxygen,
-                null, float.MaxValue, null, float.MaxValue, selectedMethod);
-        }
+        // Generate reports with selected method
+        result.summaryText = TrialReportGenerator.GeneratePythonModelSummary(
+            allTrialData, avgError, pythonModel, solution, error, targetOxygen, allImportance);
+        result.fullDetailsText = TrialReportGenerator.GeneratePythonModelFullReport(
+            allTrialData, avgError, result.averageOxygen, pythonModel,
+            allImportance, solution, error, targetOxygen,
+            null, float.MaxValue, null, float.MaxValue, selectedMethod);
 
         return result;
     }

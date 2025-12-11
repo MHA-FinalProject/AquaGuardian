@@ -51,6 +51,7 @@ public static class MultiTargetOptimizer
         public float modelR2;
         public float modelRMSE;
         public string inputType;
+        public string modelSource = "Unity Model";  // "Unity Model" or "Python Model"
     }
 
     /// <summary>

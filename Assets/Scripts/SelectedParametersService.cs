@@ -32,6 +32,7 @@ public static class SelectedParametersService
     {
         public float targetOxygen;
         public float predictedOxygen;
+        public string modelSource;  // "Unity Model", "Python Model", or "Python Server"
         public float speed;
         public float verticalSpeed;
         public float idleUpwardSpeed;
@@ -48,7 +49,7 @@ public static class SelectedParametersService
     /// <summary>
     /// Saves selected parameters to JSON file
     /// </summary>
-    public static bool SaveSelectedParameters(TrialDataModels.TrialData parameters, float targetOxygen, float predictedOxygen = 0f)
+    public static bool SaveSelectedParameters(TrialDataModels.TrialData parameters, float targetOxygen, float predictedOxygen = 0f, string modelSource = "Unity Model")
     {
         if (parameters == null)
         {
@@ -67,6 +68,7 @@ public static class SelectedParametersService
             {
                 targetOxygen = Round1(targetOxygen),
                 predictedOxygen = Round1(predictedOxygen),
+                modelSource = modelSource,
                 speed = Round1(parameters.speed),
                 verticalSpeed = Round1(parameters.verticalSpeed),
                 idleUpwardSpeed = Round1(parameters.idleUpwardSpeed),
