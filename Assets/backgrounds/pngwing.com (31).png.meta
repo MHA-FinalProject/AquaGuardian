@@ -45,7 +45,7 @@ TextureImporter:
   compressionQuality: 50
   spriteMode: 2
   spriteExtrude: 1
-  spriteMeshType: 1
+  spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 100
@@ -73,7 +73,7 @@ TextureImporter:
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 1
-    compressionQuality: 0
+    compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
@@ -126,10 +126,10 @@ TextureImporter:
       name: pngwing.com (31)_0
       rect:
         serializedVersion: 2
-        x: 18
-        y: 607
-        width: 172
-        height: 171
+        x: 17
+        y: 605
+        width: 175
+        height: 195
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -137,8 +137,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: b625f03c023618d49b9e86f237116e13
-      internalID: -820759295
+      spriteID: 8a02af7f37c567741b5663ff95913aaf
+      internalID: -143659665
       vertices: []
       indices: 
       edges: []
@@ -147,10 +147,10 @@ TextureImporter:
       name: pngwing.com (31)_1
       rect:
         serializedVersion: 2
-        x: 219
-        y: 618
-        width: 381
-        height: 160
+        x: 218
+        y: 617
+        width: 383
+        height: 162
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -158,8 +158,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: c0d1ce29e57ecd842a00477c9bed8985
-      internalID: -103146335
+      spriteID: 05f21c33d9ffb2c43affcfc3015ae153
+      internalID: -91327086
       vertices: []
       indices: 
       edges: []
@@ -168,10 +168,10 @@ TextureImporter:
       name: pngwing.com (31)_2
       rect:
         serializedVersion: 2
-        x: 18
-        y: 396
-        width: 172
-        height: 172
+        x: 17
+        y: 395
+        width: 175
+        height: 174
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -179,8 +179,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 1acca2e870c1a404dbea0959e79ebb25
-      internalID: 845312877
+      spriteID: 9d57ea87d326a344d84219f9c32da59a
+      internalID: -1550329747
       vertices: []
       indices: 
       edges: []
@@ -189,10 +189,10 @@ TextureImporter:
       name: pngwing.com (31)_3
       rect:
         serializedVersion: 2
-        x: 219
-        y: 408
-        width: 381
-        height: 160
+        x: 218
+        y: 407
+        width: 383
+        height: 162
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -200,8 +200,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: aefd3a36e79b9304093e1acb5fb5e2d2
-      internalID: -1833429575
+      spriteID: 2a2cca829bd0f5242b2d2b43414c3e58
+      internalID: -131235835
       vertices: []
       indices: 
       edges: []
@@ -210,10 +210,10 @@ TextureImporter:
       name: pngwing.com (31)_4
       rect:
         serializedVersion: 2
-        x: 18
-        y: 198
-        width: 172
-        height: 171
+        x: 17
+        y: 196
+        width: 175
+        height: 175
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -221,8 +221,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 85464dc99e394394e93710ef67c0735a
-      internalID: 16612241
+      spriteID: 25808d633ddecd143a406f9df943a0aa
+      internalID: 2138700625
       vertices: []
       indices: 
       edges: []
@@ -231,10 +231,10 @@ TextureImporter:
       name: pngwing.com (31)_5
       rect:
         serializedVersion: 2
-        x: 219
+        x: 218
         y: 209
-        width: 381
-        height: 160
+        width: 383
+        height: 162
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -242,8 +242,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 61b259e2d3b257d4585ba8124022ef3a
-      internalID: -852604962
+      spriteID: 96f15614d5cb98143a0542b13bdc9f22
+      internalID: -1445113092
       vertices: []
       indices: 
       edges: []
@@ -252,9 +252,9 @@ TextureImporter:
       name: pngwing.com (31)_6
       rect:
         serializedVersion: 2
-        x: 18
+        x: 17
         y: 0
-        width: 172
+        width: 175
         height: 171
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -263,8 +263,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: e9aa12783da0f3941bec4053d47d9819
-      internalID: -833203411
+      spriteID: 8dae933a66701ff4781f77626b654b14
+      internalID: -762047557
       vertices: []
       indices: 
       edges: []
@@ -273,10 +273,10 @@ TextureImporter:
       name: pngwing.com (31)_7
       rect:
         serializedVersion: 2
-        x: 219
-        y: 11
-        width: 381
-        height: 160
+        x: 218
+        y: 10
+        width: 383
+        height: 161
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -284,8 +284,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 11a3c3933f6927b42bbbf81e52f058ae
-      internalID: -614293455
+      spriteID: 18c8f8cdfd1eea344a44a869c5514680
+      internalID: 592411370
       vertices: []
       indices: 
       edges: []
@@ -293,7 +293,7 @@ TextureImporter:
     outline: []
     physicsShape: []
     bones: []
-    spriteID: 32c7570d227059c46a3c09d9ad4f56cf
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -301,14 +301,14 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      pngwing.com (31)_0: -820759295
-      pngwing.com (31)_1: -103146335
-      pngwing.com (31)_2: 845312877
-      pngwing.com (31)_3: -1833429575
-      pngwing.com (31)_4: 16612241
-      pngwing.com (31)_5: -852604962
-      pngwing.com (31)_6: -833203411
-      pngwing.com (31)_7: -614293455
+      pngwing.com (31)_0: -143659665
+      pngwing.com (31)_1: -91327086
+      pngwing.com (31)_2: -1550329747
+      pngwing.com (31)_3: -131235835
+      pngwing.com (31)_4: 2138700625
+      pngwing.com (31)_5: -1445113092
+      pngwing.com (31)_6: -762047557
+      pngwing.com (31)_7: 592411370
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -112897,7 +112897,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 638, y: -108.41}
+  m_AnchoredPosition: {x: 625, y: -108.41}
   m_SizeDelta: {x: 1219.0181, y: 192.7248}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &623466628
@@ -323353,8 +323353,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -137, y: 399.7}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchoredPosition: {x: -137, y: 405.9}
+  m_SizeDelta: {x: 200, y: 48.5024}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1725929134
 MonoBehaviour:
@@ -323476,8 +323476,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 'Multi Target Oygen '
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 4c0cf7eb55a8671488d3140d290fb908, type: 2}
-  m_sharedMaterial: {fileID: 1480561245049114060, guid: 4c0cf7eb55a8671488d3140d290fb908, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 31bf3aae42f604549857ac25da16858a, type: 2}
+  m_sharedMaterial: {fileID: 5356815950764113940, guid: 31bf3aae42f604549857ac25da16858a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -389457,8 +389457,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 4fb7ea176f44b2c4aa835b41a9aac8a6, type: 2}
-  m_sharedMaterial: {fileID: 6515614769980502619, guid: 4fb7ea176f44b2c4aa835b41a9aac8a6, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

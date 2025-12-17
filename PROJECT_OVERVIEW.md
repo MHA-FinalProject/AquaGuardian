@@ -51,8 +51,15 @@ This approach provides **adaptive difficulty selection** without requiring multi
     - Successful retries create **new columns** (`o2_run2`, `o2_run3`, etc.)
 
 #### **`Trial_Random_Parameters.csv`** - Random Parameter Generation
-- **Purpose**: Stores randomly generated parameters for trials (alternative to constant parameters)
-- **Structure**: Same as `Trial_5_runs_.csv` but with `o2_result` column instead of multiple runs
+- **Location**: `Assets/Data/Trials/Trial_Random_Parameters.csv`
+- **Purpose**: Stores trial rows for **random-parameters mode** (used when the UI toggle “Random Parameters” is ON)
+- **Structure**:
+  - Has **one oxygen column**: `o2_result` (not `o2_run1`, `o2_run2`, ...)
+  - Includes metadata columns such as `IsAmadeoMode` and `duration`
+  - Uses `trial_id` (snake_case) instead of `trialId` (both are supported by the loader)
+- **Important behavior**:
+  - For regression / multi-target analysis, Unity **shuffles** the rows and takes **5 random trials** each time (`TrialDataService.LoadAllTrials(useRandomParameters: true)`), so results may vary run-to-run unless you keep the file fixed.
+  - Trial results in random mode update the `o2_result` column (not dynamic `o2_runX` columns).
 
 ### Output Files
 
@@ -89,34 +96,39 @@ This approach provides **adaptive difficulty selection** without requiring multi
 ```mermaid
 flowchart TB
     subgraph Trial["Trial Phase"]
-        A[Patient completes 5 Trials<br/>2 caves each, ~20s]
-        B[Save to Trial_5_runs_.csv]
+        A["Patient completes 5 Trials<br/>(2 caves each, ~20s)"]
+        B1["Save to Trial_5_runs_.csv<br/>(fixed parameters)"]
+        B2["Save to Trial_Random_Parameters.csv<br/>(random parameters)"]
     end
 
     subgraph ML["Machine Learning Pipeline"]
-        C[Feature Extraction<br/>10 features C# / 9 features Python]
-        D[Train Regression Model<br/>Ridge C# / ElasticNet Python]
-        E[Cross-Validation<br/>Evaluate model quality]
+        C["Feature Extraction<br/>(10 features)"]
+        D["Train Regression Model<br/>C#: Ridge | Python: Ridge/ElasticNet/Huber/PLS"]
+        E["Cross-Validation<br/>(Evaluate model quality)"]
     end
 
     subgraph MultiTarget["Multi-Target Optimization"]
-        F[Optimize for 9 Targets<br/>10%, 20%...90% oxygen]
-        G[3-Solver Cascade per target<br/>Gradient 3-Phase → RandomSweep → Multi-Gradient]
+        F["Optimize for 9 Targets<br/>(10% to 90% oxygen)"]
+        G["3-Solver Cascade per target<br/>Gradient → RandomSweep → Multi-Gradient"]
     end
 
     subgraph Output["Output & Selection"]
-        H[Save target.csv<br/>11 params × 9 targets]
-        I[Save MultiTarget_Report_*.csv<br/>Detailed analysis]
-        J[Display Interactive Table<br/>Therapist selects difficulty]
-        K[Save SelectedParameters.json]
+        H["Save target.csv<br/>(11 params x 9 targets)"]
+        I["Save MultiTarget_Report.csv<br/>(Detailed analysis)"]
+        J["Display Interactive Table<br/>(Therapist selects difficulty)"]
+        K["Save SelectedParameters.json"]
     end
 
     subgraph Game["Main Game"]
-        L[Load selected parameters<br/>PanelOpenUp.cs]
-        M[Play 21 caves<br/>with selected difficulty]
+        L["Load selected parameters<br/>(PanelOpenUp.cs)"]
+        M["Play 21 caves<br/>(with selected difficulty)"]
     end
 
-    A --> B --> C --> D --> E --> F --> G --> H
+    A -->|fixed| B1
+    A -->|random| B2
+    B1 --> C
+    B2 --> C
+    C --> D --> E --> F --> G --> H
     G --> I
     H --> J --> K --> L --> M
 
@@ -126,53 +138,172 @@ flowchart TB
     style M fill:#9C27B0,color:#fff
 ```
 
+### Trial Session Flow
+
+#### Option A: Simplified (Recommended for Main Text)
+
+```mermaid
+flowchart TB
+    START(["Start"])
+    RUN["Run Trial"]
+    CHECK{"5 Trials<br/>Done?"}
+    ANALYSIS["Analyze & Optimize"]
+    SELECT["Select Difficulty"]
+    ENDTRIAL(["End"])
+
+    START --> RUN --> CHECK
+    CHECK -->|No| RUN
+    CHECK -->|Yes| ANALYSIS --> SELECT --> ENDTRIAL
+
+    style START fill:#9DC3E6,stroke:#2E75B6
+    style ENDTRIAL fill:#9DC3E6,stroke:#2E75B6
+    style CHECK fill:#BF9000,stroke:#806000,color:#fff
+    style RUN fill:#B4C7E7,stroke:#2E75B6
+    style ANALYSIS fill:#F4B183,stroke:#C65911
+    style SELECT fill:#E2A0D0,stroke:#A04080
+```
+
+#### Option B: Detailed (For Appendix or Technical Documentation)
+
+```mermaid
+flowchart TB
+    START(["Start Trial Session"])
+    INC["Increase Trial Counter"]
+    LOAD["Load Parameters"]
+    RUN["Run Trial"]
+    SAVE["Save Result to CSV"]
+    FAILED{"Failed?"}
+    RETRY{"Retry?"}
+    MORE{"Done?"}
+    COMPLETE["Show Completion UI"]
+    MULTI{"Analyze?"}
+    ANALYSIS["Multi-Target Analysis"]
+    SELECT["Select Difficulty"]
+    ENDTRIAL(["End"])
+
+    START --> INC --> LOAD --> RUN --> SAVE --> FAILED
+    FAILED -->|Yes| RETRY
+    RETRY -->|Yes| RUN
+    RETRY -->|No| MORE
+    FAILED -->|No| MORE
+    MORE -->|No| INC
+    MORE -->|Yes| COMPLETE --> MULTI
+    MULTI -->|Yes| ANALYSIS --> SELECT --> ENDTRIAL
+    MULTI -->|No| ENDTRIAL
+
+    style START fill:#9DC3E6,stroke:#2E75B6
+    style ENDTRIAL fill:#9DC3E6,stroke:#2E75B6
+    style FAILED fill:#7B4B94,stroke:#5B3A70,color:#fff
+    style RETRY fill:#7B4B94,stroke:#5B3A70,color:#fff
+    style MORE fill:#BF9000,stroke:#806000,color:#fff
+    style MULTI fill:#BF9000,stroke:#806000,color:#fff
+    style LOAD fill:#FFE599,stroke:#BF9000
+    style RUN fill:#B4C7E7,stroke:#2E75B6
+    style SAVE fill:#B4C7E7,stroke:#2E75B6
+    style COMPLETE fill:#C5E0B4,stroke:#548235
+    style ANALYSIS fill:#F4B183,stroke:#C65911
+    style SELECT fill:#E2A0D0,stroke:#A04080
+```
+
 ### Pipeline Flow
 
-**Data Flow:** `TrialSystemManager`, `FeatureExtractor`, `OxygenPredictor`, `DifficultyParameterSolver`, `TrialReportGenerator`
+#### ML Pipeline (Simplified)
+
+```mermaid
+flowchart LR
+    DATA["Trial Data<br/>(5 Trials)"]
+    FE["Feature<br/>Extraction"]
+    TRAIN["Train<br/>Model"]
+    OPT["Optimize<br/>Parameters"]
+    OUT["9 Difficulty<br/>Levels"]
+
+    DATA --> FE --> TRAIN --> OPT --> OUT
+
+    style DATA fill:#C5E0B4,stroke:#548235
+    style FE fill:#FFE599,stroke:#BF9000
+    style TRAIN fill:#B4C7E7,stroke:#2E75B6
+    style OPT fill:#F4B183,stroke:#C65911
+    style OUT fill:#E2A0D0,stroke:#A04080
+```
+
+#### Detailed Steps
 
 1. **Trial Execution** - `TrialSystemManager` orchestrates 5 trials, `TrialDataService` handles CSV I/O
-2. **Feature Extraction** - `FeatureExtractor` converts raw data to feature vectors (C#: 10 features, Python: 9 features)
-3. **Model Training** - Regression model (C# mode: `MultipleLinearRegression` with Ridge | Python mode: ElasticNet/Huber/PLS via HTTP server)
+2. **Feature Extraction** - `FeatureExtractor` converts raw data to 10 feature vectors
+3. **Model Training** - Ridge regression (C#) or Ridge/ElasticNet/Huber/PLS (Python)
 4. **Validation** - K-Fold cross-validation in `RegressionUtilities`
-5. **Optimization** - 3-solver parameter optimization in `DifficultyParameterSolver` (see [Optimization Algorithm](#optimization-algorithm))
+5. **Optimization** - 3-solver parameter optimization in `DifficultyParameterSolver`
 6. **Reporting** - Analysis summary generation in `TrialReportGenerator`
 
 *(See [Key Components](#key-components) section below for detailed component descriptions)*
+
+### Important Runtime Behaviors (from `Assets/Scripts/`)
+
+- **Random vs Regular mode is a UI toggle**: `TrialUIController` controls `useRandomParameters`, and `TrialRegressionUI` passes it into `TrialDataService.LoadAllTrials(useRandomParameters)`.
+- **Retries and “o2_run columns”**: `Trial_5_runs_.csv` grows dynamic `o2_runX` columns. Failed attempts (~0%) are overwritten; successful retries create a new `o2_runX` column.
+- **How “final oxygen” is chosen when multiple runs exist**: `TrialDataService` aggregates multiple oxygen columns via `OxygenCalculationSettings` (e.g., LastRun/Average/Median). This affects the regression target \(y\).
+- **TrialDataCache affects analysis**: regular-trial runs are also written into `TrialDataCache` (BeginRun/AppendTrial/EndRun) and can be used as a fast source of latest oxygen values with CSV fallback.
+- **Keyboard vs Amadeo affects features**: when `IsAmadeoMode = 0`, Unity forces `factorForce = 0` (and may exclude it from optimization if no Amadeo trials exist).
+- **Python mode is hybrid**: Python trains a model and Unity loads coefficients; **optimization for 9 targets still runs in Unity** (see `PythonRegressionHandler.PerformPythonMultiTargetAnalysis`).
+- **Python model selection is configurable**: `PythonRegressionServerClient` has `modelType` (e.g., Ridge/ElasticNet/Huber/PLS) and may use a small-dataset endpoint for 5 trials.
+- **Selected difficulty is persisted and auto-loaded**: clicking a Multi-Target row saves `SelectedParameters.json`; `PanelOpenUp` loads it into input fields on start.
+- **Trial reset is centralized**: `GameSystemResetter` resets player state, cleans spawned objects, and restores protected scene objects between trials.
 
 ---
 
 ### 3-Solver Optimization Cascade
 
-**Note:** These are THREE DIFFERENT SOLVERS (not phases). `SolveForTargetOxygen` contains 3 internal phases, but this diagram shows the fallback chain between different solvers.
+#### Option A: Simplified (Recommended for Main Text)
 
 ```mermaid
 flowchart LR
-    subgraph Solver1["Solver 1: SolveForTargetOxygen<br/>(Contains 3 internal phases)"]
+    S1["Gradient<br/>Solver"]
+    S2["Random<br/>Sweep"]
+    S3["Multi-Gradient<br/>Fallback"]
+    OUT(["Solution"])
+
+    S1 -->|success| OUT
+    S1 -->|fail| S2
+    S2 -->|success| OUT
+    S2 -->|fail| S3
+    S3 --> OUT
+
+    style S1 fill:#4CAF50,color:#fff
+    style S2 fill:#FF9800,color:#fff
+    style S3 fill:#F44336,color:#fff
+    style OUT fill:#9DC3E6,stroke:#2E75B6
+```
+
+#### Option B: Detailed (For Appendix)
+
+```mermaid
+flowchart LR
+    subgraph Solver1["Solver 1: Gradient 3-Phase"]
         direction LR
-        P1A["Phase 1: Analytical Solution<br/><i>Minimal parameter changes</i>"]
-        P1B["Phase 2: Gradient Refinement<br/><i>Fine-tune solution</i>"]
-        P1C["Phase 3: Extended Refinement<br/><i>If error > 0.5%</i>"]
+        P1A["Analytical"]
+        P1B["Refine"]
+        P1C["Polish"]
         P1A --> P1B --> P1C
     end
     
-    subgraph Solver2["Solver 2: RandomSweepOptimizer<br/>(Fallback solver)"]
+    subgraph Solver2["Solver 2: Random Sweep"]
         direction LR
-        P2A["Generate 300 random<br/>parameter combinations"]
-        P2B["Predict oxygen<br/>for each"]
-        P2C["Select lowest error"]
+        P2A["Generate 300"]
+        P2B["Predict"]
+        P2C["Select Best"]
         P2A --> P2B --> P2C
     end
     
-    subgraph Solver3["Solver 3: SolveForTargetDifficultyMulti<br/>(Last resort fallback)"]
+    subgraph Solver3["Solver 3: Multi-Gradient"]
         direction LR
-        P3A["Gradient descent"]
-        P3B["Update top K features"]
-        P3C["Iterate until<br/>convergence"]
+        P3A["Descent"]
+        P3B["Update K"]
+        P3C["Converge"]
         P3A --> P3B --> P3C
     end
     
-    P1C -->|"Error > 5%<br/>or null"| P2A
-    P2C -->|"Error > 5%<br/>or null"| P3A
+    P1C -->|error > 5%| P2A
+    P2C -->|failed| P3A
     
     style Solver1 fill:#4CAF50,color:#fff
     style Solver2 fill:#FF9800,color:#fff
@@ -202,13 +333,13 @@ flowchart LR
 **Python Mode (Parallel)**:
 - Runs Python Gradient + RandomSweep simultaneously
 - Compares results, selects best solution
-- More robust for sparse coefficients (ElasticNet/Lasso)
+- Can be more robust for sparse coefficients (e.g., ElasticNet), but also works with Ridge (current)
 
 ---
 
-## Features (C# vs Python)
+## Features (10 Features — Synchronized C# and Python)
 
-**C# uses 10 features**, **Python uses 9 features** (excludes `EffectiveDrainRate` to prevent multicollinearity).
+**Both C# and Python use the same 10 features** (synchronized in `TrialDataModels.FeatureNames` and `regression_server.py`).
 
 ### 9 Core Game Parameters (Independent Variables)
 
@@ -224,14 +355,12 @@ These parameters control the game's difficulty and are optimized by the regressi
 8. **`healHealthPoint`** - Oxygen restored by collecting oxygen tanks (range: 3-15)
 9. **`factorForce`** - Amadeo device force multiplier (range: 0.5-15, 0 for keyboard mode)
 
-### 10th Feature (C# Only) - Derived Variable
+### 10th Feature - Derived Variable
 
 10. **`EffectiveDrainRate`** = $$\frac{\text{RemoveHealthEveryLifeTime}}{\text{lifeTime}}$$
     - Represents oxygen loss per second
-    - **Used in regression** to improve model accuracy (captures the combined effect)
+    - **Used in regression** (both C# and Python) to improve model accuracy
     - **Banned from optimization** to prevent multicollinearity (cannot directly optimize a variable that depends on two other optimized variables)
-    - **C#:** Included in regression, banned from optimization
-    - **Python:** Excluded entirely (multicollinearity with source features)
 
 ### Target Variable
 
@@ -290,7 +419,7 @@ The system automatically adapts features based on input device:
    python PythonScripts/regression_server.py  # localhost:5000
    ```
 
-**How it works:** Unity sends trial data to Python (`/train`), receives coefficients, runs optimization with Python model
+**How it works (hybrid):** Unity sends trial data to Python (`/train` or `/train_small`), receives coefficients, and runs optimization in Unity using the Python-trained model coefficients.
 
 ## Quick Start
 
@@ -298,6 +427,7 @@ The system automatically adapts features based on input device:
 
 ```csharp
 // Multi-Target Analysis (Primary Workflow)
+// Note: set useRandomParameters based on the Trial UI toggle (Random vs Regular trials)
 var trials = TrialDataService.LoadAllTrials(useRandomParameters: false);
 var results = MultiTargetOptimizer.RunMultiTargetAnalysis(trials);
 
@@ -345,6 +475,7 @@ if (result.optimizedSolution != null) {
 - `TrialReportGenerator` - Report generation
 
 **Python Integration (Optional):**
+
 - `PythonRegressionServerClient` - HTTP client for Python API
 - `PythonRegressionHandler` - Model loading, optimization with Python models
 - `PythonRegressionModel` - JSON deserialization, predictions
@@ -352,6 +483,7 @@ if (result.optimizedSolution != null) {
 ### Regression Model Details
 
 #### **Unity Built-in: Ridge Regression**
+
 - **Algorithm**: Multiple Linear Regression with L2 regularization
 - **Solver**: Cholesky decomposition for solving normal equations
 - **Regularization**: Adaptive lambda (0.5-2.0 based on sample count)
