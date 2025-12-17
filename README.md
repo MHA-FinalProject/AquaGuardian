@@ -114,15 +114,16 @@ The game was evaluated through trials with patients at the Beit Loewenstein Reha
 - Dynamic column support for multiple run attempts
 - JSON-based parameter selection and loading
 
-### Screenshot
-![alt text](mainPanel.png)
-![alt text](trialpanel.png)
-![alt text](<1 (4).png>)
-![alt text](<after5 (1).png>)
+### Screenshots
+![Main Panel](docs/images/mainPanel.png)
+![Trial Panel](docs/images/trialpanel.png)
+![After 1 Trial](docs/images/1%20(4).png)
+![After 5 Trials](docs/images/after5%20(1).png)
 
-![alt text](<multi_target (2).png>) ![alt text](<multi_target (1).png>)
-after selecting:
-![alt text](after_multi.png)
+![Multi-Target Analysis 1](docs/images/multi_target%20(2).png) ![Multi-Target Analysis 2](docs/images/multi_target%20(1).png)
+
+After selecting parameters:
+![After Multi-Target Selection](docs/images/after_multi.png)
 
 ---
 
