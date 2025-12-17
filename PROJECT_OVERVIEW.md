@@ -1,8 +1,47 @@
 # AquaGuardian: Adaptive Difficulty System
 
-## Overview
+## Table of Contents
 
-**AquaGuardian** is an advanced rehabilitation game system that extends the previous version of the game. This version focuses on creating a **dynamic difficulty calculation algorithm** to adapt game parameters to individual patients.
+**Part I: System Overview**
+
+- [Overview](#overview)
+- [System Capabilities](#system-capabilities)
+
+**Part II: Architecture & Data Flow**
+
+- [Key Files & Data Flow](#key-files--data-flow)
+- [System Architecture](#system-architecture)
+- [Trial Session Flow](#trial-session-flow)
+- [Pipeline Flow](#pipeline-flow)
+- [Important Runtime Behaviors](#important-runtime-behaviors)
+
+**Part III: ML & Optimization**
+
+- [Features (10 Features)](#features-10-features--synchronized-c-and-python)
+- [Regression Modes](#regression-modes)
+- [Regression Model Details](#regression-model-details)
+- [Optimization Algorithm Details](#optimization-algorithm-details)
+- [Parameter Ranges & Constraints](#parameter-ranges--constraints)
+
+**Part IV: Implementation Details**
+
+- [Key Components](#key-components)
+- [Input Mode Handling](#input-mode-handling)
+- [Quick Start](#quick-start)
+
+**Part V: Usage & Configuration**
+
+- [Multi-Target User Workflow](#multi-target-user-workflow)
+- [Configuration & Settings](#configuration--settings)
+- [Debug & Logging](#debug--logging)
+
+---
+
+## Part I: System Overview
+
+### Overview
+
+This version extends the AquaGuardian rehabilitation game, developed in collaboration with Beit Loewenstein Rehabilitation Center for post-stroke finger motor recovery using the Amadeo robotic device. The game enables patients to control an underwater diver navigating caves while collecting oxygen balloons and avoiding obstacles. This version focuses on creating a **dynamic difficulty calculation algorithm** to adapt game parameters to individual patients.
 
 **How It Works:**
 
@@ -30,19 +69,36 @@ This approach provides **adaptive difficulty selection** without requiring multi
 
 ---
 
-## Key Files & Data Flow
+### System Capabilities
+
+1. **Trial-Based Calibration**: Five short calibration trials (2 caves each, ~2 minutes total) establish baseline performance
+2. **Patient-Specific ML**: Personalized Ridge regression models over 10 features (9 measured + derived `EffectiveDrainRate`)
+3. **Three-Solver Optimization**: Hierarchical cascade (Gradient 3-Phase → RandomSweep → Multi-Gradient) ensures robust solutions
+4. **Multi-Target Difficulty**: Generate 9 difficulty levels (10%-90% oxygen) in single analysis
+5. **Therapist Selection Interface**: Interactive lookup table for selecting appropriate challenge level
+6. **Automatic Persistence**: Selected parameters saved to `SelectedParameters.json` and auto-loaded into main game (21 caves)
+7. **Optional Python Integration**: Support advanced ML models (ElasticNet, Huber, PLS) via external server
+
+---
+
+## Part II: Architecture & Data Flow
+
+### Key Files & Data Flow
 
 ### Trial Data Files
 
 #### **`Trial_5_runs_.csv`** - Patient Trial History
+
 - **Location**: `Assets/Data/Trials/Trial_5_runs_.csv`
 - **Purpose**: Stores results from all patient trial runs
 - **Structure Example**:
+
   ```csv
   trialId,speed,verticalSpeed,idleUpwardSpeed,lifeTime,RemoveHealthEveryLifeTime,...,o2_run1,o2_run2,o2_run3
   1,20.00,25.00,3.50,2.00,3.00,...,45.2,52.1,48.7
   2,25.00,30.00,4.00,1.80,3.50,...,38.9,42.3,40.1
   ```
+
 - **Dynamic Columns**:
   - **Base Parameters**: `trialId`, `speed`, `verticalSpeed`, `idleUpwardSpeed`, etc. (9 parameters)
   - **Oxygen Results**: `o2_run1`, `o2_run2`, `o2_run3`, ... (one column added per successful run)
@@ -51,6 +107,7 @@ This approach provides **adaptive difficulty selection** without requiring multi
     - Successful retries create **new columns** (`o2_run2`, `o2_run3`, etc.)
 
 #### **`Trial_Random_Parameters.csv`** - Random Parameter Generation
+
 - **Location**: `Assets/Data/Trials/Trial_Random_Parameters.csv`
 - **Purpose**: Stores trial rows for **random-parameters mode** (used when the UI toggle “Random Parameters” is ON)
 - **Structure**:
@@ -63,35 +120,41 @@ This approach provides **adaptive difficulty selection** without requiring multi
 
 ### Output Files
 
-#### **`target.csv`** - Game Loading (Primary File) ⭐
+#### **`target.csv`** - Game Loading (Primary File) 
+
 - **Location**: `Assets/Data/MultiTargets/target.csv`
 - **Purpose**: Optimized parameters for all difficulty levels (10%-90%)
 - **Structure**:
+
   ```csv
   oygenTarget,predicted_oygen,error,speed,verticalSpeed,idleUpwardSpeed,lifeTime,RemoveHealthEveryLifeTime,removeHealthWithCollide,timeBetweenCollides,healHealthPoint,factorForce
   10%,9.81,0.190,18.481,28.910,0.500,0.735,4.183,9.826,1.156,5.687,0.000
   20%,20.15,0.152,18.630,29.045,0.500,0.812,4.250,9.761,1.198,5.712,0.000
   ```
+
 - **Usage**: Field names match code properties for direct loading
 
 #### **`SelectedParameters.json`** - Current Selection
+
 - **Location**: `Assets/Data/SelectedParameters/SelectedParameters.json`
 - **Created by**: Clicking a row in the Multi-Target table
 - **Applied by**: `PanelOpenUp.cs` auto-loads into input fields
 - **Contains**: Target oxygen, predicted outcome, all 11 parameters, timestamp
 
 #### **`MultiTarget_Report_[timestamp].csv`** - Excel Analysis
+
 - **Location**: `Assets/Data/MultiTargets/MultiTarget_Report_[timestamp].csv`
 - **Purpose**: Detailed analysis report with metadata, 12 parameters (includes `EffectiveDrainRate`), and summary statistics
 - **Features**: Timestamped history, Excel-friendly formatting
 
 #### **`UnityRegression_[timestamp].txt`** - Single Target Reports (Legacy)
+
 - **Location**: `Assets/Data/RegressionResults/`
 - **Purpose**: Single-target analysis reports (legacy feature)
 
 ---
 
-## System Architecture
+### System Architecture
 
 ```mermaid
 flowchart TB
@@ -140,7 +203,7 @@ flowchart TB
 
 ### Trial Session Flow
 
-#### Option A: Simplified (Recommended for Main Text)
+#### Simplified Trial Flow
 
 ```mermaid
 flowchart TB
@@ -163,7 +226,7 @@ flowchart TB
     style SELECT fill:#E2A0D0,stroke:#A04080
 ```
 
-#### Option B: Detailed (For Appendix or Technical Documentation)
+#### Detailed Trial Flow
 
 ```mermaid
 flowchart TB
@@ -253,7 +316,7 @@ flowchart LR
 
 ### 3-Solver Optimization Cascade
 
-#### Option A: Simplified (Recommended for Main Text)
+#### Simplified Solver Cascade
 
 ```mermaid
 flowchart LR
@@ -274,7 +337,7 @@ flowchart LR
     style OUT fill:#9DC3E6,stroke:#2E75B6
 ```
 
-#### Option B: Detailed (For Appendix)
+#### Detailed Solver Cascade
 
 ```mermaid
 flowchart LR
@@ -331,13 +394,14 @@ flowchart LR
 - Falls back to Multi-Gradient as last resort
 
 **Python Mode (Parallel)**:
+
 - Runs Python Gradient + RandomSweep simultaneously
 - Compares results, selects best solution
 - Can be more robust for sparse coefficients (e.g., ElasticNet), but also works with Ridge (current)
 
 ---
 
-## Features (10 Features — Synchronized C# and Python)
+### Features (10 Features — Synchronized C# and Python)
 
 **Both C# and Python use the same 10 features** (synchronized in `TrialDataModels.FeatureNames` and `regression_server.py`).
 
@@ -357,10 +421,11 @@ These parameters control the game's difficulty and are optimized by the regressi
 
 ### 10th Feature - Derived Variable
 
-10. **`EffectiveDrainRate`** = $$\frac{\text{RemoveHealthEveryLifeTime}}{\text{lifeTime}}$$
-    - Represents oxygen loss per second
-    - **Used in regression** (both C# and Python) to improve model accuracy
-    - **Banned from optimization** to prevent multicollinearity (cannot directly optimize a variable that depends on two other optimized variables)
+**`EffectiveDrainRate`** = $$\frac{\text{RemoveHealthEveryLifeTime}}{\text{lifeTime}}$$
+
+- Represents oxygen loss per second
+- **Used in regression** (both C# and Python) to improve model accuracy
+- **Banned from optimization** to prevent multicollinearity (cannot directly optimize a variable that depends on two other optimized variables)
 
 ### Target Variable
 
@@ -372,48 +437,40 @@ These parameters control the game's difficulty and are optimized by the regressi
 
 ---
 
-## Parameter Ranges & Constraints
+### Parameter Ranges & Constraints
 
 The system uses **adaptive range constraints** based on observed trial data to balance interpolation and extrapolation.
 
 **Two Buffer Modes:**
+
 - **Conservative** (10%-25% buffer): Stays closer to observed data, best for interpolation
 - **Expanded** (25%-50% buffer): Allows more extrapolation, best for extreme targets (10%, 90%)
 
 **Adaptive Logic:**
+
 - Buffer increases with distance from observed data (`deltaFromTarget`)
 - **Range Override**: If gap > 35-40%, ignores observed ranges entirely and uses full parameter ranges
 
 ---
 
-## Input Mode Handling
-
-The system automatically adapts features based on input device:
-
-- **Keyboard Mode** (`IsAmadeoMode = 0`):
-  - `factorForce = 0` (no force sensitivity)
-  - `idleUpwardSpeed` used as-is
-
-- **Amadeo Mode** (`IsAmadeoMode = 1`):
-  - `factorForce` active (force multiplier, range: 0.5-5.0)
-  - `idleUpwardSpeed ×= 0.5` (weaker drift for better control)
-  - Only marked as Amadeo mode if device was **actually used** during trial (not keyboard fallback)
-  - If no Amadeo trials exist, `factorForce` is automatically excluded from optimization
-
-## Regression Modes
+### Regression Modes
 
 ### Mode 1: C# Built-in (Default)
+
 - Pure C# Ridge regression with adaptive regularization
 - Fast, integrated, **no setup required**
 
 ### Mode 2: Python Server
+
 - External Python server with ElasticNet, Ridge, Huber, PLS
 - Requires Python 3.9+
 
 **Enable Python Mode in Editor:**
+
 1. Enable the `PythonRegressionServerClient` GameObject
 2. Check "Use Python Server" checkbox in `TrialRegressionUI` GameObject
 3. Run the server:
+
    ```bash
    pip install numpy pandas scikit-learn flask flask-cors
    python PythonScripts/regression_server.py  # localhost:5000
@@ -421,68 +478,11 @@ The system automatically adapts features based on input device:
 
 **How it works (hybrid):** Unity sends trial data to Python (`/train` or `/train_small`), receives coefficients, and runs optimization in Unity using the Python-trained model coefficients.
 
-## Quick Start
-
-### Code Usage Example
-
-```csharp
-// Multi-Target Analysis (Primary Workflow)
-// Note: set useRandomParameters based on the Trial UI toggle (Random vs Regular trials)
-var trials = TrialDataService.LoadAllTrials(useRandomParameters: false);
-var results = MultiTargetOptimizer.RunMultiTargetAnalysis(trials);
-
-// Check if user selected parameters from UI table
-if (SelectedParametersService.HasSelectedParameters()) {
-    var selected = SelectedParametersService.LoadSelectedParameters();
-    float targetOxygen = SelectedParametersService.GetSelectedTargetOxygen();
-    ApplyParameters(selected);
-}
-```
-
-```csharp
-// Single Target Analysis (Legacy)
-var result = TrialRegressionAlgorithm.PerformRegressionAnalysis(trials, targetOxygen: 10f);
-if (result.optimizedSolution != null) {
-    ApplyParameters(result.optimizedSolution);
-}
-```
-
-## Key Components
-
-> For Python mode, ML components (3-8) are replaced by external Python server. See [Regression Modes](#regression-modes).
-
-**Core Workflow:**
-
-- `TrialSystemManager` - Trial lifecycle orchestration
-- `MultiTargetOptimizer` - Multi-target optimization (10%-90% spectrum)
-- `TrialRegressionAlgorithm` - Single-target optimization (legacy)
-- `SelectedParametersService` - Save/load selected parameters
-- `PanelOpenUp` - Main panel, loads parameters to input fields
-- `TrialRegressionUI` - UI integration, table display
-
-**ML Pipeline:**
-
-- `FeatureExtractor` - Trial data -> feature vectors
-- `OxygenPredictor` - Model training/prediction (Ridge regression)
-- `DifficultyParameterSolver` - 3-solver cascade (Gradient 3-Phase, RandomSweep, Multi-Gradient)
-- `RegressionUtilities` - Cross-validation, optimization coordination
-- `MultipleLinearRegression` - Ridge regression with L2 regularization
-- `FeatureNormalizer` - Z-score normalization
-
-**Data & I/O:**
-- `TrialDataService` - CSV I/O operations
-- `TrialDataModels` - Data structures (`TrialData`, `RegressionResult`)
-- `TrialReportGenerator` - Report generation
-
-**Python Integration (Optional):**
-
-- `PythonRegressionServerClient` - HTTP client for Python API
-- `PythonRegressionHandler` - Model loading, optimization with Python models
-- `PythonRegressionModel` - JSON deserialization, predictions
+---
 
 ### Regression Model Details
 
-#### **Unity Built-in: Ridge Regression**
+### Unity Built-in: Ridge Regression
 
 - **Algorithm**: Multiple Linear Regression with L2 regularization
 - **Solver**: Cholesky decomposition for solving normal equations
@@ -490,7 +490,7 @@ if (result.optimizedSolution != null) {
 - **Normalization**: Z-score (mean=0, std=1) using sample standard deviation (n-1)
 - **Feature Selection**: Optional for <10 trials (selects top K features by importance)
 
-#### **Model Equation**
+### Model Equation
 
 ```
 oxygen = b0 + b1*speed + b2*verticalSpeed + b3*idleUpwardSpeed + b4*lifeTime + 
@@ -499,7 +499,7 @@ oxygen = b0 + b1*speed + b2*verticalSpeed + b3*idleUpwardSpeed + b4*lifeTime +
          b10*EffectiveDrainRate
 ```
 
-#### **Evaluation Metrics**
+### Evaluation Metrics
 
 - **R-squared**: Proportion of variance explained (0-1, higher = better, >0.7 recommended)
 - **RMSE (Root Mean Squared Error)**: Average prediction error magnitude
@@ -518,8 +518,7 @@ oxygen = b0 + b1*speed + b2*verticalSpeed + b3*idleUpwardSpeed + b4*lifeTime +
 
 ---
 
-
-## Optimization Algorithm Details
+### Optimization Algorithm Details
 
 ### Solver Comparison
 
@@ -553,9 +552,89 @@ Monte Carlo random search with **biased sampling**:
 
 ---
 
-## Multi-Target User Workflow
+## Part IV: Implementation Details
+
+### Quick Start
+
+### Code Usage Example
+
+```csharp
+// Multi-Target Analysis (Primary Workflow)
+// Note: set useRandomParameters based on the Trial UI toggle (Random vs Regular trials)
+var trials = TrialDataService.LoadAllTrials(useRandomParameters: false);
+var results = MultiTargetOptimizer.RunMultiTargetAnalysis(trials);
+
+// Check if user selected parameters from UI table
+if (SelectedParametersService.HasSelectedParameters()) {
+    var selected = SelectedParametersService.LoadSelectedParameters();
+    float targetOxygen = SelectedParametersService.GetSelectedTargetOxygen();
+    ApplyParameters(selected);
+}
+```
+
+```csharp
+// Single Target Analysis (Legacy)
+var result = TrialRegressionAlgorithm.PerformRegressionAnalysis(trials, targetOxygen: 10f);
+if (result.optimizedSolution != null) {
+    ApplyParameters(result.optimizedSolution);
+}
+```
+
+### Input Mode Handling
+
+The system automatically adapts features based on input device:
+
+- **Keyboard Mode** (`IsAmadeoMode = 0`):
+  - `factorForce = 0` (no force sensitivity)
+  - `idleUpwardSpeed` used as-is
+
+- **Amadeo Mode** (`IsAmadeoMode = 1`):
+  - `factorForce` active (force multiplier, range: 0.5-5.0)
+  - `idleUpwardSpeed ×= 0.5` (weaker drift for better control)
+  - Only marked as Amadeo mode if device was **actually used** during trial (not keyboard fallback)
+  - If no Amadeo trials exist, `factorForce` is automatically excluded from optimization
+
+### Key Components
+
+> For Python mode, ML components are replaced by external Python server. See [Regression Modes](#regression-modes).
+
+**Core Workflow:**
+
+- `TrialSystemManager` - Trial lifecycle orchestration
+- `MultiTargetOptimizer` - Multi-target optimization (10%-90% spectrum)
+- `TrialRegressionAlgorithm` - Single-target optimization (legacy)
+- `SelectedParametersService` - Save/load selected parameters
+- `PanelOpenUp` - Main panel, loads parameters to input fields
+- `TrialRegressionUI` - UI integration, table display
+
+**ML Pipeline:**
+
+- `FeatureExtractor` - Trial data -> feature vectors
+- `OxygenPredictor` - Model training/prediction (Ridge regression)
+- `DifficultyParameterSolver` - 3-solver cascade (Gradient 3-Phase, RandomSweep, Multi-Gradient)
+- `RegressionUtilities` - Cross-validation, optimization coordination
+- `MultipleLinearRegression` - Ridge regression with L2 regularization
+- `FeatureNormalizer` - Z-score normalization
+
+**Data & I/O:**
+- `TrialDataService` - CSV I/O operations
+- `TrialDataModels` - Data structures (`TrialData`, `RegressionResult`)
+- `TrialReportGenerator` - Report generation
+
+**Python Integration (Optional):**
+
+- `PythonRegressionServerClient` - HTTP client for Python API
+- `PythonRegressionHandler` - Model loading, optimization with Python models
+- `PythonRegressionModel` - JSON deserialization, predictions
+
+---
+
+## Part V: Usage & Configuration
+
+### Multi-Target User Workflow
 
 **Phase 1: Trial Collection**
+
 1. Complete **5 trials** in the trial system (each: 2 caves, ~20 seconds)
 2. System saves results to `Trial_5_runs_.csv`
 
@@ -577,7 +656,7 @@ Monte Carlo random search with **biased sampling**:
 
 ---
 
-## Debug & Logging
+### Debug & Logging
 
 ### Console Output Examples
 
@@ -593,6 +672,7 @@ Monte Carlo random search with **biased sampling**:
 ```
 
 #### Solver Selection:
+
 ```
 [Optimization] Gradient 3-Phase error=2.3%, using as solution
 [Optimization] Target 30%: Gradient 3-Phase selected (error=2.3%)
@@ -606,14 +686,15 @@ OR (if fallback needed):
 ```
 
 #### Parameter Selection:
+
 ```
 [PanelOpenUp] Loaded parameters for target 30% to input fields
 [PanelOpenUp] Speed=29.8, vSpeed=35.2, idle=2.9, lifeTime=1.5, drain=5.6
 ```
 
-## Configuration & Settings
+### Configuration & Settings
 
-### GameDataSO (Scriptable Object)
+#### GameDataSO (Scriptable Object)
 
 - **Location**: `Assets/Resources/GameDataSO.asset`
 - **Purpose**: Centralized game configuration

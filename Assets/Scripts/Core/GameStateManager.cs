@@ -31,7 +31,7 @@ public class GameStateManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Debug.LogWarning("Duplicate GameStateManager detected - destroying duplicate");
+            // Duplicate found in new scene - destroying it (expected behavior for DontDestroyOnLoad singleton)
             Destroy(gameObject);
             return;
         }

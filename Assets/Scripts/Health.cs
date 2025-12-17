@@ -75,8 +75,8 @@ public class Health : MonoBehaviour
         // 100.000 -> "100", 97.8 -> "97.8", 97.8975666 -> "97.898"
         healthText.text = "Oxygen: " + health.ToString("0.###") + "%";
 
-        healthBarFiller();
-        colorChanger();
+        HealthBarFiller();
+        ColorChanger();
 
         bool panelClosed = Panel == null || !Panel.activeSelf;
         if (GameStateManager.Instance != null)
@@ -116,21 +116,21 @@ public class Health : MonoBehaviour
         moveOxygen = false;
     }
 
-    void healthBarFiller()
+    void HealthBarFiller()
     {
         float maxHealth = GetMaxHealth();
         healthBar.fillAmount = Mathf.Lerp(healthBar.fillAmount, health / maxHealth, lerpSpeed);
     }
 
     // Changes the color of the health bar based on the current health percentage
-    void colorChanger()
+    void ColorChanger()
     {
         float maxHealth = GetMaxHealth();
         Color healthColor = Color.Lerp(Color.red, Color.green, (health / maxHealth));
         healthBar.color = healthColor;
     }
 
-    public void damage(float damagePoint)
+    public void Damage(float damagePoint)
     {
         if (health > damagePoint)
         {
@@ -139,11 +139,11 @@ public class Health : MonoBehaviour
         else
         {
             health = 0;
-            gameOver();
+            GameOver();
         }
     }
 
-    public void heal(float healingPoint)
+    public void Heal(float healingPoint)
     {
         float maxHealth = GetMaxHealth();
         health = Mathf.Clamp(health + healingPoint, 0, maxHealth);
@@ -155,20 +155,20 @@ public class Health : MonoBehaviour
         {
             yield return new WaitForSeconds(lifeTime);
 
-            damage(RemoveHealthEveryLifeTime);
+            Damage(RemoveHealthEveryLifeTime);
 
             if (i <= 0)
             {
-                gameOver();
+                GameOver();
             }
         }
     }
 
-    void gameOver()
+    void GameOver()
     {
         bool trialsActive = IsTrialModeActive();
 
-        Debug.Log($"[Health] gameOver() called - Trials Active: {trialsActive}, Health: {health}");
+        Debug.Log($"[Health] GameOver() called - Trials Active: {trialsActive}, Health: {health}");
 
         if (trialsActive)
         {
@@ -220,18 +220,6 @@ public class Health : MonoBehaviour
             Debug.Log("[Health] Trials detected via TrialSystemManager.TrialsMode");
             return true;
         }
-
-
-        // Redundant check - already checked AreTrialsActive above
-        // if (GameStateManager.Instance != null)
-        // {
-        //     bool trials = GameStateManager.AreTrialsActive;
-        //     if (trials)
-        //     {
-        //         Debug.Log("[Health] Trials detected via GameStateManager.Instance");
-        //         return true;
-        //     }
-        // }
 
         // No active trials
         Debug.Log("[Health] No trials detected - normal game mode");

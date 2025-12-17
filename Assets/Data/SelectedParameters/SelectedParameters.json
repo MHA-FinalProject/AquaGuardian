@@ -1,16 +1,16 @@
 {
     "targetOxygen": 90.0,
-    "predictedOxygen": 89.19999694824219,
+    "predictedOxygen": 89.4000015258789,
     "modelSource": "Unity Model",
-    "speed": 18.100000381469728,
-    "verticalSpeed": 33.900001525878909,
+    "speed": 15.699999809265137,
+    "verticalSpeed": 33.70000076293945,
     "idleUpwardSpeed": 0.5,
     "lifeTime": 2.200000047683716,
     "RemoveHealthEveryLifeTime": 1.0,
-    "removeHealthWithCollide": 6.400000095367432,
-    "timeBetweenCollides": 2.299999952316284,
-    "healHealthPoint": 5.199999809265137,
+    "removeHealthWithCollide": 5.800000190734863,
+    "timeBetweenCollides": 2.200000047683716,
+    "healHealthPoint": 6.0,
     "factorForce": 0.0,
     "IsAmadeoMode": 0.0,
-    "savedAt": "2025-12-17 09:02:24"
+    "savedAt": "2025-12-17 16:10:24"
 }

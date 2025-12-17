@@ -18,7 +18,7 @@ public class getEventFromAmadeoClientDiver : MonoBehaviour
     [Header("Movement Settings")]
    // [SerializeField] private float smoothSpeed = 1.5f;  // Smoothing factor for movement speed
     [SerializeField] float verticalTolerance = 0.1f;  // Tolerance for vertical movement to avoid unnecessary small adjustments
-    [SerializeField] bool invertForceDirection = false;  // Invert force direction (use if forces are negative)
+   //[SerializeField] bool invertForceDirection = false;  // Invert force direction (use if forces are negative)
 
     // === UI Elements ===
     [Header("UI Components")]

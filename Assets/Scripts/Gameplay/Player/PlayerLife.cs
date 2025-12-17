@@ -153,7 +153,7 @@ public class PlayerLife : MonoBehaviour
             other.gameObject.SetActive(false);
 
             if (healthBar2 != null)
-                healthBar2.heal(healHealthPoint);
+                healthBar2.Heal(healHealthPoint);
         }
     }
 
@@ -172,7 +172,7 @@ public class PlayerLife : MonoBehaviour
 
         if (healthBar2 != null && canCollide)
         {
-            healthBar2.damage(removeHealthWithCollide);
+            healthBar2.Damage(removeHealthWithCollide);
             StartCoroutine(Wait(timeBetweenCollides));
         }
     }

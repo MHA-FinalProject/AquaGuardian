@@ -11,7 +11,8 @@
 3. [Gameplay Mechanics](#gameplay-mechanics)
 4. [Instructions](#Instructions)
 5. [Evaluation and Results](#evaluation-and-results)
-6. [Conclusion and Future Work](#conclusion-and-future-work)
+6. [Enhanced Version: Adaptive Difficulty System](#enhanced-version-adaptive-difficulty-system) ⭐ **NEW**
+7. [Additional Documentation](#additional-documentation)
 
 ## Problem Statement
 
@@ -78,9 +79,63 @@ The game was evaluated through trials with patients at the Beit Loewenstein Reha
 - **Patient Engagement:** Patients reported higher levels of engagement and motivation compared to existing rehabilitative games.
 - **Positive Outcomes:** The immersive and enjoyable nature of the game led to longer play sessions, which are crucial for effective rehabilitation.
 
-**Aqua Guardian** has demonstrated its potential as a valuable tool in stroke rehabilitation. The game not only provides therapeutic benefits but also makes the rehabilitation process more enjoyable for patients. 
+**Aqua Guardian** has demonstrated its potential as a valuable tool in stroke rehabilitation. The game not only provides therapeutic benefits but also makes the rehabilitation process more enjoyable for patients.
 
 ---
 
-### Additional Notes
-- For detailed technical explanations and further insights, please refer to the [Full Project Book](AquaGuardian_FinalProjectBook.pdf).
+## Enhanced Version: Adaptive Difficulty System
+
+⭐ **NEW**: This version introduces a **comprehensive adaptive difficulty system** with significant improvements and new features.
+
+### What's New
+
+**Intelligent Difficulty Calibration:**
+- Patient-specific machine learning models (Ridge regression)
+- Automatic parameter optimization for 9 difficulty levels (10%-90% oxygen targets)
+- Three-phase optimization cascade for robust solutions
+
+**User Interface Enhancements:**
+- Pause button for patient breaks
+- Mute button for audio control
+- Enhanced visual feedback systems
+
+**Code Architecture Improvements:**
+- Centralized configuration via `GameDataSO` ScriptableObject
+- Modular system architecture (ML, Regression, Trial System modules)
+- Improved code organization and maintainability
+
+**Bug Fixes & Reliability:**
+- Fixed movement calculations in `PlayerMovement.cs`
+- Improved collision detection and Amadeo device integration
+- Automatic data persistence and CSV export
+
+**Data Management:**
+- Automatic trial result export to structured CSV files
+- Dynamic column support for multiple run attempts
+- JSON-based parameter selection and loading
+
+### Screenshot
+![alt text](mainPanel.png)
+![alt text](trialpanel.png)
+![alt text](<1 (4).png>)
+![alt text](<after5 (1).png>)
+
+![alt text](<multi_target (2).png>) ![alt text](<multi_target (1).png>)
+after selecting:
+![alt text](after_multi.png)
+
+---
+
+## Additional Documentation
+
+📖 **For the Original Version:**
+- See [AquaGuardian_FinalProjectBook.pdf](AquaGuardian_FinalProjectBook.pdf)
+
+📖 **For This Version (Adaptive Difficulty System):**
+- See **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** - Complete technical documentation
+
+📖 **For the Original Version:**
+
+- See [AquaGuardian_FinalProjectBook.pdf](AquaGuardian_FinalProjectBook.pdf)
+📖 **For This Version (Adaptive Difficulty System):**
+- See **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** - Complete technical documentation

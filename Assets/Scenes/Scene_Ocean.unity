@@ -399798,7 +399798,6 @@ MonoBehaviour:
   amadeoClient: {fileID: 1758101646}
   factor_forces: 5
   verticalTolerance: 5
-  invertForceDirection: 0
   Panel: {fileID: 1618970796}
   factor_force_inputField: {fileID: 1846761473}
 --- !u!1 &2143041683 stripped

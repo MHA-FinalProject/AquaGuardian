@@ -323,16 +323,13 @@ public class PanelOpenUp : MonoBehaviour
             Debug.Log($"  PlayerLife: collide={selected.removeHealthWithCollide}, timeBetween={selected.timeBetweenCollides}, heal={selected.healHealthPoint}");
         }
 
-        // Apply to Amadeo component if in Amadeo mode
-        if (selected.IsAmadeoMode > 0.5f)
+        // Apply to Amadeo component (always load, even if currently in keyboard mode)
+        // User might enable Amadeo later, so we need the correct factorForce value ready
+        var amadeoHandler = FindObjectOfType<getEventFromAmadeoClientDiver>();
+        if (amadeoHandler != null && amadeoHandler.factor_force_inputField != null)
         {
-            // Find getEventFromAmadeoClientDiver component (on Player object)
-            var amadeoHandler = FindObjectOfType<getEventFromAmadeoClientDiver>();
-            if (amadeoHandler != null && amadeoHandler.factor_force_inputField != null)
-            {
-                amadeoHandler.factor_force_inputField.text = selected.factorForce.ToString("F2");
-                Debug.Log($"  AmadeoHandler: factorForce={selected.factorForce}");
-            }
+            amadeoHandler.factor_force_inputField.text = selected.factorForce.ToString("F2");
+            Debug.Log($"  AmadeoHandler: factorForce={selected.factorForce}");
         }
 
         Debug.Log($"[PanelOpenUp] Successfully applied parameters for target {selected.targetOxygen}%");
@@ -486,14 +483,12 @@ public class PanelOpenUp : MonoBehaviour
                 playerLife.healHealthPoints_inputField.text = selected.healHealthPoint.ToString("F2");
         }
 
-        // Populate Amadeo input field if in Amadeo mode
-        if (selected.IsAmadeoMode > 0.5f)
+        // Populate Amadeo input field (always load, even if currently in keyboard mode)
+        // User might enable Amadeo later, so we need the correct factorForce value ready
+        var amadeoHandler = FindObjectOfType<getEventFromAmadeoClientDiver>();
+        if (amadeoHandler != null && amadeoHandler.factor_force_inputField != null)
         {
-            var amadeoHandler = FindObjectOfType<getEventFromAmadeoClientDiver>();
-            if (amadeoHandler != null && amadeoHandler.factor_force_inputField != null)
-            {
-                amadeoHandler.factor_force_inputField.text = selected.factorForce.ToString("F2");
-            }
+            amadeoHandler.factor_force_inputField.text = selected.factorForce.ToString("F2");
         }
 
         Debug.Log($"[PanelOpenUp] Loaded parameters: speed={selected.speed}, vSpeed={selected.verticalSpeed}, idle={selected.idleUpwardSpeed}, lifeTime={selected.lifeTime}, drain={selected.RemoveHealthEveryLifeTime}, collide={selected.removeHealthWithCollide}, heal={selected.healHealthPoint}");

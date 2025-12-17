@@ -190,7 +190,7 @@ public class GameSystemResetter : MonoBehaviour
         {
             health.StopAllCoroutines();
             health.didntGetInputsYet = true;
-            health.heal(100f);
+            health.Heal(100f);
         }
         }
 
