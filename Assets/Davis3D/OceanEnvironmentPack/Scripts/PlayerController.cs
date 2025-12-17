@@ -5,8 +5,8 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     [SerializeField] private float baseSpeed = 10f;
-    [SerializeField] private float lookSensitivity = 3f;
-    [SerializeField] private float wheelAdjustFactor = 0.2f;
+    //[SerializeField] private float lookSensitivity = 3f;
+    //[SerializeField] private float wheelAdjustFactor = 0.2f;
 
    // [SerializeField] private float movementSmoothing = 0.9f;
     [SerializeField] private float rotationSmoothing = 0.9f;

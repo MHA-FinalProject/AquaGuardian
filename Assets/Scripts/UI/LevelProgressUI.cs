@@ -1,0 +1,85 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+/**
+* Level progress bar UI controller.
+* Shows player progress towards a finish line using a Slider and a moving player icon.
+*/
+
+public class LevelProgressUI : MonoBehaviour
+{
+    [Header("UI References:")]
+    [SerializeField] private Image playerModelImage;  // Player icon image
+    [SerializeField] private RectTransform progressBar; // Progress bar rect (movement rail for the icon)
+
+    [Header("Player & Finish Line Settings:")]
+    [SerializeField] private Transform player;
+    [SerializeField] private Slider slider;
+
+    [Header("Smooth Settings:")]
+    [SerializeField] private float smoothSpeed = 5f;
+
+    // Finish line transform (target position for the player icon)
+    private Transform finishLine;
+    private float maxDistance;
+    private float currentSliderValue;
+    private Vector2 currentPlayerModelPosition;
+    void Start()
+    {
+        slider.value = 0;
+        currentSliderValue = slider.value;
+        currentPlayerModelPosition = playerModelImage.rectTransform.anchoredPosition;
+    }
+
+    void Update()
+    {
+        if (finishLine != null && player != null)
+        {
+            float distance = GetDistance();
+            float targetProgress = 1 - (distance / maxDistance);
+            targetProgress = Mathf.Clamp01(targetProgress);
+
+
+            // Smoothly update the slider value
+            currentSliderValue = Mathf.Lerp(currentSliderValue, targetProgress, Time.deltaTime * smoothSpeed);
+            SetProgress(currentSliderValue);
+
+            // Smoothly update the player model position
+            UpdatePlayerModelPosition(currentSliderValue);
+        }
+    }
+
+    float GetDistance()
+    {
+        return Vector3.Distance(player.position, finishLine.position);
+    }
+
+    void SetProgress(float p)
+    {
+        slider.value = p;
+    }
+
+    void UpdatePlayerModelPosition(float progress)
+    {
+        if (playerModelImage != null && progressBar != null)
+        {
+            RectTransform playerRectTransform = playerModelImage.rectTransform;
+            Vector2 targetPosition = new Vector2(Mathf.Lerp(0, progressBar.rect.width, progress), playerRectTransform.anchoredPosition.y);
+            playerRectTransform.anchoredPosition = Vector2.Lerp(playerRectTransform.anchoredPosition, targetPosition, Time.deltaTime * smoothSpeed);
+        }
+    }
+
+    public void SetFinishLine(Transform finishLineTransform)
+    {
+        if (finishLineTransform != null)
+        {
+            finishLine = finishLineTransform;
+            maxDistance = GetDistance(); // Update maxDistance after setting the finish line
+        }
+        else
+        {
+            Debug.LogWarning("PROGRESS BAR: Finish line transform is null.");
+        }
+    }
+
+}

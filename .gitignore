@@ -25,6 +25,45 @@
 
 # Visual Studio cache directory
 .vs/
+.cursor/
+./
+# orel use this 
+
+/Assets/Scripts/DifficultySystem_Future/
+/Assets/Sci-Fi UI/
+/Assets/tokens.json
+/Assets/Cute-GUI-Pack-Lite/
+.cursor/rules/ 
+
+# Additional ignore patterns for Unity
+# Generated reports
+Assets/Subject/
+README_PROJECT_BOOK.md
+README_REGRESSION_DETAILED.md
+
+README_NEW.md
+.cursor/
+project_book.tex
+
+
+
+
+# Temp screenshots and test images
+Assets/**/צילום*
+Assets/**/ל*.png
+Assets/Data/RegressionResults/
+
+# Screenshots in root directory (should be in docs/images/)
+צילום מסך*.png
+צילום מסך*.jpg
+
+
+
+
+# Additional UI assets
+
+
+
 
 # Gradle cache directory
 .gradle/

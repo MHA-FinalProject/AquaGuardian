@@ -9,6 +9,9 @@ TagManager:
   - OxygenObject
   - Wall
   - Ground
+  - trial_trigger
+  - TrialFish
+  - CaveCeiling
   layers:
   - Default
   - TransparentFX

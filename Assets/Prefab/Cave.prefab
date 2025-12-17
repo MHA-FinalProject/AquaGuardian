@@ -129,7 +129,7 @@ GameObject:
   - component: {fileID: 4573293755962110755}
   m_Layer: 6
   m_Name: firstCave (20)
-  m_TagString: Cave
+  m_TagString: CaveCeiling
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1394,7 +1394,7 @@ GameObject:
   - component: {fileID: 4038898599705882056}
   m_Layer: 6
   m_Name: firstCave (13)
-  m_TagString: Cave
+  m_TagString: CaveCeiling
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3199,7 +3199,7 @@ Transform:
   m_GameObject: {fileID: 5975865315302678480}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -0.2, y: -0, z: 0}
   m_LocalScale: {x: 5, y: 5, z: 5}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3269,7 +3269,7 @@ GameObject:
   - component: {fileID: 3788735887198286515}
   m_Layer: 6
   m_Name: firstCave (10)
-  m_TagString: Cave
+  m_TagString: CaveCeiling
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3551,7 +3551,7 @@ GameObject:
   - component: {fileID: 9108295274032479855}
   m_Layer: 6
   m_Name: firstCave (12)
-  m_TagString: Cave
+  m_TagString: CaveCeiling
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4578,7 +4578,7 @@ GameObject:
   - component: {fileID: 5228692113277832074}
   m_Layer: 6
   m_Name: firstCave (17)
-  m_TagString: Cave
+  m_TagString: CaveCeiling
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4719,7 +4719,7 @@ GameObject:
   - component: {fileID: 267474792352454599}
   m_Layer: 6
   m_Name: firstCave (11)
-  m_TagString: Cave
+  m_TagString: CaveCeiling
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -5215,7 +5215,7 @@ GameObject:
   - component: {fileID: 2148244231687861683}
   m_Layer: 6
   m_Name: firstCave (16)
-  m_TagString: Cave
+  m_TagString: CaveCeiling
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
