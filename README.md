@@ -126,6 +126,84 @@ after selecting:
 
 ---
 
+## Project Structure
+
+| File | Description |
+|------|-------------|
+| **GameDataSO.cs** | ScriptableObject for centralized game configuration (max health, speeds, collision delays) |
+| **GameStateManager.cs** | Manages global game state (panel open/closed, trials active, game events) |
+| **PlayerMovement.cs** | Controls diver movement (horizontal/vertical speed, idle upward drift, Amadeo/keyboard input) |
+| **PlayerLife.cs** | Manages collision damage, healing from oxygen balloons, blood splatter visual effects |
+| **PlayerIntro.cs** | Handles "Get Ready... Go!" countdown sequence at game start |
+| **Health.cs** | Tracks oxygen level, depletion over time, game over conditions |
+| **AmadeoClient.cs** | Manages connection to Amadeo device, input mode switching (PC/Amadeo/Emulation) |
+| **getEventFromAmadeoClientDiver.cs** | Processes force data from Amadeo device and converts to movement commands |
+| **TrialSystemManager.cs** | Orchestrates trial sessions (5 runs), tracks results, manages trial flow |
+| **TrialParameterManager.cs** | Loads/applies trial parameters from CSV, generates random parameters if needed |
+| **TrialDataService.cs** | CSV reading/writing service, parameter persistence |
+| **TrialDataModels.cs** | Data structures for trial parameters (speed, oxygen drain, collision damage, etc.) |
+| **TrialUIController.cs** | Manages trial control panel UI (start next, retry, exit) |
+| **TrialFishSpawner.cs** | Spawns target fish at end of trial caves |
+| **GameSystemResetter.cs** | Resets player position, health, spawned objects between trials |
+| **CsvFileHelper.cs** | Utility for CSV file operations |
+| **CoroutineHost.cs** | Persistent GameObject for running coroutines across scenes |
+| **DifficultyParameterSolver.cs** | **Core ML system** - 3-phase optimization cascade for difficulty calibration |
+| **MultipleLinearRegression.cs** | Ridge regression implementation for parameter-to-oxygen prediction |
+| **MultiTargetOptimizer.cs** | Optimizes parameters for 9 target oxygen levels simultaneously |
+| **OxygenPredictor.cs** | Predicts final oxygen based on game parameters |
+| **RegressionExtensions.cs** | Matrix operations and math utilities |
+| **RegressionMath.cs** | Statistical functions for regression |
+| **FeatureExtractor.cs** | Extracts 10 features from trial parameters (including derived EffectiveDrainRate) |
+| **FeatureNormalizer.cs** | Standardizes features for ML models (z-score normalization) |
+| **ParameterHelper.cs** | Parameter validation and range management |
+| **RegressionMetrics.cs** | Model evaluation metrics (R², RMSE, MAE) |
+| **OxygenCalculationSettings.cs** | Configuration for oxygen prediction |
+| **PythonRegressionHandler.cs** | Interface for Python-based ML models |
+| **PythonRegressionModel.cs** | Communication with Python regression server |
+| **PythonRegressionServerClient.cs** | HTTP client for Python ML server |
+| **PanelOpenUp.cs** | **Main game controller** - manages panel open/close, cave building, parameter application |
+| **LevelProgressUI.cs** | Progress bar showing distance to goal |
+| **PauseManager.cs** | Pause menu functionality |
+| **TrialRegressionUI.cs** | Multi-target analysis UI - table with 9 difficulty levels, model selection |
+| **TrialReportGenerator.cs** | Generates detailed trial reports and statistics |
+| **GoToEndGame.cs** | Handles end-game scene transition or trial completion |
+| **ScenesManager.cs** | Scene loading utilities |
+| **ArrowUpDown.cs** | Animated arrow indicators |
+| **MuteController.cs** | Audio mute/unmute functionality |
+| **RotateObject.cs** | Object rotation animation |
+| **FindMissingScripts.cs, MissingScriptsScanner.cs, PrefabMissingScriptsFixer.cs** | Development utilities for cleaning up broken references |
+| **CaveBuilder.cs** | Procedurally builds caves from CSV specifications (diameter, height, length) |
+| **SelectedParametersService.cs** | Saves/loads user-selected parameters from multi-target analysis to JSON |
+| **TrialDataCache.cs** | In-memory cache for trial data during sessions |
+| **RegressionUtilities.cs** | General utilities for regression system |
+| **TrialRegressionAlgorithm.cs** | Regression algorithm wrapper |
+
+
+
+## Key File Relationships
+
+### Game Flow
+1. **PanelOpenUp.cs** → Main entry point, orchestrates everything
+2. **CaveBuilder.cs** → Builds environment from CSV
+3. **PlayerMovement.cs** + **Health.cs** + **PlayerLife.cs** → Core gameplay loop
+4. **GameStateManager.cs** → Coordinates state across all systems
+
+### Trial System Flow
+1. **TrialSystemManager.cs** → Manages 5-trial sessions
+2. **TrialParameterManager.cs** → Loads parameters from CSV
+3. **GameSystemResetter.cs** → Resets between trials
+4. **TrialDataService.cs** → Saves results to CSV
+
+### ML/Regression Flow
+1. **TrialRegressionUI.cs** → User interface
+2. **DifficultyParameterSolver.cs** → Core optimization (3 phases)
+3. **MultipleLinearRegression.cs** → Ridge regression model
+4. **FeatureExtractor.cs** → Prepares data
+5. **MultiTargetOptimizer.cs** → Generates 9 difficulty levels
+6. **SelectedParametersService.cs** → Saves user selection
+
+---
+
 ## Additional Documentation
 
 📖 **For the Original Version:**
