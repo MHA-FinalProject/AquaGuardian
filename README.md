@@ -196,10 +196,8 @@ The difficulty calibration system is accessed through `TrialRegressionUI.cs`. `D
 
 ## Additional Documentation
 
- **For the Original Version:**
-
+**For the Original Version:**
 - See [AquaGuardian_FinalProjectBook.pdf](AquaGuardian_FinalProjectBook.pdf)
 
 **For This Version (Adaptive Difficulty System):**
-
 - See **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** - Complete technical documentation
