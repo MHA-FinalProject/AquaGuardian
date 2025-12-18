@@ -9,10 +9,12 @@
 1. [Problem Statement](#problem-statement)
 2. [Objectives and Methodology](#objectives-and-methodology)
 3. [Gameplay Mechanics](#gameplay-mechanics)
-4. [Instructions](#Instructions)
+4. [Instructions](#instructions)
 5. [Evaluation and Results](#evaluation-and-results)
-6. [Enhanced Version: Adaptive Difficulty System](#enhanced-version-adaptive-difficulty-system) ⭐ **NEW**
-7. [Additional Documentation](#additional-documentation)
+6. [Enhanced Version: Adaptive Difficulty System](#enhanced-version-adaptive-difficulty-system)
+7. [System Components](#system-components)
+8. [System Architecture](#system-architecture)
+9. [Additional Documentation](#additional-documentation)
 
 ## Problem Statement
 
@@ -65,7 +67,6 @@ To play **Aqua Guardian**, connect the Amadeo device to your system, and follow 
    <img src="https://github.com/user-attachments/assets/79ab5997-cb4a-48e3-a0ab-5ef8c872824a" alt="WhatsApp Image 2024-08-28 at 22 31 59_cab6c29a" width="400"/>
 
 5. **Complete the Course:** Get to the treasure before you run out of oxygen.
-
    <img src="https://github.com/user-attachments/assets/7e05adb9-6c24-498e-8481-c4bee9fea784" alt="WhatsApp Image 2024-08-27 at 18 18 51_9c9775c4" width="400"/>
 
 ## Evaluation and Results
@@ -85,49 +86,26 @@ The game was evaluated through trials with patients at the Beit Loewenstein Reha
 
 ## Enhanced Version: Adaptive Difficulty System
 
-⭐ **NEW**: This version introduces a **comprehensive adaptive difficulty system** with significant improvements and new features.
+The enhanced version introduces an adaptive difficulty system designed to adjust game parameters automatically based on patient performance.
 
-### What's New
+### System Enhancements
 
-**Intelligent Difficulty Calibration:**
-- Patient-specific machine learning models (Ridge regression)
-- Automatic parameter optimization for 9 difficulty levels (10%-90% oxygen targets)
-- Three-phase optimization cascade for robust solutions
+**Trial System:**
+This version introduces a trial-based calibration system that enables therapists to run controlled parameter testing sessions. Each session consists of 5 trials with configurable parameters. The system automatically records trial outcomes including final oxygen level, duration, and collision count, exporting results to CSV format for subsequent analysis.
 
-**User Interface Enhancements:**
-- Pause button for patient breaks
-- Mute button for audio control
-- Enhanced visual feedback systems
+**Difficulty Calibration:**
+A machine learning module (Ridge regression) was implemented to predict game outcomes based on input parameters. The system optimizes parameters for 9 target difficulty levels (10%-90% final oxygen). A three-phase optimization cascade ensures robust parameter solutions across varying patient skill levels.
 
-**Code Architecture Improvements:**
-- Centralized configuration via `GameDataSO` ScriptableObject
-- Modular system architecture (ML, Regression, Trial System modules)
-- Improved code organization and maintainability
+**User Interface:**
+Additional controls include pause and mute functionality. A trial control panel provides session management capabilities. A parameter selection table displays the 9 optimized difficulty presets for therapist selection.
 
-**Bug Fixes & Reliability:**
-- Fixed movement calculations in `PlayerMovement.cs`
-- Improved collision detection and Amadeo device integration
-- Automatic data persistence and CSV export
+**System Architecture:**
+Game configuration was centralized using a ScriptableObject (`GameDataSO`). The codebase was reorganized into modular components (Trial System, Regression, Gameplay modules). Trial results are automatically exported to structured CSV files with JSON-based parameter persistence.
 
-**Data Management:**
-- Automatic trial result export to structured CSV files
-- Dynamic column support for multiple run attempts
-- JSON-based parameter selection and loading
+**Bug Fixes:**
+A collision handling bug was identified in `PlayerMovement.cs`. The original implementation pushed the player upward upon cave collision, which prevented the player from descending when colliding with the cave ceiling. The fix introduced a new tag (`CaveCeiling`) to distinguish the upper part of the cave from the rest of the cave structure. Additionally, two configurable flags were added: `autoMoveUpwardFromCaveFloor` and `autoMoveDownwardFromCaveCeiling`. These flags allow the therapist to choose whether the player moves automatically upon collision or must manually control the movement. In either configuration, the player will not get stuck at collision boundaries.
 
-### Screenshots
-![Main Panel](docs/images/mainPanel.png)
-![Trial Panel](docs/images/trialpanel.png)
-![After 1 Trial](docs/images/1%20(4).png)
-![After 5 Trials](docs/images/after5%20(1).png)
-
-![Multi-Target Analysis 1](docs/images/multi_target%20(2).png) ![Multi-Target Analysis 2](docs/images/multi_target%20(1).png)
-
-After selecting parameters:
-![After Multi-Target Selection](docs/images/after_multi.png)
-
----
-
-## Project Structure
+## System Components
 
 | File | Description |
 |------|-------------|
@@ -179,42 +157,49 @@ After selecting parameters:
 | **RegressionUtilities.cs** | General utilities for regression system |
 | **TrialRegressionAlgorithm.cs** | Regression algorithm wrapper |
 
+## System Architecture
 
+### Main Game Flow
 
-## Key File Relationships
+The game is initialized through `PanelOpenUp.cs`, which serves as the main controller. Upon game start, `CaveBuilder.cs` constructs the cave environment based on CSV specifications. During gameplay, `PlayerMovement.cs` handles player control, `Health.cs` manages oxygen depletion, and `PlayerLife.cs` processes collisions. `GameStateManager.cs` coordinates state transitions across all components.
 
-### Game Flow
-1. **PanelOpenUp.cs** → Main entry point, orchestrates everything
-2. **CaveBuilder.cs** → Builds environment from CSV
-3. **PlayerMovement.cs** + **Health.cs** + **PlayerLife.cs** → Core gameplay loop
-4. **GameStateManager.cs** → Coordinates state across all systems
+### Trial System
 
-### Trial System Flow
-1. **TrialSystemManager.cs** → Manages 5-trial sessions
-2. **TrialParameterManager.cs** → Loads parameters from CSV
-3. **GameSystemResetter.cs** → Resets between trials
-4. **TrialDataService.cs** → Saves results to CSV
+`TrialSystemManager.cs` orchestrates trial sessions, managing the sequence of 5 trials per session. `TrialParameterManager.cs` loads trial parameters from CSV files and applies them to game components. Between trials, `GameSystemResetter.cs` resets player position, health, and spawned objects. `TrialDataService.cs` handles data persistence, saving trial results to CSV files.
 
-### ML/Regression Flow
-1. **TrialRegressionUI.cs** → User interface
-2. **DifficultyParameterSolver.cs** → Core optimization (3 phases)
-3. **MultipleLinearRegression.cs** → Ridge regression model
-4. **FeatureExtractor.cs** → Prepares data
-5. **MultiTargetOptimizer.cs** → Generates 9 difficulty levels
-6. **SelectedParametersService.cs** → Saves user selection
+### Machine Learning Pipeline
 
----
+The difficulty calibration system is accessed through `TrialRegressionUI.cs`. `DifficultyParameterSolver.cs` implements a three-phase optimization algorithm to find optimal parameters. `MultipleLinearRegression.cs` provides the Ridge regression model for oxygen prediction. `FeatureExtractor.cs` transforms trial parameters into model features. `MultiTargetOptimizer.cs` generates parameter sets for 9 target difficulty levels. Selected parameters are persisted via `SelectedParametersService.cs`.
+
+### System Visualization
+
+**Main game control interface**
+![Main Panel](docs/images/mainPanel.png)
+
+**Trial session interface**
+![Trial Panel](docs/images/trialpanel.png)
+
+**When the player reaches the fish, the game ends.**
+
+![After 1 Trial](docs/images/1%20(4).png)
+
+**End screen for the five trials**
+![After 5 Trials](docs/images/after5%20(1).png)
+
+**After clicking the *Multi Target* button, a table screen displaying oxygen levels from 10% to 90% appears.**
+
+![Multi-Target Analysis 1](docs/images/multi_target%20(2).png) ![Multi-Target Analysis 2](docs/images/multi_target%20(1).png)
+
+**The selected parameters are applied directly to the main screen.**
+
+![After Multi-Target Selection](docs/images/after_multi.png)
 
 ## Additional Documentation
 
-📖 **For the Original Version:**
-- See [AquaGuardian_FinalProjectBook.pdf](AquaGuardian_FinalProjectBook.pdf)
-
-📖 **For This Version (Adaptive Difficulty System):**
-- See **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** - Complete technical documentation
-
-📖 **For the Original Version:**
+ **For the Original Version:**
 
 - See [AquaGuardian_FinalProjectBook.pdf](AquaGuardian_FinalProjectBook.pdf)
-📖 **For This Version (Adaptive Difficulty System):**
+
+**For This Version (Adaptive Difficulty System):**
+
 - See **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** - Complete technical documentation
