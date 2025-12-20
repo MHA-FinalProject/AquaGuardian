@@ -101,12 +101,9 @@ This approach provides **adaptive difficulty selection** without requiring multi
 
 - **Dynamic Columns**:
   - **Base Parameters**: `trialId`, `speed`, `verticalSpeed`, `idleUpwardSpeed`, etc. (9 parameters)
-  - **Oxygen Results**: `o2_run1`, `o2_run2`, `o2_run3`, ... (one column added per successful run)
-  - **Automatic Retry Handling**:
-    - Failed attempts (0% oxygen) are **overwritten** in the same column
-    - Successful retries create **new columns** (`o2_run2`, `o2_run3`, etc.)
-
-#### **`Trial_Random_Parameters.csv`** - Random Parameter Generation
+  - **Oxygen Results**: `o2_run1`, `o2_run2`, `o2_run3`, 
+  
+### **`Trial_Random_Parameters.csv`** - Random Parameter Generation
 
 - **Location**: `Assets/Data/Trials/Trial_Random_Parameters.csv`
 - **Purpose**: Stores trial rows for **random-parameters mode** (used when the UI toggle “Random Parameters” is ON)
@@ -303,7 +300,7 @@ flowchart LR
 ### Important Runtime Behaviors (from `Assets/Scripts/`)
 
 - **Random vs Regular mode is a UI toggle**: `TrialUIController` controls `useRandomParameters`, and `TrialRegressionUI` passes it into `TrialDataService.LoadAllTrials(useRandomParameters)`.
-- **Retries and “o2_run columns”**: `Trial_5_runs_.csv` grows dynamic `o2_runX` columns. Failed attempts (~0%) are overwritten; successful retries create a new `o2_runX` column.
+- **Retries and “o2_run columns”**: `Trial_5_runs_.csv` grows dynamic `o2_runX` columns. Failed attempts (~0%) are overwritten;
 - **How “final oxygen” is chosen when multiple runs exist**: `TrialDataService` aggregates multiple oxygen columns via `OxygenCalculationSettings` (e.g., LastRun/Average/Median). This affects the regression target \(y\).
 - **TrialDataCache affects analysis**: regular-trial runs are also written into `TrialDataCache` (BeginRun/AppendTrial/EndRun) and can be used as a fast source of latest oxygen values with CSV fallback.
 - **Keyboard vs Amadeo affects features**: when `IsAmadeoMode = 0`, Unity forces `factorForce = 0` (and may exclude it from optimization if no Amadeo trials exist).
