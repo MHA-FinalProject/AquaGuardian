@@ -201,3 +201,4 @@ The difficulty calibration system is accessed through `TrialRegressionUI.cs`. `D
 
 **For This Version (Adaptive Difficulty System):**
 - See **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** - Complete technical documentation
+- See [Final_Project_Book.pdf](Final_Project_Book.pdf)
