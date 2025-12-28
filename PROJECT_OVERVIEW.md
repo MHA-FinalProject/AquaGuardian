@@ -43,6 +43,8 @@
 
 This version extends the AquaGuardian rehabilitation game, developed in collaboration with Beit Loewenstein Rehabilitation Center for post-stroke finger motor recovery using the Amadeo robotic device. The game enables patients to control an underwater diver navigating caves while collecting oxygen balloons and avoiding obstacles. This version focuses on creating a **dynamic difficulty calculation algorithm** to adapt game parameters to individual patients.
 
+**Important Note on Validation**: All system testing and validation reported in this documentation was conducted using developer self-testing only; no patient data or clinical trials were used. Clinical validation with actual patients at Beit Loewenstein Rehabilitation Center remains necessary to assess the system's therapeutic effectiveness and appropriateness for real-world clinical use.
+
 **How It Works:**
 
 The patient completes **5 trial runs** (each trial: 2 caves, ~20 seconds). The system learns a patient-specific **multiple linear regression model** over engineered features extracted from gameplay trials, and then uses a hierarchy of optimization algorithms to generate parameter sets that achieve prescribed target oxygen levels.
@@ -124,7 +126,7 @@ This approach provides **adaptive difficulty selection** without requiring multi
 - **Structure**:
 
   ```csv
-  oygenTarget,predicted_oygen,error,speed,verticalSpeed,idleUpwardSpeed,lifeTime,RemoveHealthEveryLifeTime,removeHealthWithCollide,timeBetweenCollides,healHealthPoint,factorForce
+  oxygenTarget,predicted_oxygen,error,speed,verticalSpeed,idleUpwardSpeed,lifeTime,RemoveHealthEveryLifeTime,removeHealthWithCollide,timeBetweenCollides,healHealthPoint,factorForce
   10%,9.81,0.190,18.481,28.910,0.500,0.735,4.183,9.826,1.156,5.687,0.000
   20%,20.15,0.152,18.630,29.045,0.500,0.812,4.250,9.761,1.198,5.712,0.000
   ```
@@ -136,11 +138,11 @@ This approach provides **adaptive difficulty selection** without requiring multi
 - **Location**: `Assets/Data/SelectedParameters/SelectedParameters.json`
 - **Created by**: Clicking a row in the Multi-Target table
 - **Applied by**: `PanelOpenUp.cs` auto-loads into input fields
-- **Contains**: Target oxygen, predicted outcome, all 11 parameters, timestamp
+- **Contains**: Target oxygen, predicted outcome, all 9 game parameters, timestamp
 
-#### **`MultiTarget_Report_[timestamp].csv`** - Excel Analysis
+#### **`MultiTarget_Report_.csv`** - Excel Analysis
 
-- **Location**: `Assets/Data/MultiTargets/MultiTarget_Report_[timestamp].csv`
+- **Location**: `Assets/Data/MultiTargets/MultiTarget_Report_.csv`
 - **Purpose**: Detailed analysis report with metadata, 12 parameters (includes `EffectiveDrainRate`), and summary statistics
 - **Features**: Timestamped history, Excel-friendly formatting
 
@@ -173,8 +175,8 @@ flowchart TB
     end
 
     subgraph Output["Output & Selection"]
-        H["Save target.csv<br/>(11 params x 9 targets)"]
-        I["Save MultiTarget_Report.csv<br/>(Detailed analysis)"]
+        H["Save target.csv<br/>(9 params x 9 targets)"]
+        I["Save MultiTarget_Report_.csv<br/>(Detailed analysis)"]
         J["Display Interactive Table<br/>(Therapist selects difficulty)"]
         K["Save SelectedParameters.json"]
     end
@@ -300,7 +302,7 @@ flowchart LR
 ### Important Runtime Behaviors (from `Assets/Scripts/`)
 
 - **Random vs Regular mode is a UI toggle**: `TrialUIController` controls `useRandomParameters`, and `TrialRegressionUI` passes it into `TrialDataService.LoadAllTrials(useRandomParameters)`.
-- **Retries and “o2_run columns”**: `Trial_5_runs_.csv` grows dynamic `o2_runX` columns. Failed attempts (~0%) are overwritten;
+- **Retries and "o2_run columns"**: `Trial_5_runs_.csv` grows dynamic `o2_runX` columns. The retry mechanism allows up to 2 attempts per trial (original attempt plus one retry). If the first attempt fails (oxygen depletes to 0% before completion), the oxygen value is temporarily recorded as 0. If a second attempt succeeds, the stored value is overwritten with the new result. If both attempts fail, 0 is retained.
 - **How “final oxygen” is chosen when multiple runs exist**: `TrialDataService` aggregates multiple oxygen columns via `OxygenCalculationSettings` (e.g., LastRun/Average/Median). This affects the regression target \(y\).
 - **TrialDataCache affects analysis**: regular-trial runs are also written into `TrialDataCache` (BeginRun/AppendTrial/EndRun) and can be used as a fast source of latest oxygen values with CSV fallback.
 - **Keyboard vs Amadeo affects features**: when `IsAmadeoMode = 0`, Unity forces `factorForce = 0` (and may exclude it from optimization if no Amadeo trials exist).
@@ -540,7 +542,9 @@ Monte Carlo random search with **biased sampling**:
 - **C# Mode**: 300 random combinations
 - **Python Mode**: 300-800 adaptive combinations
 - **Biased for extreme targets**: Hard parameters for low oxygen (<30%), easy for high oxygen (>70%)
-- **Deterministic**: Seed based on target oxygen for reproducibility
+- **Deterministic**: Seed based on target oxygen for reproducibility (`seed = floor(targetOxygen × 1000)`)
+
+The algorithm samples uniform random values $u_j \sim \text{Uniform}(0,1)$ for each parameter, applies a bias transformation to obtain $t_j \in [0,1]$ based on target difficulty, then maps to parameter range using linear interpolation: $x_j = l_j + t_j \cdot (u_j - l_j)$ where $[l_j, u_j]$ are the adapted parameter bounds. The bias transformation uses power functions: $t_j = u_j^2$ for hard targets ($y_{\text{target}} < 30\%$), $t_j = u_j$ (uniform) for mid-range targets ($30\% \leq y_{\text{target}} \leq 70\%$), and $t_j = 1 - (1-u_j)^2$ for easy targets ($y_{\text{target}} > 70\%$). This shifts probability density toward parameter extremes when extrapolation is needed. *(Note: The mapping formula $x_j = l_j + t_j \cdot (u_j - l_j)$ corresponds to Unity's `Mathf.Lerp(l_j, u_j, t_j)` function.)*
 
 ### Python Mode Differences
 
@@ -638,7 +642,7 @@ The system automatically adapts features based on input device:
 **Phase 2: Multi-Target Analysis**
 3. Click **"MULTI TARGET"** button
 4. System trains regression model and optimizes for **9 target levels** (10%-90%)
-5. Results saved to `target.csv` and `MultiTarget_Report_[timestamp].csv`
+5. Results saved to `target.csv` and `MultiTarget_Report_.csv`
 
 **Phase 3: Parameter Selection**
 6. View interactive table with 9 rows (10%-90% oxygen targets)
